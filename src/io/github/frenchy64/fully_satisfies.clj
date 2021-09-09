@@ -9,12 +9,17 @@
         ^Class i (:on-interface p)
         ims (.getMethods i)]
     (if (instance? i v)
-      (every? (fn [^Method im]
-                (let [cm (.getMethod c (.getName im) (.getParameterTypes im))]
-                  (zero? (bit-and (.getModifiers cm)
+      (let [l (alength ims)]
+        (loop [idx 0]
+          (if (< idx l)
+            (let [im (aget ims idx)
+                  cm (.getMethod c (.getName im) (.getParameterTypes im))]
+              (if (zero? (bit-and (.getModifiers cm)
                                   ;; abstract flag
-                                  0x0400))))
-              ims)
+                                  0x0400))
+                (recur (unchecked-inc-int idx))
+                false))
+            true)))
       (let [evm (:extend-via-metadata p)
             impls (:impls p)]
         (boolean

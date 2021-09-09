@@ -58,7 +58,7 @@ the kinds of objects to which they can apply."}
         ^Class i (:on-interface p)
         ims (delay (.getMethods i))]
     (boolean
-      (or (when (and c (.isAssignableFrom i c))
+      (or (when (instance? i v)
             (every? (fn [^Method im]
                       (let [cm (.getMethod c (.getName im) (.getParameterTypes im))
                             fs (parse-method-flags (.getModifiers cm))]

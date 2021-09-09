@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies
-  (:import [java.lang.reflect Method Modifier]))
+  (:import [java.lang.reflect Method]))
 
 ;; copied from clojure.reflect
 (defn- access-flag

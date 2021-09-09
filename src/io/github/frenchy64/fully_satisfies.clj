@@ -15,18 +15,19 @@
                                   ;; abstract flag
                                   0x0400))))
               ims)
-      (let [evm (:extend-via-metadata p)]
+      (let [evm (:extend-via-metadata p)
+            impls (:impls p)]
         (boolean
           (or
-            (when-some [impl (or (get-in p [:impls c])
+            (when-some [impl (or (get impls c)
                                  (when-not evm
-                                   (get-in p [:impls Object])))]
+                                   (get impls Object)))]
               (= (count impl)
                  (alength ims)))
             (when evm
               (let [nstr (-> p :var symbol namespace)
                     mmap-keys (into #{} (map name) (-> p :method-map keys))
-                    impl-keys (into (set (keys (get-in p [:impls Object])))
+                    impl-keys (into (set (keys (get impls Object)))
                                     (map (fn [[k v]]
                                            (when (and (symbol? k)
                                                       (= nstr (namespace k))

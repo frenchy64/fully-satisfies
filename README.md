@@ -14,7 +14,7 @@ Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/sha "TBD"}}
+         {:git/sha "2a43bbe6d82f49d12ae9193b0deaeff219d18196"}}
 ```
 
 ## Usage

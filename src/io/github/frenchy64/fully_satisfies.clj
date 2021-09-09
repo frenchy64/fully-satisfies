@@ -57,27 +57,29 @@ the kinds of objects to which they can apply."}
   (let [c (class v)
         ^Class i (:on-interface p)
         ims (delay (.getMethods i))]
-    (boolean
-      (or (when (instance? i v)
-            (not-any? (fn [^Method im]
-                        (let [cm (.getMethod c (.getName im) (.getParameterTypes im))
-                              fs (parse-method-flags (.getModifiers cm))]
-                          (:abstract fs)))
-                      @ims))
-          (when-some [impl (or (get-in p [:impls c])
-                               (when (not (:extend-via-metadata p))
-                                 (get-in p [:impls Object])))]
-            (= (count impl)
-               (alength @ims)))
-          (when (:extend-via-metadata p)
-            (let [nstr (-> p :var symbol namespace)
-                  mmap-keys (into #{} (map name) (-> p :method-map keys))
-                  impl-keys (into (set (keys (get-in p [:impls Object])))
-                                  (map (fn [[k v]]
-                                         (when (and (symbol? k)
-                                                    (= nstr (namespace k))
-                                                    (contains? mmap-keys (name k)))
-                                           (keyword (name k)))))
-                                  (meta v))]
-              (= (count impl-keys)
-                 (alength @ims))))))))
+    (if (instance? i v)
+      (not-any? (fn [^Method im]
+                  (let [cm (.getMethod c (.getName im) (.getParameterTypes im))
+                        fs (parse-method-flags (.getModifiers cm))]
+                    (:abstract fs)))
+                @ims)
+      (let [evm (:extend-via-metadata p)]
+        (boolean
+          (or
+            (when-some [impl (or (get-in p [:impls c])
+                                 (when-not evm
+                                   (get-in p [:impls Object])))]
+              (= (count impl)
+                 (alength @ims)))
+            (when evm
+              (let [nstr (-> p :var symbol namespace)
+                    mmap-keys (into #{} (map name) (-> p :method-map keys))
+                    impl-keys (into (set (keys (get-in p [:impls Object])))
+                                    (map (fn [[k v]]
+                                           (when (and (symbol? k)
+                                                      (= nstr (namespace k))
+                                                      (contains? mmap-keys (name k)))
+                                             (keyword (name k)))))
+                                    (meta v))]
+                (= (count impl-keys)
+                   (alength @ims))))))))))

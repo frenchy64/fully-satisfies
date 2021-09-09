@@ -83,6 +83,8 @@
   (is (not (fully-satisfies? A (reify A))))
   (is (not (fully-satisfies? A (reify A (aA [this])))))
   (is (fully-satisfies? A (reify A (aA [this]) (bA [this]))))
+  ;; partially implemented directly with a complete Object impl
+  (is (not (fully-satisfies? PWithFullObjectImpl (reify PWithFullObjectImpl (aPWithFullObjectImpl [this])))))
   ;; via extend
   (is (not (fully-satisfies? A (->NoExtended))))
   (is (not (fully-satisfies? A (->Extended))))

@@ -51,7 +51,8 @@ the kinds of objects to which they can apply."}
   (parse-flags flags :method))
 
 (defn fully-satisfies?
-  "Returns true if value v implements every method in protocol p."
+  "Returns true if value v implements every method in protocol p,
+  otherwise false."
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)

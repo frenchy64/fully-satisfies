@@ -59,11 +59,11 @@ the kinds of objects to which they can apply."}
         ims (delay (.getMethods i))]
     (boolean
       (or (when (instance? i v)
-            (every? (fn [^Method im]
-                      (let [cm (.getMethod c (.getName im) (.getParameterTypes im))
-                            fs (parse-method-flags (.getModifiers cm))]
-                        (not (:abstract fs))))
-                    @ims))
+            (not-any? (fn [^Method im]
+                        (let [cm (.getMethod c (.getName im) (.getParameterTypes im))
+                              fs (parse-method-flags (.getModifiers cm))]
+                          (:abstract fs)))
+                      @ims))
           (when-some [impl (or (get-in p [:impls c])
                                (when (not (:extend-via-metadata p))
                                  (get-in p [:impls Object])))]

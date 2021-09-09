@@ -1,6 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies
   (:import [java.lang.reflect Method]))
 
+(set! *warn-on-reflection* true)
+
 (defn fully-satisfies?
   "Returns true if value v implements every method in protocol p,
   otherwise false."
@@ -12,7 +14,7 @@
       (let [l (alength ims)]
         (loop [idx 0]
           (if (< idx l)
-            (let [im (aget ims idx)
+            (let [^Method im (aget ims idx)
                   cm (.getMethod c (.getName im) (.getParameterTypes im))]
               (if (zero? (bit-and (.getModifiers cm)
                                   ;; abstract flag

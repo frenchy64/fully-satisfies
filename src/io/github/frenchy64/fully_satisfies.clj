@@ -7,14 +7,14 @@
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)
-        ims (delay (.getMethods i))]
+        ims (.getMethods i)]
     (if (instance? i v)
       (every? (fn [^Method im]
                 (let [cm (.getMethod c (.getName im) (.getParameterTypes im))]
                   (zero? (bit-and (.getModifiers cm)
                                   ;; abstract flag
                                   0x0400))))
-              @ims)
+              ims)
       (let [evm (:extend-via-metadata p)]
         (boolean
           (or
@@ -22,7 +22,7 @@
                                  (when-not evm
                                    (get-in p [:impls Object])))]
               (= (count impl)
-                 (alength @ims)))
+                 (alength ims)))
             (when evm
               (let [nstr (-> p :var symbol namespace)
                     mmap-keys (into #{} (map name) (-> p :method-map keys))
@@ -34,4 +34,4 @@
                                              (keyword (name k)))))
                                     (meta v))]
                 (= (count impl-keys)
-                   (alength @ims))))))))))
+                   (alength ims))))))))))

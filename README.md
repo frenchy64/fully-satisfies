@@ -30,9 +30,9 @@ Clojure CLI:
 ;=> false
 (fully-satisfies? A (reify A)))
 ;=> false
-(fully-satisfies? A (reify A (aA [this]))))
+(fully-satisfies? A (reify A (a [this]))))
 ;=> false
-(fully-satisfies? A (reify A (aA [this]) (bA [this]))))
+(fully-satisfies? A (reify A (a [this]) (b [this]))))
 ;=> true
 ```
 

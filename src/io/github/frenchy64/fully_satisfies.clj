@@ -1,4 +1,4 @@
-(ns com.ambrose.fully-satisfies
+(ns io.github.frenchy64.fully-satisfies
   (:import [java.lang.reflect Method Modifier]))
 
 ;; copied from clojure.reflect
@@ -51,6 +51,7 @@ the kinds of objects to which they can apply."}
   (parse-flags flags :method))
 
 (defn fully-satisfies?
+  "Returns true if value v implements every method in protocol p."
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)
@@ -63,8 +64,19 @@ the kinds of objects to which they can apply."}
                         (not (:abstract fs))))
                     @ims))
           (when-some [impl (or (get-in p [:impls c])
-                               (get-in p [:impls Object]))]
+                               (when (not (:extend-via-metadata p))
+                                 (get-in p [:impls Object])))]
             (= (count impl)
                (alength @ims)))
           (when (:extend-via-metadata p)
-            )))))
+            (let [nstr (-> p :var symbol namespace)
+                  mmap-keys (into #{} (map name) (-> p :method-map keys))
+                  impl-keys (into (set (keys (get-in p [:impls Object])))
+                                  (map (fn [[k v]]
+                                         (when (and (symbol? k)
+                                                    (= nstr (namespace k))
+                                                    (contains? mmap-keys (name k)))
+                                           (keyword (name k)))))
+                                  (meta v))]
+              (= (count impl-keys)
+                 (alength @ims))))))))

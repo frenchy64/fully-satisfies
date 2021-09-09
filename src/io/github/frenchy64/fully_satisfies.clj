@@ -11,15 +11,25 @@
         ^Class i (:on-interface p)
         ims (.getMethods i)]
     (if (instance? i v)
-      (let [l (alength ims)]
-        (loop [idx 0]
-          (if (< idx l)
-            (let [^Method im (aget ims idx)
-                  cm (.getMethod c (.getName im) (.getParameterTypes im))]
+      (let [_ (sort-by #(.getName ^Method %) ims)
+            cms (.getMethods c)
+            _ (sort-by #(.getName ^Method %) cms)
+            l (alength ims)]
+        (loop [ims-idx 0
+               cms-idx 0]
+          (if (< ims-idx l)
+            (let [^Method im (aget ims ims-idx)
+                  [cms-idx ^Method cm] (loop [cms-idx cms-idx]
+                                         (let [^Method cm (aget cms cms-idx)]
+                                           (if (= (.getName im)
+                                                  (.getName cm))
+                                             [cms-idx cm]
+                                             (recur (unchecked-inc-int cms-idx)))))]
               (if (zero? (bit-and (.getModifiers cm)
                                   ;; abstract flag
                                   0x0400))
-                (recur (unchecked-inc-int idx))
+                (recur (unchecked-inc-int ims-idx)
+                       (unchecked-inc-int cms-idx))
                 false))
             true)))
       (let [evm (:extend-via-metadata p)

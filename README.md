@@ -7,14 +7,14 @@ Provides a variant of `clojure.core/satisfies?` that also checks if all methods 
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "TBD"]
+[io.github.frenchy64/fully-satisfies "1.0.0"]
 ```
 
 Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/sha "f1709cfe416dc89cd62a1bcf6f2b36ebd99f3cfd"}}
+         {:git/tag "1.0.0", :git/sha "e5ad684bbd1b70feafd3095818c842ebb562ccd1"}}
 ```
 
 ## Usage

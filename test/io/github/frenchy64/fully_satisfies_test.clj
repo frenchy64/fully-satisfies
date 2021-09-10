@@ -88,6 +88,7 @@
 
 ;; TODO test abstract class implementing interface used as super. ensures
 ;; we use the correct getMethods vs getDeclaredMethods.
+;; TODO test omitted implements shadows meta
 (deftest fully-satisfies?-test
   ;; implemented directly
   (is (not (fully-satisfies? A (reify))))

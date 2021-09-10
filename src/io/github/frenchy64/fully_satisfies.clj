@@ -34,6 +34,7 @@
                 nstr (-> p :var symbol namespace)
                 object-impls (get impls Object)]
             (every? (fn [mmap-key]
+                      ;;FIXME search supers
                       (or (get cimpl mmap-key)
                           (get vm (symbol nstr (name mmap-key)))
                           (get object-impls mmap-key)))

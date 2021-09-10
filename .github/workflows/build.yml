@@ -32,3 +32,9 @@ jobs:
         with:
           lein: 2.9.6
       - run: lein test
+      - name: deploy
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env: 
+          CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
+          CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
+        run: lein deploy

@@ -38,7 +38,7 @@ Clojure CLI:
 
 ## Thanks
 
-Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea and name. My initial claim that this was impossible to implement was (gladly) proven wrong by Wanderson's eagerness to decompile bytecode.
+Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea and name. My initial stance that this was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.
 
 Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
 

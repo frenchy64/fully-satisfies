@@ -8,9 +8,12 @@
               :dependencies [[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
                              [criterium/criterium "0.4.6"]]
               :jvm-opts ["-Djdk.attach.allowAttachSelf"]}}
-  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+  :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
+                                     :username :env/clojars_user
+                                     :password  :env/clojars_token
+                                     :sign-releases false}]
+                        ["release" {:url "https://clojars.org/repo"
                                     :username :env/clojars_user
                                     :password  :env/clojars_token
                                     :sign-releases false}]]
-
   :repl-options {:init-ns io.github.frenchy64.fully-satisfies})

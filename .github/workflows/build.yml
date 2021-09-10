@@ -54,4 +54,12 @@ jobs:
         env: 
           CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
-        run: lein deploy clojars
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [[ "$COMMIT_MSG" == "Release :major"]]; then
+            lein release :major
+          elif [[ "$COMMIT_MSG" == "Release :minor"]]; then
+            lein release :minor
+          else
+            lein deploy snapshot
+          fi

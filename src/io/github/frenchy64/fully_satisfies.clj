@@ -3,6 +3,11 @@
 
 (set! *warn-on-reflection* true)
 
+;; copied from clojure.core
+(defn- super-chain [^Class c]
+  (when c
+    (cons c (super-chain (.getSuperclass c)))))
+
 (defn fully-satisfies?
   "Returns true if value v implements every method in protocol p,
   otherwise false."
@@ -33,8 +38,29 @@
                           (get vm (symbol nstr (name mmap-key)))
                           (get object-impls mmap-key)))
                     (-> p :method-map keys)))
-          (if-some [impl (or cimpl
-                             (get impls Object))]
+          (if-some [impl (if c
+                           ;; references
+                           (let [;; copied from clojure.core
+                                 pref (fn
+                                        ([] nil)
+                                        ([a] a) 
+                                        ([^Class a ^Class b]
+                                         (if (.isAssignableFrom a b) b a)))]
+                             (or cimpl
+                                 (first
+                                   (sequence
+                                     (mapcat (fn [c]
+                                               (when (not (identical? Object c))
+                                                 (when-some [impl (get impls c)]
+                                                   [impl]))))
+                                     (super-chain c)))
+                                 (when-some [t (reduce pref
+                                                       (filter #(get impls %)
+                                                               (disj (supers c) Object)))]
+                                   (get impls t))
+                                 (get impls Object)))
+                           ;; nil
+                           cimpl)]
             (= (count impl)
                (alength ims))
             false))))))

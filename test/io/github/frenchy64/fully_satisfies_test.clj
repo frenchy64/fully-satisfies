@@ -86,6 +86,23 @@
   AssumptionExtendsAPExtendViaMetadata
   (aPExtendViaMetadata [this] :extend))
 
+(defprotocol PNumberPartialExtended
+  (aPNumberPartialExtended [this])
+  (bPNumberPartialExtended [this]))
+
+(extend-protocol PNumberPartialExtended
+  Number
+  (aPNumberPartialExtended [this] :extend-number))
+
+(defprotocol PNumberFullyExtended
+  (aPNumberFullyExtended [this])
+  (bPNumberFullyExtended [this]))
+
+(extend-protocol PNumberFullyExtended
+  Number
+  (aPNumberFullyExtended [this] :extend-number)
+  (bPNumberFullyExtended [this] :extend-number))
+
 ;; TODO test abstract class implementing interface used as super. ensures
 ;; we use the correct getMethods vs getDeclaredMethods.
 ;; TODO test omitted implements shadows meta
@@ -106,10 +123,17 @@
   (is (not (fully-satisfies? A nil)))
   (is (not (fully-satisfies? PWithPartialNilImpl nil)))
   (is (fully-satisfies? PWithFullNilImpl nil))
+  (is (not (fully-satisfies? PWithPartialObjectImpl nil)))
+  (is (not (fully-satisfies? PWithFullObjectImpl nil)))
   ;; Object
   (is (not (fully-satisfies? A (reify))))
   (is (not (fully-satisfies? PWithPartialObjectImpl (reify))))
   (is (fully-satisfies? PWithFullObjectImpl (reify)))
+  (is (fully-satisfies? PWithFullObjectImpl (Object.)))
+  (is (not (fully-satisfies? PWithPartialNilImpl (reify))))
+  (is (not (fully-satisfies? PWithFullNilImpl (reify))))
+  (is (not (fully-satisfies? PWithPartialNilImpl (Object.))))
+  (is (not (fully-satisfies? PWithFullNilImpl (Object.))))
   ;; :extend-via-metadata
   (is (not (fully-satisfies? A (with-meta {}
                                           {`aA (fn [this])
@@ -149,6 +173,17 @@
     (is (fully-satisfies?
           PExtendViaMetadata
           v)))
+  (doseq [v [1 1.0 1/3]]
+    ;; partially extended superclass != Object
+    (testing v
+      (is (= :extend-number (aPNumberPartialExtended v)))
+      (is (thrown? IllegalArgumentException (bPNumberPartialExtended v)))
+      (is (not (fully-satisfies? PNumberPartialExtended v))))
+    ;; fully extended superclass != Object
+    (testing v
+      (is (= :extend-number (aPNumberFullyExtended v)))
+      (is (= :extend-number (bPNumberFullyExtended v)))
+      (is (fully-satisfies? PNumberFullyExtended v))))
   )
 
 (deftest protocol-assumptions

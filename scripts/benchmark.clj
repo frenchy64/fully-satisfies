@@ -77,27 +77,27 @@
   )
 
 ;; bench clojure.core/satisfies?
-; Evaluation count : 2677800 in 60 samples of 44630 calls.
-;              Execution time mean : 22.384349 µs
-;     Execution time std-deviation : 622.007472 ns
-;    Execution time lower quantile : 21.742259 µs ( 2.5%)
-;    Execution time upper quantile : 24.003420 µs (97.5%)
-;                    Overhead used : 7.982414 ns
-; 
-; Found 4 outliers in 60 samples (6.6667 %)
-; 	low-severe	 3 (5.0000 %)
-; 	low-mild	 1 (1.6667 %)
-;  Variance from outliers : 14.2412 % Variance is moderately inflated by outliers
-
-
-;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
-; (out) Evaluation count : 38765160 in 60 samples of 646086 calls.
-; (out)              Execution time mean : 1.660924 µs
-; (out)     Execution time std-deviation : 56.536367 ns
-; (out)    Execution time lower quantile : 1.566917 µs ( 2.5%)
-; (out)    Execution time upper quantile : 1.784531 µs (97.5%)
-; (out)                    Overhead used : 7.982414 ns
+; (out) Evaluation count : 2879580 in 60 samples of 47993 calls.
+; (out)              Execution time mean : 21.268488 µs
+; (out)     Execution time std-deviation : 450.608411 ns
+; (out)    Execution time lower quantile : 20.771101 µs ( 2.5%)
+; (out)    Execution time upper quantile : 21.899994 µs (97.5%)
+; (out)                    Overhead used : 7.621916 ns
 ; (out) 
 ; (out) Found 1 outliers in 60 samples (1.6667 %)
 ; (out) 	low-severe	 1 (1.6667 %)
-; (out)  Variance from outliers : 20.6116 % Variance is moderately inflated by outliers
+; (out)  Variance from outliers : 9.4198 % Variance is slightly inflated by outliers
+
+
+;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
+; (out) Evaluation count : 38438460 in 60 samples of 640641 calls.
+; (out)              Execution time mean : 1.587878 µs
+; (out)     Execution time std-deviation : 36.581023 ns
+; (out)    Execution time lower quantile : 1.550656 µs ( 2.5%)
+; (out)    Execution time upper quantile : 1.670501 µs (97.5%)
+; (out)                    Overhead used : 7.621916 ns
+; (out) 
+; (out) Found 2 outliers in 60 samples (3.3333 %)
+; (out) 	low-severe	 2 (3.3333 %)
+; (out)  Variance from outliers : 10.9988 % Variance is moderately inflated by outliers
+

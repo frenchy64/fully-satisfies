@@ -17,4 +17,12 @@
                                     :username :env/clojars_user
                                     :password  :env/clojars_token
                                     :sign-releases false}]]
+  :release-tasks [["vcs" "assert-committed"]
+                  ["change" "version" "leiningen.release/bump-version" "release"]
+                  ["vcs" "commit"]
+                  ["vcs" "tag" "--no-sign"]
+                  ["deploy"]
+                  ["change" "version" "leiningen.release/bump-version"]
+                  ["vcs" "commit"]
+                  ["vcs" "push"]]
   :repl-options {:init-ns io.github.frenchy64.fully-satisfies})

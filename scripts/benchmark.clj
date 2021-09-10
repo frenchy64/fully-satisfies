@@ -15,6 +15,27 @@
   (bar [this a])
   (baw [this d]))
 
+(defprotocol PExtendViaMetadata
+  :extend-via-metadata true
+  (aPExtendViaMetadata [this])
+  (bPExtendViaMetadata [this]))
+
+(defprotocol A
+  (aA [this])
+  (bA [this]))
+
+(deftype NoExtended [])
+(deftype Extended [])
+(deftype ExtendedA [])
+(deftype ExtendedAB [])
+(extend-protocol A
+  Extended
+  (aA [_])
+  ExtendedA
+  (aA [_])
+  ExtendedAB
+  (aA [_])
+  (bA [_]))
 
 (comment
 
@@ -24,12 +45,22 @@
   ;; use criterium bench on clojure.core/satisfies?
   (c/with-progress-reporting
     (c/bench
-     (satisfies? Foo (Bar.))))
+     (do
+       (satisfies? Foo (Bar.))
+       (satisfies? PExtendViaMetadata
+                   (with-meta {}
+                     {`aPExtendViaMetadata (fn [this])}))
+       (satisfies? A (->ExtendedAB)))))
 
   ;; use criterium bench on fully-satisfies?
   (c/with-progress-reporting
     (c/bench
-     (sut/fully-satisfies? Foo (Bar.))))
+     (do
+       (sut/fully-satisfies? Foo (Bar.))
+       (sut/fully-satisfies? PExtendViaMetadata
+                             (with-meta {}
+                               {`aPExtendViaMetadata (fn [this])}))
+       (sut/fully-satisfies? A (->ExtendedAB)))))
 
   (def flamegraph-sample-number 10000)
 
@@ -37,32 +68,27 @@
   ;; goto https://localhost:17042 to see the images
   (p/profile
    (dotimes [_ flamegraph-sample-number]
-     (sut/fully-satisfies? Foo (Bar.))))
+     (sut/fully-satisfies? Foo (Bar.))
+     (sut/fully-satisfies? PExtendViaMetadata
+                           (with-meta {}
+                             {`aPExtendViaMetadata (fn [this])}))
+     (sut/fully-satisfies? A (->ExtendedAB))))
 
   )
 
 ;; bench clojure.core/satisfies?
-;; Evaluation count : 2585077800 in 60 samples of 43084630 calls.
-;;              Execution time mean : 16.454595 ns
-;;     Execution time std-deviation : 0.358982 ns
-;;    Execution time lower quantile : 16.066100 ns ( 2.5%)
-;;    Execution time upper quantile : 17.374432 ns (97.5%)
-;;                    Overhead used : 6.888735 ns
-
-;; Found 4 outliers in 60 samples (6.6667 %)
-;; 	low-severe	 3 (5.0000 %)
-;; 	low-mild	 1 (1.6667 %)
-;;  Variance from outliers : 9.4529 % Variance is slightly inflated by outliers
+;; Evaluation count : 4958280 in 60 samples of 82638 calls.
+;;              Execution time mean : 12.067375 µs
+;;     Execution time std-deviation : 311.210275 ns
+;;    Execution time lower quantile : 11.791342 µs ( 2.5%)
+;;    Execution time upper quantile : 12.908302 µs (97.5%)
+;;                    Overhead used : 6.883453 ns
 
 
 ;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
-;; Evaluation count : 93682620 in 60 samples of 1561377 calls.
-;;              Execution time mean : 664.533753 ns
-;;     Execution time std-deviation : 24.724335 ns
-;;    Execution time lower quantile : 633.942034 ns ( 2.5%)
-;;    Execution time upper quantile : 715.617187 ns (97.5%)
-;;                    Overhead used : 7.758689 ns
-;; 
-;; Found 1 outliers in 60 samples (1.6667 %)
-;; 	low-severe	 1 (1.6667 %)
-;;  Variance from outliers : 23.8242 % Variance is moderately inflated by outliers
+;; Evaluation count : 41180040 in 60 samples of 686334 calls.
+;;              Execution time mean : 1.494673 µs
+;;     Execution time std-deviation : 18.077293 ns
+;;    Execution time lower quantile : 1.461525 µs ( 2.5%)
+;;    Execution time upper quantile : 1.527422 µs (97.5%)
+;;                    Overhead used : 6.883453 ns

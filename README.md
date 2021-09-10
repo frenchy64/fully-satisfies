@@ -4,6 +4,8 @@ Provides a variant of `clojure.core/satisfies?` that also checks if all methods 
 
 ## Dependency
 
+Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
+
 Leiningen:
 
 ```clojure

@@ -55,17 +55,14 @@
 ;;  Variance from outliers : 9.4529 % Variance is slightly inflated by outliers
 
 
-;;
-;;
 ;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
-;; Evaluation count : 6195060 in 60 samples of 103251 calls.
-;;              Execution time mean : 9.797970 µs
-;;     Execution time std-deviation : 406.875147 ns
-;;    Execution time lower quantile : 9.635392 µs ( 2.5%)
-;;    Execution time upper quantile : 10.126902 µs (97.5%)
-;;                    Overhead used : 6.888735 ns
-
-;; Found 3 outliers in 60 samples (5.0000 %)
+;; Evaluation count : 93682620 in 60 samples of 1561377 calls.
+;;              Execution time mean : 664.533753 ns
+;;     Execution time std-deviation : 24.724335 ns
+;;    Execution time lower quantile : 633.942034 ns ( 2.5%)
+;;    Execution time upper quantile : 715.617187 ns (97.5%)
+;;                    Overhead used : 7.758689 ns
+;; 
+;; Found 1 outliers in 60 samples (1.6667 %)
 ;; 	low-severe	 1 (1.6667 %)
-;; 	low-mild	 2 (3.3333 %)
-;;  Variance from outliers : 28.6409 % Variance is moderately inflated by outliers
+;;  Variance from outliers : 23.8242 % Variance is moderately inflated by outliers

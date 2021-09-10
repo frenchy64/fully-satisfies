@@ -32,14 +32,10 @@
               (= (count impl)
                  (alength ims)))
             (when evm
-              (let [nstr (-> p :var symbol namespace)
-                    mmap-keys (into #{} (map name) (-> p :method-map keys))
-                    impl-keys (into (set (keys (get impls Object)))
-                                    (map (fn [[k v]]
-                                           (when (and (symbol? k)
-                                                      (= nstr (namespace k))
-                                                      (contains? mmap-keys (name k)))
-                                             (keyword (name k)))))
-                                    (meta v))]
-                (= (count impl-keys)
-                   (alength ims))))))))))
+              (let [vm (meta v)
+                    nstr (-> p :var symbol namespace)
+                    object-impls (get impls Object)]
+                (every? (fn [mmap-key]
+                          (or (get vm (symbol nstr (name mmap-key)))
+                              (get object-impls mmap-key)))
+                        (-> p :method-map keys))))))))))

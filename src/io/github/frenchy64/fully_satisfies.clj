@@ -22,20 +22,19 @@
                 (recur (unchecked-inc-int idx))
                 false))
             true)))
-      (let [evm (:extend-via-metadata p)
-            impls (:impls p)]
-        (boolean
-          (or
-            (when-some [impl (or (get impls c)
-                                 (when-not evm
-                                   (get impls Object)))]
-              (= (count impl)
-                 (alength ims)))
-            (when evm
-              (let [vm (meta v)
-                    nstr (-> p :var symbol namespace)
-                    object-impls (get impls Object)]
-                (every? (fn [mmap-key]
-                          (or (get vm (symbol nstr (name mmap-key)))
-                              (get object-impls mmap-key)))
-                        (-> p :method-map keys))))))))))
+      (let [impls (:impls p)
+            cimpl (get impls c)]
+        (if (:extend-via-metadata p)
+          (let [vm (meta v)
+                nstr (-> p :var symbol namespace)
+                object-impls (get impls Object)]
+            (every? (fn [mmap-key]
+                      (or (get cimpl mmap-key)
+                          (get vm (symbol nstr (name mmap-key)))
+                          (get object-impls mmap-key)))
+                    (-> p :method-map keys)))
+          (if-some [impl (or cimpl
+                             (get impls Object))]
+            (= (count impl)
+               (alength ims))
+            false))))))

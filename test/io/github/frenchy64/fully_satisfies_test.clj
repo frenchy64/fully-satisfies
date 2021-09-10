@@ -77,6 +77,15 @@
   (aPExtendViaMetadataWithFullObjectImpl [this] :default)
   (bPExtendViaMetadataWithFullObjectImpl [this] :default))
 
+(defrecord AssumptionExtendsZeroMethodsPExtendViaMetadata
+  [])
+(defrecord AssumptionExtendsAPExtendViaMetadata
+  [])
+(extend-protocol PExtendViaMetadata
+  AssumptionExtendsZeroMethodsPExtendViaMetadata
+  AssumptionExtendsAPExtendViaMetadata
+  (aPExtendViaMetadata [this] :extend))
+
 ;; TODO test abstract class implementing interface used as super. ensures
 ;; we use the correct getMethods vs getDeclaredMethods.
 (deftest fully-satisfies?-test
@@ -130,7 +139,16 @@
   (is (fully-satisfies? PExtendViaMetadataWithPartialObjectImpl
                         (with-meta {}
                                    {`aPExtendViaMetadataWithPartialObjectImpl (fn [this])
-                                    `bPExtendViaMetadataWithPartialObjectImpl (fn [this])}))))
+                                    `bPExtendViaMetadataWithPartialObjectImpl (fn [this])})))
+  ;; `a` implemented via extend, `b` via metadata
+  (let [v (with-meta (->AssumptionExtendsAPExtendViaMetadata)
+                     {`bPExtendViaMetadata (fn [this] :meta)})]
+    (is (= :extend (aPExtendViaMetadata v)))
+    (is (= :meta (bPExtendViaMetadata v)))
+    (is (fully-satisfies?
+          PExtendViaMetadata
+          v)))
+  )
 
 (deftest protocol-assumptions
   (is (= :a
@@ -143,6 +161,28 @@
            (with-meta {}
                       {`bPExtendViaMetadataWithPartialObjectImpl (fn [this] :b)}))))
   (is (thrown? IllegalArgumentException
-               (= :default
-                  (bPExtendViaMetadataWithPartialObjectImpl
-                    {})))))
+               (bPExtendViaMetadataWithPartialObjectImpl
+                 {})))
+  (testing "missing direct implementation overrides metadata"
+    (is (= :a
+           (aPExtendViaMetadataWithPartialObjectImpl
+             (with-meta (reify
+                          PExtendViaMetadataWithPartialObjectImpl
+                          (aPExtendViaMetadataWithPartialObjectImpl [this] :a))
+                        {`aPExtendViaMetadataWithPartialObjectImpl (fn [this] :b)}))))
+    (is (thrown?
+          AbstractMethodError
+          (aPExtendViaMetadataWithPartialObjectImpl
+            (with-meta (reify
+                         PExtendViaMetadataWithPartialObjectImpl)
+                       {`aPExtendViaMetadataWithPartialObjectImpl (fn [this] :b)})))))
+  (testing "missing extends implementation drops to metadata"
+    ;; sanity check
+    (is (thrown?
+          IllegalArgumentException
+          (aPExtendViaMetadata
+            (->AssumptionExtendsZeroMethodsPExtendViaMetadata))))
+    (is (= :b
+           (aPExtendViaMetadata
+             (with-meta (->AssumptionExtendsZeroMethodsPExtendViaMetadata)
+                        {`aPExtendViaMetadata (fn [this] :b)}))))))

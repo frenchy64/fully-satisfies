@@ -77,18 +77,27 @@
   )
 
 ;; bench clojure.core/satisfies?
-;; Evaluation count : 4958280 in 60 samples of 82638 calls.
-;;              Execution time mean : 12.067375 µs
-;;     Execution time std-deviation : 311.210275 ns
-;;    Execution time lower quantile : 11.791342 µs ( 2.5%)
-;;    Execution time upper quantile : 12.908302 µs (97.5%)
-;;                    Overhead used : 6.883453 ns
+; Evaluation count : 2677800 in 60 samples of 44630 calls.
+;              Execution time mean : 22.384349 µs
+;     Execution time std-deviation : 622.007472 ns
+;    Execution time lower quantile : 21.742259 µs ( 2.5%)
+;    Execution time upper quantile : 24.003420 µs (97.5%)
+;                    Overhead used : 7.982414 ns
+; 
+; Found 4 outliers in 60 samples (6.6667 %)
+; 	low-severe	 3 (5.0000 %)
+; 	low-mild	 1 (1.6667 %)
+;  Variance from outliers : 14.2412 % Variance is moderately inflated by outliers
 
 
 ;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
-;; Evaluation count : 41180040 in 60 samples of 686334 calls.
-;;              Execution time mean : 1.494673 µs
-;;     Execution time std-deviation : 18.077293 ns
-;;    Execution time lower quantile : 1.461525 µs ( 2.5%)
-;;    Execution time upper quantile : 1.527422 µs (97.5%)
-;;                    Overhead used : 6.883453 ns
+; (out) Evaluation count : 38765160 in 60 samples of 646086 calls.
+; (out)              Execution time mean : 1.660924 µs
+; (out)     Execution time std-deviation : 56.536367 ns
+; (out)    Execution time lower quantile : 1.566917 µs ( 2.5%)
+; (out)    Execution time upper quantile : 1.784531 µs (97.5%)
+; (out)                    Overhead used : 7.982414 ns
+; (out) 
+; (out) Found 1 outliers in 60 samples (1.6667 %)
+; (out) 	low-severe	 1 (1.6667 %)
+; (out)  Variance from outliers : 20.6116 % Variance is moderately inflated by outliers

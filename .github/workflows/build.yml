@@ -54,4 +54,4 @@ jobs:
         env: 
           CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
-        run: lein deploy
+        run: lein deploy clojars

@@ -56,6 +56,8 @@ jobs:
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
+          git config --global user.email "abonnairesergeant@gmail.com"
+          git config --global user.name "Ambrose Bonnaire-Sergeant"
           if [[ "$COMMIT_MSG" == "Release :major" ]]; then
             lein release :major
           elif [[ "$COMMIT_MSG" == "Release :minor" ]]; then

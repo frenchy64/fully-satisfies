@@ -38,7 +38,7 @@ Clojure CLI:
 
 ## Thanks
 
-Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea, and name. Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
+Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea and name. Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
 
 ## License
 

@@ -2,6 +2,7 @@
   :description "A variant of clojure.core/satisfies? that checks all methods are implemented."
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
+  :url "https://github.com/frenchy64/fully-satisfies"
   :dependencies [[org.clojure/clojure "1.10.3"]]
   :profiles {:bench
              {:source-paths ["scripts"]

@@ -36,6 +36,12 @@ Clojure CLI:
 ;=> true
 ```
 
+## Releasing
+
+1. Commit with message `Release {:major,:minor,:patch}`
+2. Pull
+3. Update `README.md`
+
 ## Thanks
 
 Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea and name. My initial stance that this was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.

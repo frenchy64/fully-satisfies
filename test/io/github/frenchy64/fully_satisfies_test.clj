@@ -77,6 +77,8 @@
   (aPExtendViaMetadataWithFullObjectImpl [this] :default)
   (bPExtendViaMetadataWithFullObjectImpl [this] :default))
 
+;; TODO test abstract class implementing interface used as super. ensures
+;; we use the correct getMethods vs getDeclaredMethods.
 (deftest fully-satisfies?-test
   ;; implemented directly
   (is (not (fully-satisfies? A (reify))))

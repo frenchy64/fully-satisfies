@@ -14,7 +14,7 @@ Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/sha "35d627d6d58b130217fb244cd0af93b3b3b36b7b"}}
+         {:git/sha "f1709cfe416dc89cd62a1bcf6f2b36ebd99f3cfd"}}
 ```
 
 ## Usage
@@ -35,6 +35,10 @@ Clojure CLI:
 (fully-satisfies? A (reify A (a [this]) (b [this]))))
 ;=> true
 ```
+
+## Thanks
+
+Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea, and name. Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
 
 ## License
 

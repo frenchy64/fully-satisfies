@@ -33,7 +33,7 @@ jobs:
           lein: 2.9.6
       - run: lein test
       - name: deploy
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository_owner == 'frenchy64' }}
         env: 
           CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}

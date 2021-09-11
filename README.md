@@ -58,6 +58,8 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 
 - https://clojure.atlassian.net/browse/CLJ-2426
 - https://clojure.atlassian.net/browse/CLJ-1814
+- https://clojure.atlassian.net/browse/CLJ-2656
+  - result of making this library and realizing `supers` call is suspicious
 
 ## License
 

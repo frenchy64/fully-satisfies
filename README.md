@@ -57,6 +57,7 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 ## Related work
 
 - https://clojure.atlassian.net/browse/CLJ-2426
+- https://clojure.atlassian.net/browse/CLJ-1814
 
 ## License
 

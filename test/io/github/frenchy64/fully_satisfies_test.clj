@@ -298,6 +298,23 @@
         (is (not (fully-satisfies? A v)))))
   )
 
+;;https://clojure.atlassian.net/browse/CLJ-2656
+#_
+(deftest protocol-nondeterminism
+  (dotimes [_ 100]
+    (te [(definterface A)
+         (definterface B)
+         (defprotocol P
+           (a [this])
+           (b [this]))
+         (extend-protocol P
+           A
+           (a [this] :a)
+           B
+           (a [this] :b)
+           (b [this] :b))]
+        (is (fully-satisfies? P (reify A B))))))
+
 (deftest protocol-assumptions
   (is (= :a
          (aPExtendViaMetadataWithPartialObjectImpl

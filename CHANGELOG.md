@@ -1,4 +1,4 @@
-# 1.1.0
+# 1.1.0-SNAPSHOT
 - return false for values that don't explicitly extend an :extend-via-metadata protocol with zero methods
 
 # 1.0.2

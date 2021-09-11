@@ -268,6 +268,10 @@
     (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
   (te [(defprotocol A)]
       (is (not (fully-satisfies? A 1))))
+  (te [(defprotocol A)
+       (extend-protocol A
+         Number)]
+      (is (fully-satisfies? A 1)))
   (te [(defprotocol A
          :extend-via-metadata true)]
       (is (fully-satisfies? A 1)))

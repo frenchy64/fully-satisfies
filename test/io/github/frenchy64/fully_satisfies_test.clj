@@ -300,13 +300,18 @@
 
 ;;https://clojure.atlassian.net/browse/CLJ-2656
 (deftest protocol-nondeterminism
-  (dotimes [_ 1]
+  ;; reify, proxy, et. al all seem to sort the interfaces by name
+  ;; before creating the class. That means A will always be before B
+  ;; in .getInterfaces on the reified class. So first we make A a parital
+  ;; implementation, then make B a partial implementation.
+  (dotimes [_ 100]
     (te [(definterface A)
          (definterface B)
          (defprotocol P
            (a [this])
            (b [this]))
          (extend-protocol P
+           ;; A is partial (chosen first)
            A
            (a [this] :a)
            B
@@ -314,7 +319,7 @@
            (b [this] :b))]
         (is (not (fully-satisfies? P (reify B A))))
         (is (not (fully-satisfies? P (reify A B))))))
-  (dotimes [_ 1]
+  (dotimes [_ 100]
     (te [(definterface A)
          (definterface B)
          (defprotocol P
@@ -323,6 +328,7 @@
          (extend-protocol P
            B
            (a [this] :a)
+           ;; A is complete (chosen first)
            A
            (a [this] :b)
            (b [this] :b))]

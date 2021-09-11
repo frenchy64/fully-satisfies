@@ -37,11 +37,7 @@
                                                     (when-not (identical? Object c)
                                                       (or (when (.isInterface c)
                                                             (get impls c))
-                                                          ;; order of interfaces is strange for reify, normalize it
-                                                          (->> (.getInterfaces c)
-                                                               ;; mutates
-                                                               (sort-by #(.getName ^Class %))
-                                                               (some dfs-for-interface))
+                                                          (some dfs-for-interface (.getInterfaces c))
                                                           (when (not (.isInterface c))
                                                             (recur (.getSuperclass c))))))]
                             (or (loop [^Class c (.getSuperclass c)]

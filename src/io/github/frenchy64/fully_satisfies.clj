@@ -3,11 +3,6 @@
 
 (set! *warn-on-reflection* true)
 
-;; copied from clojure.core
-(defn- super-chain [^Class c]
-  (when c
-    (cons c (super-chain (.getSuperclass c)))))
-
 (defn fully-satisfies?
   "Returns true if value v implements every method in protocol p,
   otherwise false."
@@ -30,20 +25,17 @@
       (let [impls (:impls p)
             cimpl (when impls
                     (or (get impls c)
-                        (when c
+                        (when (and c (not (identical? Object c)))
                           (let [;; copied from clojure.core
                                 pref (fn
                                        ([] nil)
                                        ([a] a)
                                        ([^Class a ^Class b]
                                         (if (.isAssignableFrom a b) b a)))]
-                            (or (first
-                                  (sequence
-                                    (mapcat (fn [c]
-                                              (when (not (identical? Object c))
-                                                (when-some [impl (get impls c)]
-                                                  [impl]))))
-                                    (super-chain c)))
+                            (or (loop [^Class c (.getSuperclass c)]
+                                  (when-not (identical? Object c)
+                                    (or (get impls c)
+                                        (recur (.getSuperclass c)))))
                                 (when-some [t (reduce pref
                                                       (filter #(get impls %)
                                                               (disj (supers c) Object)))]

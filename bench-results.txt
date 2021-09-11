@@ -1,16 +1,24 @@
 bench satisfies?
-Evaluation count : 3267420 in 60 samples of 54457 calls.
-             Execution time mean : 20.624841 µs
-    Execution time std-deviation : 1.695629 µs
-   Execution time lower quantile : 18.111369 µs ( 2.5%)
-   Execution time upper quantile : 23.268776 µs (97.5%)
-                   Overhead used : 8.319707 ns
+Evaluation count : 3202560 in 60 samples of 53376 calls.
+             Execution time mean : 20.487435 µs
+    Execution time std-deviation : 1.879546 µs
+   Execution time lower quantile : 18.652565 µs ( 2.5%)
+   Execution time upper quantile : 24.133431 µs (97.5%)
+                   Overhead used : 7.955589 ns
+
+Found 1 outliers in 60 samples (1.6667 %)
+	low-severe	 1 (1.6667 %)
+ Variance from outliers : 65.2915 % Variance is severely inflated by outliers
 
 
 bench fully-satisfies?
-Evaluation count : 44908860 in 60 samples of 748481 calls.
-             Execution time mean : 1.571185 µs
-    Execution time std-deviation : 93.974246 ns
-   Execution time lower quantile : 1.383892 µs ( 2.5%)
-   Execution time upper quantile : 1.721405 µs (97.5%)
-                   Overhead used : 8.319707 ns
+Evaluation count : 38632320 in 60 samples of 643872 calls.
+             Execution time mean : 1.534467 µs
+    Execution time std-deviation : 108.465284 ns
+   Execution time lower quantile : 1.368031 µs ( 2.5%)
+   Execution time upper quantile : 1.778390 µs (97.5%)
+                   Overhead used : 7.955589 ns
+
+Found 1 outliers in 60 samples (1.6667 %)
+	low-severe	 1 (1.6667 %)
+ Variance from outliers : 53.4234 % Variance is severely inflated by outliers

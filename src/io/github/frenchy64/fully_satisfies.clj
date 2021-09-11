@@ -28,40 +28,37 @@
                 false))
             true)))
       (let [impls (:impls p)
-            cimpl (get impls c)]
+            cimpl (or (get impls c)
+                      (when c
+                        (let [;; copied from clojure.core
+                              pref (fn
+                                     ([] nil)
+                                     ([a] a) 
+                                     ([^Class a ^Class b]
+                                      (if (.isAssignableFrom a b) b a)))]
+                          (or (get impls c)
+                              (first
+                                (sequence
+                                  (mapcat (fn [c]
+                                            (when (not (identical? Object c))
+                                              (when-some [impl (get impls c)]
+                                                [impl]))))
+                                  (super-chain c)))
+                              (when-some [t (reduce pref
+                                                    (filter #(get impls %)
+                                                            (disj (supers c) Object)))]
+                                (get impls t))
+                              (get impls Object)))))]
         (if (:extend-via-metadata p)
           (let [vm (meta v)
                 nstr (-> p :var symbol namespace)
                 object-impls (get impls Object)]
             (every? (fn [mmap-key]
-                      ;;FIXME search supers
                       (or (get cimpl mmap-key)
                           (get vm (symbol nstr (name mmap-key)))
                           (get object-impls mmap-key)))
                     (-> p :method-map keys)))
-          (if-some [impl (if c
-                           ;; references
-                           (let [;; copied from clojure.core
-                                 pref (fn
-                                        ([] nil)
-                                        ([a] a) 
-                                        ([^Class a ^Class b]
-                                         (if (.isAssignableFrom a b) b a)))]
-                             (or cimpl
-                                 (first
-                                   (sequence
-                                     (mapcat (fn [c]
-                                               (when (not (identical? Object c))
-                                                 (when-some [impl (get impls c)]
-                                                   [impl]))))
-                                     (super-chain c)))
-                                 (when-some [t (reduce pref
-                                                       (filter #(get impls %)
-                                                               (disj (supers c) Object)))]
-                                   (get impls t))
-                                 (get impls Object)))
-                           ;; nil
-                           cimpl)]
-            (= (count impl)
+          (if cimpl
+            (= (count cimpl)
                (alength ims))
             false))))))

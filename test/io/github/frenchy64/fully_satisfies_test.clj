@@ -103,6 +103,28 @@
   (aPNumberFullyExtended [this] :extend-number)
   (bPNumberFullyExtended [this] :extend-number))
 
+(definterface IInterface)
+
+(defprotocol PIInterfaceExtendViaMetaPartialExtended
+  :extend-via-metadata true
+  (aPIInterfaceExtendViaMetaPartialExtended [this])
+  (bPIInterfaceExtendViaMetaPartialExtended [this])
+  (cPIInterfaceExtendViaMetaPartialExtended [this]))
+
+(extend-protocol PIInterfaceExtendViaMetaPartialExtended
+  IInterface
+  (aPIInterfaceExtendViaMetaPartialExtended [this] :extend))
+
+(defprotocol PIInterfaceExtendViaMetaFullyExtended
+  :extend-via-metadata true
+  (aPIInterfaceExtendViaMetaFullyExtended [this])
+  (bPIInterfaceExtendViaMetaFullyExtended [this]))
+
+(extend-protocol PIInterfaceExtendViaMetaFullyExtended
+  IInterface
+  (aPIInterfaceExtendViaMetaFullyExtended [this] :extend)
+  (bPIInterfaceExtendViaMetaFullyExtended [this] :extend))
+
 ;; TODO test abstract class implementing interface used as super. ensures
 ;; we use the correct getMethods vs getDeclaredMethods.
 ;; TODO test omitted implements shadows meta
@@ -184,6 +206,42 @@
       (is (= :extend-number (aPNumberFullyExtended v)))
       (is (= :extend-number (bPNumberFullyExtended v)))
       (is (fully-satisfies? PNumberFullyExtended v))))
+  (let [v (reify IInterface)]
+    (is (= :extend (aPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (thrown? IllegalArgumentException (bPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (thrown? IllegalArgumentException (cPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
+  ;; partially extended via metadata inherits extend to partially satisfy
+  (let [v (with-meta
+            (reify IInterface)
+            {`bPIInterfaceExtendViaMetaPartialExtended
+             (fn [this] :meta)})]
+    (is (= :extend (aPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (= :meta (bPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (thrown? IllegalArgumentException (cPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
+  ;; partially extended via metadata inherits extend to completely satisfy
+  (let [v (with-meta
+            (reify IInterface)
+            {`bPIInterfaceExtendViaMetaPartialExtended
+             (fn [this] :meta)
+             `cPIInterfaceExtendViaMetaPartialExtended
+             (fn [this] :meta)})]
+    (is (= :extend (aPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (= :meta (bPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (= :meta (cPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v)))
+  (let [v (with-meta
+            (reify IInterface)
+            {`bPIInterfaceExtendViaMetaPartialExtended
+             (fn [this] :meta)})
+        _ (extend-type (class v)
+            PIInterfaceExtendViaMetaPartialExtended
+            (cPIInterfaceExtendViaMetaPartialExtended [this] :direct-extend))]
+    (is (thrown? IllegalArgumentException (aPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (= :meta (bPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (= :direct-extend (cPIInterfaceExtendViaMetaPartialExtended v)))
+    (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
   )
 
 (deftest protocol-assumptions

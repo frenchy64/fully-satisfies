@@ -280,6 +280,11 @@
          :extend-via-metadata true)]
       (let [v 1]
         (is (not (satisfies? A v)))
+        (is (not (fully-satisfies? A v)))))
+  (te [(defprotocol A
+         :extend-via-metadata true)]
+      (let [v 'a]
+        (is (not (satisfies? A v)))
         (is (fully-satisfies? A v))))
   )
 

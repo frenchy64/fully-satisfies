@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies
-  (:import [clojure.lang Var]
+  (:import [clojure.lang IMeta Var]
            [java.lang.reflect Method]))
 
 (set! *warn-on-reflection* true)
@@ -9,9 +9,10 @@
   "Returns true if value v extends protocol p (if applicable) and
   implements every method in protocol p, otherwise false.
   
-  Always returns true on :extend-via-metadata protocols with zero methods
-  because there is no way to extend them explicitly via metadata and
-  all methods are (vacuously) implemented for every value."
+  If p supports :extend-via-metadata and has zero methods, returns
+  true if v implements IMeta. This is because there is no way to extend
+  them explicitly via metadata and all methods are (vacuously) implemented
+  for every value."
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)
@@ -56,7 +57,8 @@
                                 (get vm (symbol nstr (name mmap-key)))))
                           (-> p :method-map keys)))
                 false))
-          (if (:extend-via-metadata p)
+          (if (and (:extend-via-metadata p)
+                   (instance? IMeta v))
             (let [vm (meta v)
                   ^Var pvar (:var p)
                   nstr (-> pvar .ns .name name)]

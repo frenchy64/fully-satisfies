@@ -41,16 +41,18 @@
                                                               (disj (supers c) Object)))]
                                   (get impls t))
                                 (get impls Object))))))]
-        (if (:extend-via-metadata p)
-          (let [vm (meta v)
-                nstr (-> p :var symbol namespace)
-                object-impls (get impls Object)]
-            (every? (fn [mmap-key]
-                      (or (get cimpl mmap-key)
-                          (get vm (symbol nstr (name mmap-key)))
-                          (get object-impls mmap-key)))
-                    (-> p :method-map keys)))
-          (if cimpl
-            (.equals ^Object (count cimpl)
-                     (alength ims))
+        (if cimpl
+          (or (.equals ^Object (count cimpl) (alength ims))
+              (if-some [vm (and (:extend-via-metadata p) (meta v))]
+                (let [nstr (-> p :var symbol namespace)]
+                  (every? (fn [mmap-key]
+                            (or (get cimpl mmap-key)
+                                (get vm (symbol nstr (name mmap-key)))))
+                          (-> p :method-map keys)))
+                false))
+          (if-some [vm (and (:extend-via-metadata p) (meta v))]
+            (let [nstr (-> p :var symbol namespace)]
+              (every? (fn [mmap-key]
+                        (get vm (symbol nstr (name mmap-key))))
+                      (-> p :method-map keys)))
             false))))))

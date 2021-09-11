@@ -59,6 +59,6 @@
                           (get object-impls mmap-key)))
                     (-> p :method-map keys)))
           (if cimpl
-            (= (count cimpl)
-               (alength ims))
+            (.equals ^Integer (count cimpl)
+                     ^Integer (alength ims))
             false))))))

@@ -146,13 +146,18 @@
       (let [v (reify A)]
         (is (thrown? AbstractMethodError (a v)))
         (is (thrown? AbstractMethodError (b v)))
+        (is (satisfies? A v))
         (is (not (fully-satisfies? A v))))
       (let [v (reify A (a [this] :a/reify))]
         (is (= :a/reify (a v)))
         (is (thrown? AbstractMethodError (b v)))
+        (is (satisfies? A v))
         (is (not (fully-satisfies? A v))))
-      (is (not (fully-satisfies? A (reify A (a [this])))))
-      (is (fully-satisfies? A (reify A (a [this]) (b [this])))))
+      (let [v (reify A (a [this] :a/reify) (b [this] :b/reify))]
+        (is (= :a/reify (a v)))
+        (is (= :b/reify (b v)))
+        (is (satisfies? A v))
+        (is (fully-satisfies? A v))))
   ;; partially implemented directly with a complete Object impl
   (is (not (fully-satisfies? PWithFullObjectImpl (reify PWithFullObjectImpl (aPWithFullObjectImpl [this])))))
   ;; via extend

@@ -285,7 +285,7 @@
          :extend-via-metadata true)]
       (let [v 'a]
         (is (not (satisfies? A v)))
-        (is (fully-satisfies? A v))))
+        (is (not (fully-satisfies? A v)))))
   )
 
 (deftest protocol-assumptions

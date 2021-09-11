@@ -6,13 +6,14 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn fully-satisfies?
-  "Returns true if value v extends protocol p (if applicable) and
+  "Returns true if value v extends protocol p and
   implements every method in protocol p, otherwise false.
-  
-  If p supports :extend-via-metadata and has zero methods, returns
-  true if v implements IMeta. This is because there is no way to extend
-  them explicitly via metadata and all methods are (vacuously) implemented
-  for every value."
+
+  A value is considered to 'extend' protocol p either if:
+  - p implements the protocols interface, or
+  - p extends the protocol via clojure.core/extend, or
+  - p implements at least one method via metadata if supported
+    by the protocol"
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)
@@ -57,10 +58,9 @@
                                 (get vm (symbol nstr (name mmap-key)))))
                           (-> p :method-map keys)))
                 false))
-          (if (and (:extend-via-metadata p)
-                   (instance? IMeta v))
-            (let [vm (meta v)
-                  ^Var pvar (:var p)
+          (if-some [vm (and (:extend-via-metadata p)
+                            (meta v))]
+            (let [^Var pvar (:var p)
                   nstr (-> pvar .ns .name name)]
               (every? (fn [mmap-key]
                         (get vm (symbol nstr (name mmap-key))))

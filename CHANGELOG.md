@@ -1,8 +1,11 @@
-# 1.0.1-SNAPSHOT
+# 1.1.0
+- return false for values that don't explicitly extend an :extend-via-metadata protocol with zero methods
+
+# 1.0.2
 - walk inheritance chain to find implementation
 - fix: nil should not inherit Object implementations
 - fix: walk superclass chain even with :extend-via-metadata
-- a value always implements an :extend-via-methdata protocol with zero methods
+- a value always implements an :extend-via-metadata protocol with zero methods
 
 # 1.0.0 - 10th September 2021
 - initial public release

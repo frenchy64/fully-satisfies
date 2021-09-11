@@ -60,9 +60,11 @@
                 false))
           (if-some [vm (and (:extend-via-metadata p)
                             (meta v))]
-            (let [^Var pvar (:var p)
-                  nstr (-> pvar .ns .name name)]
-              (every? (fn [mmap-key]
-                        (get vm (symbol nstr (name mmap-key))))
-                      (-> p :method-map keys)))
+            (if-some [method-map-keys (-> p :method-map keys seq)]
+              (let [^Var pvar (:var p)
+                    nstr (-> pvar .ns .name name)]
+                (every? (fn [mmap-key]
+                          (get vm (symbol nstr (name mmap-key))))
+                        method-map-keys))
+              false)
             false))))))

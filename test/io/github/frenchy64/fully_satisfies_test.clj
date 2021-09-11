@@ -286,6 +286,16 @@
       (let [v 'a]
         (is (not (satisfies? A v)))
         (is (not (fully-satisfies? A v)))))
+  (te [(defprotocol A
+         :extend-via-metadata true)]
+      (let [v (with-meta 'a {})]
+        (is (not (satisfies? A v)))
+        (is (not (fully-satisfies? A v)))))
+  (te [(defprotocol A
+         :extend-via-metadata true)]
+      (let [v (with-meta 'a {:a 1})]
+        (is (not (satisfies? A v)))
+        (is (not (fully-satisfies? A v)))))
   )
 
 (deftest protocol-assumptions

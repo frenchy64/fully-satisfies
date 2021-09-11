@@ -41,9 +41,12 @@ Clojure CLI:
 
 ## Releasing
 
-1. Commit with message `Release {:major,:minor,:patch}`
-2. Pull
-3. Update `README.md`
+1. Change project.clj version to desired version + SNAPSHOT
+   - eg., `1.0.0-SNAPSHOT`
+2. Commit with message `Release {:major,:minor,:patch}`
+   - this releases the current version then bumps to the next `{:major,:minor,:patch}` SNAPSHOT
+3. Pull
+4. Update `README.md`
 
 ## Thanks
 

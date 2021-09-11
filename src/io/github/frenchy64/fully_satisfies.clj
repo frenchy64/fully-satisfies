@@ -28,26 +28,27 @@
                 false))
             true)))
       (let [impls (:impls p)
-            cimpl (or (get impls c)
-                      (when (and c impls)
-                        (let [;; copied from clojure.core
-                              pref (fn
-                                     ([] nil)
-                                     ([a] a)
-                                     ([^Class a ^Class b]
-                                      (if (.isAssignableFrom a b) b a)))]
-                          (or (first
-                               (sequence
-                                (mapcat (fn [c]
-                                          (when (not (identical? Object c))
-                                            (when-some [impl (get impls c)]
-                                              [impl]))))
-                                (super-chain c)))
-                              (when-some [t (reduce pref
-                                                    (filter #(get impls %)
-                                                            (disj (supers c) Object)))]
-                                (get impls t))
-                              (get impls Object)))))]
+            cimpl (when impls
+                    (or (get impls c)
+                        (when c
+                          (let [;; copied from clojure.core
+                                pref (fn
+                                       ([] nil)
+                                       ([a] a)
+                                       ([^Class a ^Class b]
+                                        (if (.isAssignableFrom a b) b a)))]
+                            (or (first
+                                  (sequence
+                                    (mapcat (fn [c]
+                                              (when (not (identical? Object c))
+                                                (when-some [impl (get impls c)]
+                                                  [impl]))))
+                                    (super-chain c)))
+                                (when-some [t (reduce pref
+                                                      (filter #(get impls %)
+                                                              (disj (supers c) Object)))]
+                                  (get impls t))
+                                (get impls Object))))))]
         (if (:extend-via-metadata p)
           (let [vm (meta v)
                 nstr (-> p :var symbol namespace)
@@ -58,6 +59,6 @@
                           (get object-impls mmap-key)))
                     (-> p :method-map keys)))
           (if cimpl
-            (.equals ^Integer (count cimpl)
-                     ^Integer (alength ims))
+            (.equals ^Object (count cimpl)
+                     (alength ims))
             false))))))

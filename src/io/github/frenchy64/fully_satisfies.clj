@@ -44,7 +44,7 @@
                                 (get impls Object))))))]
         (if cimpl
           (or (.equals ^Object (count cimpl) (alength ims))
-              (if-some [vm (and (:extend-via-metadata p) (meta v))]
+              (if-some [vm (when (:extend-via-metadata p) (meta v))]
                 (let [^Var pvar (:var p)
                       nstr (-> pvar .ns .name name)]
                   (every? (fn [mmap-key]

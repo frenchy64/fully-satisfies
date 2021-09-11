@@ -54,6 +54,10 @@ Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea 
 
 Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
 
+## Related work
+
+- https://clojure.atlassian.net/browse/CLJ-2426
+
 ## License
 
 Copyright © 2021 Ambrose Bonnaire-Sergeant

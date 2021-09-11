@@ -17,6 +17,7 @@
                                     :username :env/clojars_user
                                     :password  :env/clojars_token
                                     :sign-releases false}]]
+  :aliases {"bench" ["with-profile" "+bench" "run" "-m" "benchmark/bench"]}
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]

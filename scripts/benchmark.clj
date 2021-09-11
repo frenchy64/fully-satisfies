@@ -37,30 +37,48 @@
   (aA [_])
   (bA [_]))
 
+(defn bench-satisfies? []
+  (c/bench
+    (do
+      (satisfies? Foo (Bar.))
+      (satisfies? PExtendViaMetadata
+                  (with-meta {}
+                             {`aPExtendViaMetadata (fn [this])}))
+      (satisfies? A (->ExtendedAB)))))
+
+(defn bench-fully-satisfies? []
+  (c/bench
+    (do
+      (sut/fully-satisfies? Foo (Bar.))
+      (sut/fully-satisfies? PExtendViaMetadata
+                            (with-meta {}
+                                       {`aPExtendViaMetadata (fn [this])}))
+      (sut/fully-satisfies? A (->ExtendedAB)))))
+
+(defn bench []
+  (println "Starting benchmarks...")
+  (spit "bench-results.txt"
+        (with-out-str
+          (println "bench satisfies?")
+          (bench-satisfies?)
+          (println "\n\nbench fully-satisfies?")
+          (bench-fully-satisfies?)))
+  (println "Finished benchmarking."))
+
 (comment
+  ;; see bench-results.txt
+  (bench)
 
   ;; start profiler at port 17042
   (p/serve-files 17042)
 
   ;; use criterium bench on clojure.core/satisfies?
   (c/with-progress-reporting
-    (c/bench
-     (do
-       (satisfies? Foo (Bar.))
-       (satisfies? PExtendViaMetadata
-                   (with-meta {}
-                     {`aPExtendViaMetadata (fn [this])}))
-       (satisfies? A (->ExtendedAB)))))
+    (bench-satisfies?))
 
   ;; use criterium bench on fully-satisfies?
   (c/with-progress-reporting
-    (c/bench
-     (do
-       (sut/fully-satisfies? Foo (Bar.))
-       (sut/fully-satisfies? PExtendViaMetadata
-                             (with-meta {}
-                               {`aPExtendViaMetadata (fn [this])}))
-       (sut/fully-satisfies? A (->ExtendedAB)))))
+    (bench-fully-satisfies?))
 
   (def flamegraph-sample-number 10000)
 
@@ -75,29 +93,3 @@
      (sut/fully-satisfies? A (->ExtendedAB))))
 
   )
-
-;; bench clojure.core/satisfies?
-; (out) Evaluation count : 2879580 in 60 samples of 47993 calls.
-; (out)              Execution time mean : 21.268488 µs
-; (out)     Execution time std-deviation : 450.608411 ns
-; (out)    Execution time lower quantile : 20.771101 µs ( 2.5%)
-; (out)    Execution time upper quantile : 21.899994 µs (97.5%)
-; (out)                    Overhead used : 7.621916 ns
-; (out) 
-; (out) Found 1 outliers in 60 samples (1.6667 %)
-; (out) 	low-severe	 1 (1.6667 %)
-; (out)  Variance from outliers : 9.4198 % Variance is slightly inflated by outliers
-
-
-;; bench io.github.frenchy64.fully-satisfies/fully-satisfies?
-; (out) Evaluation count : 38438460 in 60 samples of 640641 calls.
-; (out)              Execution time mean : 1.587878 µs
-; (out)     Execution time std-deviation : 36.581023 ns
-; (out)    Execution time lower quantile : 1.550656 µs ( 2.5%)
-; (out)    Execution time upper quantile : 1.670501 µs (97.5%)
-; (out)                    Overhead used : 7.621916 ns
-; (out) 
-; (out) Found 2 outliers in 60 samples (3.3333 %)
-; (out) 	low-severe	 2 (3.3333 %)
-; (out)  Variance from outliers : 10.9988 % Variance is moderately inflated by outliers
-

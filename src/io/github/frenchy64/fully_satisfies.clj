@@ -6,8 +6,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defn fully-satisfies?
-  "Returns true if value v implements every method in protocol p,
-  otherwise false."
+  "Returns true if value v extends protocol p (if applicable) and
+  implements every method in protocol p, otherwise false.
+  
+  Always returns true on :extend-via-metadata protocols with zero methods
+  because there is no way to extend them explicitly via metadata and
+  they all methods are (vacuously) implemented for every value."
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)

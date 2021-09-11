@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies
-  (:import [java.lang.reflect Method]))
+  (:import [clojure.lang Var]
+           [java.lang.reflect Method]))
 
 (set! *warn-on-reflection* true)
 
@@ -44,14 +45,16 @@
         (if cimpl
           (or (.equals ^Object (count cimpl) (alength ims))
               (if-some [vm (and (:extend-via-metadata p) (meta v))]
-                (let [nstr (-> p :var symbol namespace)]
+                (let [^Var pvar (:var p)
+                      nstr (-> pvar .ns .name name)]
                   (every? (fn [mmap-key]
                             (or (get cimpl mmap-key)
                                 (get vm (symbol nstr (name mmap-key)))))
                           (-> p :method-map keys)))
                 false))
           (if-some [vm (and (:extend-via-metadata p) (meta v))]
-            (let [nstr (-> p :var symbol namespace)]
+            (let [^Var pvar (:var p)
+                  nstr (-> pvar .ns .name name)]
               (every? (fn [mmap-key]
                         (get vm (symbol nstr (name mmap-key))))
                       (-> p :method-map keys)))

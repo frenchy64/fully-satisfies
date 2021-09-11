@@ -2,6 +2,16 @@
   (:require [clojure.test :refer :all]
             [io.github.frenchy64.fully-satisfies :refer :all]))
 
+(defn te* [top-levels body]
+  ((eval `(do (ns ~(gensym "fully-satisfies.test")
+                (:require ~'[clojure.test :refer :all]
+                          ~'[io.github.frenchy64.fully-satisfies :refer :all]))
+              ~@top-levels
+              (fn [] (do ~@body))))))
+
+(defmacro te [top-levels & body]
+  `(te* '~top-levels '~body))
+
 (defprotocol A
   (aA [this])
   (bA [this]))
@@ -130,10 +140,19 @@
 ;; TODO test omitted implements shadows meta
 (deftest fully-satisfies?-test
   ;; implemented directly
-  (is (not (fully-satisfies? A (reify))))
-  (is (not (fully-satisfies? A (reify A))))
-  (is (not (fully-satisfies? A (reify A (aA [this])))))
-  (is (fully-satisfies? A (reify A (aA [this]) (bA [this]))))
+  (te [(defprotocol A
+         (a [this])
+         (b [this]))]
+      (let [v (reify A)]
+        (is (thrown? AbstractMethodError (a v)))
+        (is (thrown? AbstractMethodError (b v)))
+        (is (not (fully-satisfies? A v))))
+      (let [v (reify A (a [this] :a/reify))]
+        (is (= :a/reify (a v)))
+        (is (thrown? AbstractMethodError (b v)))
+        (is (not (fully-satisfies? A v))))
+      (is (not (fully-satisfies? A (reify A (a [this])))))
+      (is (fully-satisfies? A (reify A (a [this]) (b [this])))))
   ;; partially implemented directly with a complete Object impl
   (is (not (fully-satisfies? PWithFullObjectImpl (reify PWithFullObjectImpl (aPWithFullObjectImpl [this])))))
   ;; via extend

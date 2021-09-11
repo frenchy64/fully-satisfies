@@ -299,9 +299,8 @@
   )
 
 ;;https://clojure.atlassian.net/browse/CLJ-2656
-#_
 (deftest protocol-nondeterminism
-  (dotimes [_ 100]
+  (dotimes [_ 1]
     (te [(definterface A)
          (definterface B)
          (defprotocol P
@@ -313,8 +312,22 @@
            B
            (a [this] :b)
            (b [this] :b))]
+        (is (not (fully-satisfies? P (reify B A))))
+        (is (not (fully-satisfies? P (reify A B))))))
+  (dotimes [_ 1]
+    (te [(definterface A)
+         (definterface B)
+         (defprotocol P
+           (a [this])
+           (b [this]))
+         (extend-protocol P
+           B
+           (a [this] :a)
+           A
+           (a [this] :b)
+           (b [this] :b))]
         (is (fully-satisfies? P (reify B A)))
-        (is (not (fully-satisfies? P (reify A B)))))))
+        (is (fully-satisfies? P (reify A B))))))
 
 (deftest protocol-assumptions
   (is (= :a

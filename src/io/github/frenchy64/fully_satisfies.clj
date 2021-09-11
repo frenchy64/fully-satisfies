@@ -33,20 +33,22 @@
       (let [cimpl (when-some [impls (:impls p)]
                     (or (get impls c)
                         (when (and c (not (identical? Object c)))
-                          (let [;; copied from clojure.core
-                                pref (fn
-                                       ([] nil)
-                                       ([a] a)
-                                       ([^Class a ^Class b]
-                                        (if (.isAssignableFrom a b) b a)))]
+                          (let [dfs-for-interface (fn dfs-for-interface [^Class c]
+                                                    (when-not (identical? Object c)
+                                                      (or (when (.isInterface c)
+                                                            (get impls c))
+                                                          ;; order of interfaces is strange for reify, normalize it
+                                                          (->> (.getInterfaces c)
+                                                               ;; mutates
+                                                               (sort-by #(.getName ^Class %))
+                                                               (some dfs-for-interface))
+                                                          (when (not (.isInterface c))
+                                                            (recur (.getSuperclass c))))))]
                             (or (loop [^Class c (.getSuperclass c)]
                                   (when-not (identical? Object c)
                                     (or (get impls c)
                                         (recur (.getSuperclass c)))))
-                                (when-some [t (reduce pref
-                                                      (filter #(get impls %)
-                                                              (disj (supers c) Object)))]
-                                  (get impls t))
+                                (dfs-for-interface c)
                                 (get impls Object))))))]
         (if cimpl
           (or (.equals ^Object (count cimpl) (alength ims))

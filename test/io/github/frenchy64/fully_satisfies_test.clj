@@ -266,6 +266,11 @@
     (is (= :meta (bPIInterfaceExtendViaMetaPartialExtended v)))
     (is (= :direct-extend (cPIInterfaceExtendViaMetaPartialExtended v)))
     (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
+  (te [(defprotocol A)]
+      (is (not (fully-satisfies? A 1))))
+  (te [(defprotocol A
+         :extend-via-metadata true)]
+      (is (fully-satisfies? A 1)))
   )
 
 (deftest protocol-assumptions

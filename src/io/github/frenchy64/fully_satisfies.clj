@@ -3,6 +3,7 @@
            [java.lang.reflect Method]))
 
 (set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 
 (defn fully-satisfies?
   "Returns true if value v implements every method in protocol p,
@@ -23,8 +24,7 @@
                 (recur (unchecked-inc-int idx))
                 false))
             true)))
-      (let [impls (:impls p)
-            cimpl (when impls
+      (let [cimpl (when-some [impls (:impls p)]
                     (or (get impls c)
                         (when (and c (not (identical? Object c)))
                           (let [;; copied from clojure.core
@@ -52,8 +52,9 @@
                                 (get vm (symbol nstr (name mmap-key)))))
                           (-> p :method-map keys)))
                 false))
-          (if-some [vm (and (:extend-via-metadata p) (meta v))]
-            (let [^Var pvar (:var p)
+          (if (:extend-via-metadata p)
+            (let [vm (meta v)
+                  ^Var pvar (:var p)
                   nstr (-> pvar .ns .name name)]
               (every? (fn [mmap-key]
                         (get vm (symbol nstr (name mmap-key))))

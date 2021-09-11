@@ -1,6 +1,7 @@
 # fully-satisfies
 
-Provides a variant of `clojure.core/satisfies?` that also checks if all methods are implemented.
+Provides a variant of `clojure.core/satisfies?` that returns true if only if the value implements
+all methods in the protocol.
 
 ## Dependency
 

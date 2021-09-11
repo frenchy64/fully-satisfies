@@ -29,21 +29,20 @@
             true)))
       (let [impls (:impls p)
             cimpl (or (get impls c)
-                      (when c
+                      (when (and c impls)
                         (let [;; copied from clojure.core
                               pref (fn
                                      ([] nil)
-                                     ([a] a) 
+                                     ([a] a)
                                      ([^Class a ^Class b]
                                       (if (.isAssignableFrom a b) b a)))]
-                          (or (get impls c)
-                              (first
-                                (sequence
-                                  (mapcat (fn [c]
-                                            (when (not (identical? Object c))
-                                              (when-some [impl (get impls c)]
-                                                [impl]))))
-                                  (super-chain c)))
+                          (or (first
+                               (sequence
+                                (mapcat (fn [c]
+                                          (when (not (identical? Object c))
+                                            (when-some [impl (get impls c)]
+                                              [impl]))))
+                                (super-chain c)))
                               (when-some [t (reduce pref
                                                     (filter #(get impls %)
                                                             (disj (supers c) Object)))]

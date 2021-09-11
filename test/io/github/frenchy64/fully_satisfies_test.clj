@@ -313,7 +313,8 @@
            B
            (a [this] :b)
            (b [this] :b))]
-        (is (fully-satisfies? P (reify A B))))))
+        (is (fully-satisfies? P (reify B A)))
+        (is (not (fully-satisfies? P (reify A B)))))))
 
 (deftest protocol-assumptions
   (is (= :a

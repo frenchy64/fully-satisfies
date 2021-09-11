@@ -267,14 +267,20 @@
     (is (= :direct-extend (cPIInterfaceExtendViaMetaPartialExtended v)))
     (is (not (fully-satisfies? PIInterfaceExtendViaMetaPartialExtended v))))
   (te [(defprotocol A)]
-      (is (not (fully-satisfies? A 1))))
+      (let [v 1]
+        (is (not (satisfies? A v)))
+        (is (not (fully-satisfies? A v)))))
   (te [(defprotocol A)
        (extend-protocol A
          Number)]
-      (is (fully-satisfies? A 1)))
+      (let [v 1]
+        (is (satisfies? A v))
+        (is (fully-satisfies? A v))))
   (te [(defprotocol A
          :extend-via-metadata true)]
-      (is (fully-satisfies? A 1)))
+      (let [v 1]
+        (is (not (satisfies? A v)))
+        (is (fully-satisfies? A v))))
   )
 
 (deftest protocol-assumptions

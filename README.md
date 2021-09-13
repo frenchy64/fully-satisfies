@@ -9,7 +9,7 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.0.1"]
+[io.github.frenchy64/fully-satisfies "1.1.0"]
 ```
 
 Clojure CLI:

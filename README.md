@@ -16,8 +16,19 @@ Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.0.1", :git/sha "093fbe49ff8dcb4d7cbf78b32c80c206c36ac840"}}
+         {:git/tag "1.1.0", :git/sha "42b2488"}}
 ```
+
+Try it in a REPL:
+
+```
+clj -Sdeps \
+    '{:deps 
+      {io.github.frenchy64/fully-satisfies 
+       {:git/tag "1.1.0" 
+        :git/sha "42b2488"}}}'
+```
+
 
 ## Usage
 

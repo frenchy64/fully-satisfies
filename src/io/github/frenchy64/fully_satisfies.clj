@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies
   (:import [clojure.lang IMeta Var]
-           [java.lang.reflect Method]))
+           [java.lang.reflect Method Modifier]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -24,11 +24,9 @@
           (if (< idx l)
             (let [^Method im (aget ims idx)
                   cm (.getMethod c (.getName im) (.getParameterTypes im))]
-              (if (zero? (bit-and (.getModifiers cm)
-                                  ;; abstract flag
-                                  0x0400))
-                (recur (unchecked-inc-int idx))
-                false))
+              (if (Modifier/isAbstract (.getModifiers cm))
+                false
+                (recur (unchecked-inc-int idx))))
             true)))
       (let [cimpl (when-some [impls (:impls p)]
                     (or (get impls c)

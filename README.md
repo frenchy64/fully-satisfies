@@ -21,14 +21,14 @@ Clojure CLI:
 
 Try it in a REPL:
 
-```
+```clojure
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
        {:git/tag "1.1.0" 
         :git/sha "42b2488"}}}'
+;; See usage below for how to proceed
 ```
-
 
 ## Usage
 
@@ -41,11 +41,11 @@ clj -Sdeps \
 
 (fully-satisfies? A (reify))
 ;=> false
-(fully-satisfies? A (reify A)))
+(fully-satisfies? A (reify A))
 ;=> false
-(fully-satisfies? A (reify A (a [this]))))
+(fully-satisfies? A (reify A (a [this])))
 ;=> false
-(fully-satisfies? A (reify A (a [this]) (b [this]))))
+(fully-satisfies? A (reify A (a [this]) (b [this])))
 ;=> true
 ```
 

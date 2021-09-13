@@ -16,10 +16,10 @@
     by the protocol"
   [p v]
   (let [c (class v)
-        ^Class i (:on-interface p)
-        ims (.getMethods i)]
+        ^Class i (:on-interface p)]
     (if (instance? i v)
-      (let [l (alength ims)]
+      (let [ims (.getMethods i)
+            l (alength ims)]
         (loop [idx 0]
           (if (< idx l)
             (let [^Method im (aget ims idx)
@@ -45,15 +45,16 @@
                                 (dfs-for-interface c)
                                 (get impls Object))))))]
         (if cimpl
-          (or (.equals ^Object (count cimpl) (alength ims))
-              (if-some [vm (when (:extend-via-metadata p) (meta v))]
-                (let [^Var pvar (:var p)
-                      nstr (-> pvar .ns .name name)]
-                  (every? (fn [mmap-key]
-                            (or (get cimpl mmap-key)
-                                (get vm (symbol nstr (name mmap-key)))))
-                          (-> p :method-map keys)))
-                false))
+          (let [ims (.getMethods i)]
+            (or (.equals ^Object (count cimpl) (alength ims))
+                (if-some [vm (when (:extend-via-metadata p) (meta v))]
+                  (let [^Var pvar (:var p)
+                        nstr (-> pvar .ns .name name)]
+                    (every? (fn [mmap-key]
+                              (or (get cimpl mmap-key)
+                                  (get vm (symbol nstr (name mmap-key)))))
+                            (-> p :method-map keys)))
+                  false)))
           (if-some [vm (and (:extend-via-metadata p)
                             (meta v))]
             (if-some [method-map-keys (-> p :method-map keys seq)]

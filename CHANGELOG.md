@@ -1,6 +1,7 @@
-# 1.1.1-SNAPSHOT
+# 1.2.0-SNAPSHOT
 - use Modifier class to decode method modifiers
 - only call .getMethods when necessary
+- add `partially-satisfies?`
 
 # 1.1.0 - 13th September 2021
 - breaking changes: return false for values that don't explicitly extend an :extend-via-metadata protocol with zero methods

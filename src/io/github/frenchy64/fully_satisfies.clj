@@ -5,6 +5,26 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+(defn partially-satisfies?
+  "Returns true if value v extends protocol p, otherwise false.
+
+  A value is considered to 'extend' protocol p either if:
+  - p implements the protocols interface, or
+  - p extends the protocol via clojure.core/extend, or
+  - p implements at least one method via metadata if supported
+    by the protocol"
+  [p v]
+  (boolean
+    (or (find-protocol-impl p v)
+        (when-some [vm (and (:extend-via-metadata p)
+                            (meta v))]
+          (when-some [method-map-keys (-> p :method-map keys seq)]
+            (let [^Var pvar (:var p)
+                  nstr (-> pvar .ns .name name)]
+              (some (fn [mmap-key]
+                      (get vm (symbol nstr (name mmap-key))))
+                    method-map-keys)))))))
+
 (defn fully-satisfies?
   "Returns true if value v extends protocol p and
   implements every method in protocol p, otherwise false.

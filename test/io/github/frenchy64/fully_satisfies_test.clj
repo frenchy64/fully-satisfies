@@ -3,11 +3,12 @@
             [io.github.frenchy64.fully-satisfies :refer :all]))
 
 (defn te* [top-levels body]
-  ((eval `(do (ns ~(gensym "fully-satisfies.test")
-                (:require ~'[clojure.test :refer :all]
-                          ~'[io.github.frenchy64.fully-satisfies :refer :all]))
-              ~@top-levels
-              (fn [] (do ~@body))))))
+  (binding [*ns* *ns*]
+    ((eval `(do (ns ~(gensym "fully-satisfies.test")
+                  (:require ~'[clojure.test :refer :all]
+                            ~'[io.github.frenchy64.fully-satisfies :refer :all]))
+                ~@top-levels
+                (fn [] (do ~@body)))))))
 
 (defmacro te [top-levels & body]
   `(te* '~top-levels '~body))
@@ -134,6 +135,29 @@
   IInterface
   (aPIInterfaceExtendViaMetaFullyExtended [this] :extend)
   (bPIInterfaceExtendViaMetaFullyExtended [this] :extend))
+
+(deftest partially-satisfies?-test
+  (te [(defprotocol A)
+       (deftype T1 [] A)
+       (deftype T2 [])]
+      (is (partially-satisfies? A (->T1)))
+      (is (not (partially-satisfies? A (->T2)))))
+  (te [(defprotocol A
+         :extend-via-metadata true)
+       (defrecord T1 [] A)
+       (defrecord T2 []) ]
+      (is (partially-satisfies? A (->T1)))
+      (is (not (partially-satisfies? A (->T2)))))
+  (te [(defprotocol A
+         :extend-via-metadata true
+         (foo [this]))
+       (defrecord T1 [] A)
+       (defrecord T2 [])
+       (def this-nstr (-> *ns* ns-name name))]
+      (is (partially-satisfies? A (->T1)))
+      (is (not (partially-satisfies? A (->T2))))
+      (is (partially-satisfies? A (with-meta (->T2)
+                                             {(symbol this-nstr "foo") identity})))))
 
 ;; TODO test abstract class implementing interface used as super. ensures
 ;; we use the correct getMethods vs getDeclaredMethods.

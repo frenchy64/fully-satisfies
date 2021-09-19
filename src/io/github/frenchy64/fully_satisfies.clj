@@ -15,13 +15,13 @@
   [p v]
   (boolean
     (or (find-protocol-impl p v)
-        (when-some [vm (and (:extend-via-metadata p)
-                            (meta v))]
-          (when-some [method-map-keys (-> p :method-map keys seq)]
-            (let [nstr (-> p :var symbol namespace)]
-              (some (fn [mmap-key]
-                      (get vm (symbol nstr (name mmap-key))))
-                    method-map-keys)))))))
+        (when (:extend-via-metadata p)
+          (when-some [vm (meta v)]
+            (when-some [method-map-keys (-> p :method-map keys seq)]
+              (let [nstr (-> p :var symbol namespace)]
+                (some (fn [mmap-key]
+                        (get vm (symbol nstr (name mmap-key))))
+                      method-map-keys))))))))
 
 (defn fully-satisfies?
   "Returns true if value v extends protocol p and

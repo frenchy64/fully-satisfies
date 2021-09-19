@@ -1,6 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies
-  (:import [clojure.lang IMeta Var]
-           [java.lang.reflect Method Modifier]))
+  (:import [java.lang.reflect Method Modifier]))
 
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -19,8 +18,7 @@
         (when-some [vm (and (:extend-via-metadata p)
                             (meta v))]
           (when-some [method-map-keys (-> p :method-map keys seq)]
-            (let [^Var pvar (:var p)
-                  nstr (-> pvar .ns .name name)]
+            (let [nstr (-> p :var symbol namespace)]
               (some (fn [mmap-key]
                       (get vm (symbol nstr (name mmap-key))))
                     method-map-keys)))))))
@@ -68,8 +66,7 @@
           (let [ims (.getMethods i)]
             (or (.equals ^Object (count cimpl) (alength ims))
                 (if-some [vm (when (:extend-via-metadata p) (meta v))]
-                  (let [^Var pvar (:var p)
-                        nstr (-> pvar .ns .name name)]
+                  (let [nstr (-> p :var symbol namespace)]
                     (every? (fn [mmap-key]
                               (or (get cimpl mmap-key)
                                   (get vm (symbol nstr (name mmap-key)))))
@@ -78,8 +75,7 @@
           (if-some [vm (and (:extend-via-metadata p)
                             (meta v))]
             (if-some [method-map-keys (-> p :method-map keys seq)]
-              (let [^Var pvar (:var p)
-                    nstr (-> pvar .ns .name name)]
+              (let [nstr (-> p :var symbol namespace)]
                 (every? (fn [mmap-key]
                           (get vm (symbol nstr (name mmap-key))))
                         method-map-keys))

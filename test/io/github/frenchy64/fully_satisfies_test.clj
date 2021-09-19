@@ -3,8 +3,8 @@
             [io.github.frenchy64.fully-satisfies :refer :all]))
 
 (defn te* [top-levels body]
-  (binding [*ns* *ns*]
-    ((eval `(do (ns ~(gensym "fully-satisfies.test")
+  ((binding [*ns* *ns*]
+     (eval `(do (ns ~(gensym "fully-satisfies.test")
                   (:require ~'[clojure.test :refer :all]
                             ~'[io.github.frenchy64.fully-satisfies :refer :all]))
                 ~@top-levels

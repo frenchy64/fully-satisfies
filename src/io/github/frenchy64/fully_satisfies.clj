@@ -16,7 +16,7 @@
   (boolean
     (or (find-protocol-impl p v)
         (when (:extend-via-metadata p)
-          (when-some [vm (meta v)]
+          (when-some [vm (not-empty (meta v))]
             (when-some [method-map-keys (-> p :method-map keys seq)]
               (let [nstr (-> p :var symbol namespace)]
                 (some (fn [mmap-key]

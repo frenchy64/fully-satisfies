@@ -385,6 +385,20 @@
             (with-meta (reify
                          PExtendViaMetadataWithPartialObjectImpl)
                        {`aPExtendViaMetadataWithPartialObjectImpl (fn [this] :b)})))))
+  (testing "metadata overrides extend"
+    (te [(defprotocol A
+           :extend-via-metadata true
+           (foo [this]))
+         (defrecord B [])
+         (extend-protocol A
+           B
+           (foo [_] :extend))
+         (def this-nstr (-> *ns* ns-name name))]
+        (is (= :meta
+               (foo (with-meta (->B)
+                               {(symbol this-nstr "foo") (fn [_] :meta)}))))
+        (is (= :extend
+               (foo (->B))))))
   (testing "missing extends implementation drops to metadata"
     ;; sanity check
     (is (thrown?

@@ -375,7 +375,7 @@
   (is (thrown? IllegalArgumentException
                (bPExtendViaMetadataWithPartialObjectImpl
                  {})))
-  (testing "missing direct implementation overrides metadata"
+  (testing "direct implementation overrides metadata"
     (is (= :a
            (aPExtendViaMetadataWithPartialObjectImpl
              (with-meta (reify

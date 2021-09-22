@@ -36,8 +36,6 @@
   ([^Class a ^Class b]
      (if (.isAssignableFrom a b) b a)))
 
-
-;; TODO document implications of https://clojure.atlassian.net/browse/CLJ-2656
 (defn fully-satisfies?
   "Returns true if value v extends protocol p and
   implements every method in protocol p, otherwise false.
@@ -46,7 +44,22 @@
   - p implements the protocols interface, or
   - p extends the protocol via clojure.core/extend, or
   - p implements at least one method via metadata if supported
-    by the protocol"
+    by the protocol
+  
+  Note that fully-satisfies? aims to be deterministic even
+  in cases where protocol dispatch is non-deterministic, and so
+  may be innaccurate in those cases.
+
+  In cases of multiple-inheritance of interfaces, fully-satisfies? will pick
+  an implementation by sorting the `supers` of the target object by name
+  and finding the first interface (from left to right) that implements
+  the protocol. Then, if it finds any more-specific interfaces (ie.,
+  sub-interfaces) of this interface in the target class hierarchy, it will pick
+  that interface's implementation (and apply this algorithm to a fixed point).
+
+  See also:
+  - https://clojure.atlassian.net/browse/CLJ-2656
+  - https://clojure.atlassian.net/browse/CLJ-1807"
   [p v]
   (let [c (class v)
         ^Class i (:on-interface p)]

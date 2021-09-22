@@ -4,6 +4,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
+;; from https://clojure.atlassian.net/browse/CLJ-2426
 (defn partially-satisfies?
   "Returns true if value v extends protocol p, otherwise false.
 

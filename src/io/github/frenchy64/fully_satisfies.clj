@@ -24,6 +24,7 @@
                         (get vm (symbol nstr (name mmap-key))))
                       method-map-keys))))))))
 
+;; TODO document implications of https://clojure.atlassian.net/browse/CLJ-2656
 (defn fully-satisfies?
   "Returns true if value v extends protocol p and
   implements every method in protocol p, otherwise false.
@@ -49,6 +50,7 @@
             true)))
       (let [cimpl (when-some [impls (:impls p)]
                     (or (get impls c)
+                        ;; FIXME use simpler deterministic impl from https://clojure.atlassian.net/browse/CLJ-2656
                         (when (and c (not (identical? Object c)))
                           (let [dfs-for-interface (fn dfs-for-interface [^Class c]
                                                     (when-not (identical? Object c)

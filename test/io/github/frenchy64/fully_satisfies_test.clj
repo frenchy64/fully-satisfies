@@ -362,6 +362,8 @@
         (is (fully-satisfies? P (reify B A)))
         (is (fully-satisfies? P (reify A B))))))
 
+;; https://ask.clojure.org/index.php/11085/when-does-a-metadata-protocol-extension-get-chosen
+;; https://clojure.org/reference/protocols#_extend_via_metadata
 (deftest protocol-assumptions
   (is (= :a
          (aPExtendViaMetadataWithPartialObjectImpl

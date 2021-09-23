@@ -5,7 +5,8 @@ set -e
 CURRENT_VERSION=`lein pprint --no-pretty -- :version`
 
 ./scripts/gen-doc.sh
-cd target
+mkdir -p tmp
+cd tmp
 if [ ! -d fully-satisfies-gh-pages ]; then
   if [ "$GITHUB_ACTIONS" == "true" ]; then
     echo "Missing gh-pages clone"
@@ -22,8 +23,8 @@ if git ls-remote --exit-code --heads git@github.com:frenchy64/fully-satisfies.gi
 fi
 rm -fr latest
 #https://askubuntu.com/a/86891
-cp -a ../doc/. latest
-cp -a ../doc/. "$CURRENT_VERSION"
+cp -a ../target/doc/. latest
+cp -a ../target/doc/. "$CURRENT_VERSION"
 git add .
 git commit --allow-empty -m "Docs for $CURRENT_VERSION"
 git push origin --set-upstream gh-pages

@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          path: target/fully-satisfies-gh-pages
+          path: tmp/fully-satisfies-gh-pages
       - name: Cache local Maven repository
         uses: actions/cache@v2
         with:

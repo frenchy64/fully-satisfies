@@ -23,8 +23,8 @@ if git ls-remote --exit-code --heads git@github.com:frenchy64/fully-satisfies.gi
 fi
 rm -fr latest
 #https://askubuntu.com/a/86891
-cp -a ../target/doc/. latest
-cp -a ../target/doc/. "$CURRENT_VERSION"
+cp -a ../../target/doc/. latest
+cp -a ../../target/doc/. "$CURRENT_VERSION"
 git add .
 git commit --allow-empty -m "Docs for $CURRENT_VERSION"
 git push origin --set-upstream gh-pages

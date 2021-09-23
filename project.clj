@@ -27,6 +27,7 @@
                   ["vcs" "tag" "--no-sign"]
                   ["deploy" "release"]
                   ["shell" "./scripts/deploy-doc.sh"]
+                  ["shell" "./scripts/regen-readme-release.sh"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
                   ["vcs" "push"]]

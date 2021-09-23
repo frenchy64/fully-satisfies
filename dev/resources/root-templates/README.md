@@ -1,4 +1,4 @@
-<!-- DO NOT EDIT! Instead, edit `dev/resources/root-templates/README.md` and run `./script/regen-selmer.sh` -->
+{% do-not-edit-xml-comment %}
 # fully-satisfies
 
 Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.

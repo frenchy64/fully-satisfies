@@ -69,5 +69,3 @@ jobs:
           else
             lein deploy snapshot
           fi
-  doc:
-    concurrency: doc

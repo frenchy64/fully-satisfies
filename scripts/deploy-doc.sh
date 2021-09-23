@@ -7,7 +7,7 @@ CURRENT_VERSION=`lein pprint --no-pretty -- :version`
 ./scripts/gen-doc.sh
 cd target
 if [ ! -d fully-satisfies-gh-pages ]; then
-  if [ ! -z $ACTIONS ]; then
+  if [ "$GITHUB_ACTIONS" == "true" ]; then
     echo "Missing gh-pages clone"
     exit 1
   else

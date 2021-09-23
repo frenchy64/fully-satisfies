@@ -2,6 +2,7 @@
   (:require [selmer.parser :as sp :refer [render render-file]]
             [selmer.util :as su]
             [clojure.string :as str]
+            [clojure.java.io :as io]
             [clojure.java.shell :as sh])
   (:import [java.io File]))
 
@@ -34,9 +35,9 @@
         (map (juxt identity identity))
         #{"README.md"}))
 
-(defn do-release []
-  (let [opts {:current-version (str/trim (:out (sh/sh "lein" "pprint" "--no-pretty" "--" ":version")))
-              :short-sha (str/trim (:out (sh/sh "git" "rev-parse" "--short" "HEAD")))}]
+(defn -main []
+  (let [opts {:current-version (str/trim (slurp (io/resource "latest-version-tag")))
+              :short-sha (str/trim (slurp (io/resource "latest-version-short-sha")))}]
     (doseq [[src dest] release-transforms]
       (spit (str "../" dest)
             (render-file

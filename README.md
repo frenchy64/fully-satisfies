@@ -3,6 +3,8 @@
 
 Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
 
+[API documentation](https://frenchy64.github.io/fully-satisfies/latest)
+
 ## Dependency
 
 Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
@@ -27,7 +29,7 @@ clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
        {:git/tag "1.3.10" 
-        :git/sha "◊short-sha◊"}}}'
+        :git/sha "28e6c62"}}}'
 ;; See usage below for how to proceed
 ```
 

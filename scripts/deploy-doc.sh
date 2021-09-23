@@ -2,7 +2,11 @@
 
 set -e
 
-CURRENT_VERSION=`lein pprint --no-pretty -- :version`
+CURRENT_VERSION=`cat dev/latest-version-tag`
+if [ -z $CURRENT_VERSION ]; then
+  echo "Current version not set -- run ./scripts/regen-latest-version-info.sh"
+  exit 1
+fi
 
 ./scripts/gen-doc.sh
 mkdir -p tmp

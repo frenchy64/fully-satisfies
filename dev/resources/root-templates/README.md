@@ -30,8 +30,7 @@ Try it in a REPL:
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
-       {:git/tag "{◊current-version◊}" 
-        :git/sha "{◊short-sha◊}"}}}'
+       {:git/tag "{◊current-version◊}", :git/sha "{◊short-sha◊}"}}}'
 ;; See usage below for how to proceed
 ```
 
@@ -61,7 +60,6 @@ clj -Sdeps \
 2. Commit with message `Release {:major,:minor,:patch}`
    - this releases the current version then bumps to the next `{:major,:minor,:patch}` SNAPSHOT
 3. Pull
-4. Update `README.md`
 
 ## Thanks
 

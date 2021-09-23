@@ -5,7 +5,7 @@ Provides a variant of `clojure.core/satisfies?` that also checks if a value impl
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.3.14)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.3.15)
 
 ## Dependency
 
@@ -14,14 +14,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.3.14"]
+[io.github.frenchy64/fully-satisfies "1.3.15"]
 ```
 
 Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.3.14", :git/sha "4f5e457"}}
+         {:git/tag "1.3.15", :git/sha "775a9be"}}
 ```
 
 Try it in a REPL:
@@ -30,8 +30,8 @@ Try it in a REPL:
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
-       {:git/tag "1.3.14" 
-        :git/sha "4f5e457"}}}'
+       {:git/tag "1.3.15" 
+        :git/sha "775a9be"}}}'
 ;; See usage below for how to proceed
 ```
 

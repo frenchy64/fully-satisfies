@@ -26,11 +26,12 @@
                   ["vcs" "commit"]
                   ["vcs" "tag" "--no-sign"]
                   ["deploy" "release"]
-                  ["shell" "./scripts/deploy-doc.sh" ~(System/getProperty "myproject.version")]
+                  ["shell" "./scripts/deploy-doc.sh"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
                   ["vcs" "push"]]
   :codox {:source-uri "https://github.com/frenchy64/fully-satisfies/blob/{git-commit}/{filepath}#L{line}"}
   :plugins [[lein-codox "0.10.7"]
-            [lein-shell "0.5.0"]]
+            [lein-shell "0.5.0"]
+            [lein-pprint "1.3.2"]]
   :repl-options {:init-ns io.github.frenchy64.fully-satisfies})

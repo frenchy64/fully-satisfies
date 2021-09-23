@@ -2,12 +2,7 @@
 
 set -e
 
-CURRENT_VERSION=$1
-
-if [ -z $CURRENT_VERSION ]; then 
-  echo "Must provide current version"
-  exit 1
-fi
+CURRENT_VERSION=`lein pprint --no-pretty -- :version`
 
 ./scripts/gen-doc.sh
 cd target

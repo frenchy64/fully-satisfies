@@ -27,7 +27,7 @@ clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
        {:git/tag "{◊current-version◊}" 
-        :git/sha "◊short-sha◊"}}}'
+        :git/sha "{◊short-sha◊}"}}}'
 ;; See usage below for how to proceed
 ```
 

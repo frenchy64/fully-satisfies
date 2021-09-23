@@ -10,14 +10,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.3.10"]
+[io.github.frenchy64/fully-satisfies "1.3.11"]
 ```
 
 Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.3.10", :git/sha "28e6c62"}}
+         {:git/tag "1.3.11", :git/sha "717698d"}}
 ```
 
 Try it in a REPL:
@@ -26,8 +26,8 @@ Try it in a REPL:
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
-       {:git/tag "1.3.10" 
-        :git/sha "◊short-sha◊"}}}'
+       {:git/tag "1.3.11" 
+        :git/sha "717698d"}}}'
 ;; See usage below for how to proceed
 ```
 

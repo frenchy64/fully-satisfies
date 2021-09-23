@@ -2,7 +2,7 @@
 
 set -e
 
-CURRENT_VERSION=`cat dev/latest-version-tag`
+CURRENT_VERSION=`cat dev/resources/latest-version-tag`
 if [ -z $CURRENT_VERSION ]; then
   echo "Current version not set -- run ./scripts/regen-latest-version-info.sh"
   exit 1

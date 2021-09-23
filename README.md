@@ -3,7 +3,7 @@
 
 Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
 
-[API documentation](https://frenchy64.github.io/fully-satisfies/latest)
+[Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
 ## Dependency
 

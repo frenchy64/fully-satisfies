@@ -8,7 +8,9 @@
              {:source-paths ["scripts"]
               :dependencies [[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
                              [criterium/criterium "0.4.6"]]
-              :jvm-opts ["-Djdk.attach.allowAttachSelf"]}}
+              :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
+             :gen-doc
+             {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token
@@ -18,12 +20,17 @@
                                     :password  :env/clojars_token
                                     :sign-releases false}]]
   :aliases {"bench" ["with-profile" "+bench" "run" "-m" "benchmark/bench"]}
-  :release-tasks [["vcs" "assert-committed"]
+  :release-tasks [["clean"]
+                  ["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]
                   ["vcs" "tag" "--no-sign"]
                   ["deploy" "release"]
+                  ["shell" "./scripts/deploy-doc.sh" ~(System/getProperty "myproject.version")]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
                   ["vcs" "push"]]
+  :codox {:source-uri "https://github.com/frenchy64/fully-satisfies/blob/{git-commit}/{filepath}#L{line}"}
+  :plugins [[lein-codox "0.10.7"]
+            [lein-shell "0.5.0"]]
   :repl-options {:init-ns io.github.frenchy64.fully-satisfies})

@@ -33,6 +33,7 @@ jobs:
           lein: 2.9.6
       - run: lein test
   deploy:
+    concurrency: deploy
     needs: test
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository_owner == 'frenchy64' }}
     runs-on: ubuntu-latest
@@ -68,3 +69,5 @@ jobs:
           else
             lein deploy snapshot
           fi
+  doc:
+    concurrency: doc

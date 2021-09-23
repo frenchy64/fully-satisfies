@@ -1,4 +1,9 @@
-# 1.2.0-SNAPSHOT
+# 1.4.0-SNAPSHOT
+- use simplified but deterministic `find-protocol-impl` from [CLJ-2656](https://clojure.atlassian.net/browse/CLJ-2656)
+- document determinism tradeoffs
+- [generate API documentation](https://frenchy64.github.io/fully-satisfies/latest)
+
+# 1.2.0 - 17th September 2021
 - use Modifier class to decode method modifiers
 - only call .getMethods when necessary
 - add `partially-satisfies?`

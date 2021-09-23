@@ -28,7 +28,7 @@
                   ["deploy" "release"]
                   ["shell" "./scripts/regen-latest-version-info.sh"]
                   ["shell" "./scripts/deploy-doc.sh"]
-                  ["shell" "./scripts/regen-readme.sh"]
+                  ["shell" "./scripts/regen-selmer.sh"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
                   ["vcs" "push"]]

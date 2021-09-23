@@ -7,8 +7,9 @@ CURRENT_VERSION=`lein pprint --no-pretty -- :version`
 ./scripts/gen-doc.sh
 cd target
 if [ ! -d fully-satisfies-gh-pages ]; then
-  if [ ! $ACTIONS ]; then
-    git clone https://github.com/frenchy64/fully-satisfies.git fully-satisfies-gh-pages
+  if [ $ACTIONS ]; then
+    echo "Missing gh-pages clone"
+    exit 1
   else
     git clone git@github.com:frenchy64/fully-satisfies.git fully-satisfies-gh-pages
   fi

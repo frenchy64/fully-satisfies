@@ -40,6 +40,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      # see ./scripts/deploy-doc.sh
+      - name: gh-pages clone
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          path: target/fully-satisfies-gh-pages
       - name: Cache local Maven repository
         uses: actions/cache@v2
         with:

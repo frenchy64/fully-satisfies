@@ -1,4 +1,6 @@
-# 1.4.0-SNAPSHOT
+# Next - TBD
+
+# 1.4.0 - 22nd September 2021
 - use simplified but deterministic `find-protocol-impl` from [CLJ-2656](https://clojure.atlassian.net/browse/CLJ-2656)
 - document determinism tradeoffs
 - [generate API documentation](https://frenchy64.github.io/fully-satisfies/latest)

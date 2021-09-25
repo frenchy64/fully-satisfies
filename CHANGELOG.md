@@ -1,4 +1,6 @@
 # Next - TBD
+- add `some-fn`
+- add `never?`
 
 # 1.4.0 - 22nd September 2021
 - use simplified but deterministic `find-protocol-impl` from [CLJ-2656](https://clojure.atlassian.net/browse/CLJ-2656)

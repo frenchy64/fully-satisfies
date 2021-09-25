@@ -3,7 +3,8 @@
 
 Utility functions for Clojure.
 
-- Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+- [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) a variant of `clojure.core/satisfies?` that is compatible with metadata extension.
 - Provides a variant of `clojure.core/some-fn` that has a simple operational equivalence.
 - Provides a predicate `never?` that always returns false.
 

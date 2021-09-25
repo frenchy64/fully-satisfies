@@ -6,16 +6,16 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns io.github.frenchy64.fully-satisfies.some-fn
+(ns io.github.frenchy64.fully-satisfies.somef
   "An implementation of clojure.core/some-fn with
   a simple operational equivalence."
   (:refer-clojure :exclude [some-fn]))
 
-(defn some-fn
+(defn somef
   "Combines functions into a variable-arity disjunction.
   
   Operationally equivalent to:
-  (defn some-fn [& fs]
+  (defn somef [& fs]
     (fn [& args] (some #(some % args) fs)))"
   ([] ;; fully-satisifes: added zero-arity
      (fn

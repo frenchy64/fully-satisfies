@@ -7,16 +7,15 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns io.github.frenchy64.fully-satisfies.somef
-  "An implementation of clojure.core/some-fn with
-  a simple operational equivalence."
-  (:refer-clojure :exclude [some-fn]))
+  "An implementation of clojure.core/some-fn with a simple operational equivalence.")
 
 (defn somef
   "Combines functions into a variable-arity disjunction.
   
   Operationally equivalent to:
-  (defn somef [& fs]
-    (fn [& args] (some #(some % args) fs)))"
+
+    (defn somef [& fs]
+      (fn [& args] (some #(some % args) fs)))"
   ([] ;; fully-satisifes: added zero-arity
      (fn
        ([] nil)

@@ -8,6 +8,7 @@
   (fn [& args] (some #(some % args) ps)))
 
 ;; TODO order of operations
+;; TODO test zero arity
 (deftest somef-test
   (doseq [somef [somef somef-reference]]
     (testing "found match"

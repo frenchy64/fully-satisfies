@@ -8,6 +8,7 @@
   (fn [& args] (every? #(every? % args) ps)))
 
 ;; TODO order of operations
+;; TODO test zero arity
 #_ ;;FIXME
 (deftest everyp-test
   (doseq [everyp [everyp everyp-reference]]

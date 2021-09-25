@@ -3,10 +3,12 @@
 
 Utility functions for Clojure.
 
-- [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
-- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) a variant of `clojure.core/satisfies?` that is compatible with metadata extension.
-- Provides a variant of `clojure.core/some-fn` that has a simple operational equivalence.
-- Provides a predicate `never?` that always returns false.
+- [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is compatible with metadata extension.
+- _somef_ -- a variant of `clojure.core/some-fn` that has a simple operational equivalence.
+- _everyp_ -- a variant of `clojure.core/every-pred` that has a simple operational equivalence.
+- _never?_ -- a predicate `never?` that always returns false.
+- _each_ -- a variant of `clojure.core/run!` that does not short-circuit on reduced.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 

@@ -68,9 +68,9 @@ clj -Sdeps \
 
 ## Thanks
 
-Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea and name. My initial stance that this was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.
+Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea of `fully-satisfies?` and its name. My initial stance that `fully-satisifes?` was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.
 
-Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations.
+Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations of `fully-satisfies?`.
 
 ## Related work
 

@@ -1,7 +1,11 @@
 {% do-not-edit-xml-comment %}
 # fully-satisfies
 
-Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+Utility functions for Clojure.
+
+- Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+- Provides a variant of `clojure.core/some-fn` that has a simple operational equivalence.
+- Provides a predicate `never?` that always returns false.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 

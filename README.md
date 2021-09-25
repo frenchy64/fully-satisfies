@@ -1,7 +1,11 @@
 <!-- DO NOT EDIT! Instead, edit `dev/resources/root-templates/README.md` and run `./script/regen-selmer.sh` -->
 # fully-satisfies
 
-Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+Utility functions for Clojure.
+
+- Provides a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol.
+- Provides a variant of `clojure.core/some-fn` that has a simple operational equivalence.
+- Provides a predicate `never?` that always returns false.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
@@ -76,21 +80,6 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 
 ## License
 
-Code in `io.github.frenchy64.fully-satisfies.some-fn` has the following license:
-
-```
-Copyright (c) Rich Hickey. All rights reserved.
-The use and distribution terms for this software are covered by the
-Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-which can be found in the file epl-v10.html at the root of this distribution.
-By using this software in any fashion, you are agreeing to be bound by
-the terms of this license.
-You must not remove this notice, or any other, from this software.
-```
-
-Otherwise:
-
-```
 Copyright © 2021 Ambrose Bonnaire-Sergeant
 
 This program and the accompanying materials are made available under the
@@ -103,4 +92,3 @@ Public License, v. 2.0 are satisfied: GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or (at your
 option) any later version, with the GNU Classpath Exception which is available
 at https://www.gnu.org/software/classpath/license.html.
-```

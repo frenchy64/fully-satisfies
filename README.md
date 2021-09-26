@@ -43,6 +43,10 @@ clj -Sdeps \
 
 ## Usage
 
+### fully-satisfies?
+
+[Docstring](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F)
+
 ```clojure
 (require '[io.github.frenchy64.fully-satisfies :refer [fully-satisfies?]])
 
@@ -58,6 +62,24 @@ clj -Sdeps \
 ;=> false
 (fully-satisfies? A (reify A (a [this]) (b [this])))
 ;=> true
+```
+
+### each
+
+```clojure
+(require '[io.github.frenchy64.fully-satisfies.each :refer [each]])
+
+(each println [1 (reduced 2) 3])
+;1
+;2
+;3
+;=> nil
+;; does not short-circuit on reduced
+(each println [1 (reduced 2) 3])
+;1
+;#object[clojure.lang.Reduced 0x3deeac1 {:status :ready, :val 2}]
+;3
+;=> nil
 ```
 
 ## Releasing

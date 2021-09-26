@@ -2,7 +2,7 @@
   "An alternative to `clojure.core/run!` that does not short-circuit on reduced.")
 
 (defn each
-  "Serially invoke f on each subsequent element of c.
+  "Serially invoke f on each subsequent element of c. Returns nil.
 
   Operationally equivalent to:
 

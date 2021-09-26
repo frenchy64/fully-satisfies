@@ -7,7 +7,9 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns io.github.frenchy64.fully-satisfies.future
-  "futures that clear conveyed bindings after execution."
+  "futures that clear conveyed bindings after execution.
+
+  Fixes memory leak described in https://clojure.atlassian.net/browse/CLJ-2619"
   (:refer-clojure :exclude [future future-call]))
 
 (set! *warn-on-reflection* true)

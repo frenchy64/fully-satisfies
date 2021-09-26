@@ -9,6 +9,7 @@ Utility functions for Clojure.
 - _everyp_ -- a variant of `clojure.core/every-pred` that has a simple operational equivalence.
 - _never?_ -- a predicate `never?` that always returns false.
 - _each_ -- a variant of `clojure.core/run!` that does not short-circuit on reduced.
+- _future'_, _future-call'_ -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 

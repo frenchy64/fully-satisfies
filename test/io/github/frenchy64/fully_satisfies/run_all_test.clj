@@ -15,6 +15,8 @@
              []
              [:a]
              [1 2 3]
+             (sorted-set 1 2 3)
+             (sorted-map 1 2 3 4)
              [1 (reduced 2) 3]
              (range 100)]]
     (test-run-all! c))

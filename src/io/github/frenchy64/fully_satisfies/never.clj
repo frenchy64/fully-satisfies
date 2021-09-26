@@ -2,4 +2,5 @@
 
 (defn never?
   "Returns false for any argument."
+  {:tag Boolean}
   [x] false)

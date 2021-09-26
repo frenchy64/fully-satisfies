@@ -77,7 +77,7 @@
      clojure.lang.IBlockingDeref
      (deref
       [_ timeout-ms timeout-val]
-      (deref-future fut timeout-ms timeout-val))
+      (deref-future' fut timeout-ms timeout-val))
      clojure.lang.IPending
      (isRealized [_] (.isDone fut))
     java.util.concurrent.Future

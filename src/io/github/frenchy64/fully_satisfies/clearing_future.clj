@@ -6,7 +6,7 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns io.github.frenchy64.fully-satisfies.future
+(ns io.github.frenchy64.fully-satisfies.clearing-future
   "futures that clear conveyed bindings after execution.
 
   Fixes memory leak described in https://clojure.atlassian.net/browse/CLJ-2619"
@@ -14,7 +14,7 @@
 
 (set! *warn-on-reflection* true)
 
-(defn ^:private future'-binding-conveyor-fn
+(defn ^:private clearing-future-binding-conveyor-fn
   [f]
   (let [frame (clojure.lang.Var/cloneThreadBindingFrame)]
     (fn
@@ -54,7 +54,7 @@
            (finally
              (clojure.lang.Var/resetThreadBindingFrame previous-frame))))))))
 
-(defn ^:private deref-future'
+(defn ^:private deref-clearing-future
   ([^java.util.concurrent.Future fut]
      (.get fut))
   ([^java.util.concurrent.Future fut timeout-ms timeout-val]
@@ -62,22 +62,23 @@
           (catch java.util.concurrent.TimeoutException e
             timeout-val))))
 
-(defn future-call'
+(defn clearing-future-call
   "Takes a function of no args and yields a future object that will
   invoke the function in another thread, and will cache the result and
-  return it on all subsequent calls to deref/@. If the computation has
+  return it on all subsequent calls to deref/@. Clears conveyed bindings
+  after result has been computed. If the computation has
   not yet finished, calls to deref/@ will block, unless the variant
   of deref with timeout is used. See also - realized?."
   [f]
-  (let [f (future'-binding-conveyor-fn f)
+  (let [f (clearing-future-binding-conveyor-fn f)
         fut (.submit clojure.lang.Agent/soloExecutor ^Callable f)]
     (reify 
      clojure.lang.IDeref 
-     (deref [_] (deref-future' fut))
+     (deref [_] (deref-clearing-future fut))
      clojure.lang.IBlockingDeref
      (deref
       [_ timeout-ms timeout-val]
-      (deref-future' fut timeout-ms timeout-val))
+      (deref-clearing-future fut timeout-ms timeout-val))
      clojure.lang.IPending
      (isRealized [_] (.isDone fut))
     java.util.concurrent.Future
@@ -87,10 +88,11 @@
       (isDone [_] (.isDone fut))
       (cancel [_ interrupt?] (.cancel fut interrupt?)))))
   
-(defmacro future'
+(defmacro clearing-future
   "Takes a body of expressions and yields a future object that will
   invoke the body in another thread, and will cache the result and
-  return it on all subsequent calls to deref/@. If the computation has
+  return it on all subsequent calls to deref/@. Clears conveyed bindings
+  after result has been computed. If the computation has
   not yet finished, calls to deref/@ will block, unless the variant of
   deref with timeout is used. See also - realized?."
-  [& body] `(future-call' (^{:once true} fn* [] ~@body))) 
+  [& body] `(clearing-future-call (^{:once true} fn* [] ~@body))) 

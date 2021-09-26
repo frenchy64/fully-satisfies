@@ -6,31 +6,32 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(ns io.github.frenchy64.fully-satisfies.future-test
-  (:refer-clojure :exclude [future])
+(ns io.github.frenchy64.fully-satisfies.clearing-future-test
+  (:refer-clojure :exclude [future future-call])
   (:require [clojure.test :refer :all]
-            [io.github.frenchy64.fully-satisfies.future :refer [future']])
+            [io.github.frenchy64.fully-satisfies.clearing-future :refer [clearing-future]])
   (:import [java.util.concurrent Executors ThreadFactory]))
 
 (def ^:dynamic *test-value* 1)
 
-(deftest future'-fn-properly-retains-conveyed-bindings
+(deftest clearing-future-fn-properly-retains-conveyed-bindings
   (let [a (atom [])]
     (binding [*test-value* 2]
-      @(future' (dotimes [_ 3]
-                 ;; we need some binding to trigger binding pop
-                 (binding [*print-dup* false]
-                   (swap! a conj *test-value*)))
-               ;; after CLJ-2619 no pop is needed
-               (swap! a conj *test-value* @(future' *test-value*) @(future' @(future' *test-value*))))
+      @(clearing-future
+         (dotimes [_ 3]
+           ;; we need some binding to trigger binding pop
+           (binding [*print-dup* false]
+             (swap! a conj *test-value*)))
+         ;; after CLJ-2619 no pop is needed
+         (swap! a conj *test-value* @(clearing-future *test-value*) @(clearing-future @(clearing-future *test-value*))))
       (is (= (repeat 6 2) @a)))))
 
 (def ^:dynamic *my-var* :root-binding)
 
 ;; this test runs a future and then attempts to retrieve the bindings on
-;; the future's thread after the future has finished. it might take a few tries
+;; the clearing-futures thread after the future has finished. it might take a few tries
 ;; for the second part to work. if it never does, prints a warning instead of failing.
-(deftest future'-cleans-up-binding-conveyance
+(deftest clearing-future-cleans-up-binding-conveyance
   (let [try-flaky-test
         (fn []
           (let [global-solo-executor clojure.lang.Agent/soloExecutor
@@ -46,7 +47,7 @@
               (let [f-prm (promise)
                     f (binding [*my-var* :thread-binding
                                 *1 :foo]
-                        (future'
+                        (clearing-future
                           (deliver current-thread-prm (Thread/currentThread))
                           @f-prm))
                     _ (set-agent-send-off-executor! global-solo-executor)

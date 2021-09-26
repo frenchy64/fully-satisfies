@@ -65,18 +65,18 @@ clj -Sdeps \
 ;=> true
 ```
 
-### each
+### run-all!
 
 ```clojure
-(require '[io.github.frenchy64.fully-satisfies.each :refer [each]])
+(require '[io.github.frenchy64.fully-satisfies.run-all :refer [run-all!]])
 
-(each println [1 (reduced 2) 3])
+(run-all! println [1 (reduced 2) 3])
 ;1
 ;2
 ;3
 ;=> nil
 ;; does not short-circuit on reduced
-(each println [1 (reduced 2) 3])
+(run-all! println [1 (reduced 2) 3])
 ;1
 ;#object[clojure.lang.Reduced 0x3deeac1 {:status :ready, :val 2}]
 ;3

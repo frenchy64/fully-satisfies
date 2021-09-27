@@ -1,4 +1,6 @@
 # Next - TBD
+
+# 1.5.2 - 27nd September 2021
 - add `areduce` alias for `folda`
 
 # 1.5.1 - 27nd September 2021

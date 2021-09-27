@@ -5,12 +5,12 @@ Utility functions for Clojure.
 
 - [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol (considering direct, extended, and metadata methods).
 - [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
-- _somef_ -- a variant of `clojure.core/some-fn` that has a simple operational equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
-- _everyp_ -- a variant of `clojure.core/every-pred` that has a simple operational equivalence, and a zero-arity.
-- _never?_ -- a predicate `never?` that always returns false.
-- _run-all! -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
-- _clearing-future_, _clearing-future-call_ -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
-- _deftest_, _testing_ -- drop-in replacements for `clojure.test/{deftest,testing}` that [report the testing context on uncaught exceptions](https://clojure.atlassian.net/browse/CLJ-2525).
+- [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple operational equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
+- [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple operational equivalence, and a zero-arity.
+- [never?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.never.html#var-never.3F) -- a predicate `never?` that always returns false.
+- [run-all!](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.run-all.html#var-run-all.21) -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
+- [clearing-future](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.clearing-future.html#var-clearing-future) -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
+- [deftest+report-uncaught-contexts](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uncaught-testing-contexts.html#var-deftest.2Breport-uncaught-contexts), [testing](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uncaught-testing-contexts.html#var-testing.2Brecord-uncaught-contexts) -- drop-in replacements for `clojure.test/{deftest,testing}` that [report the testing context on uncaught exceptions](https://clojure.atlassian.net/browse/CLJ-2525).
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 

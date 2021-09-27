@@ -28,7 +28,7 @@
     ;actual: java.lang.AssertionError: Assert failed: false
     ;...
       
-  With alternatives in this namespace (notice `foo 2` is mentioned):
+  With {deftest,testing} in this namespace (notice `foo 2` is mentioned):
 
     user=> (test-var #'my-test)
     ;ERROR in (my-test)

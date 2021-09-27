@@ -384,6 +384,7 @@
                           PExtendViaMetadataWithPartialObjectImpl
                           (aPExtendViaMetadataWithPartialObjectImpl [this] :a))
                         {`aPExtendViaMetadataWithPartialObjectImpl (fn [this] :b)}))))
+    ;; the wierd undocumented case https://ask.clojure.org/index.php/11085/when-does-a-metadata-protocol-extension-get-chosen?show=11108#c11108
     (is (thrown?
           AbstractMethodError
           (aPExtendViaMetadataWithPartialObjectImpl

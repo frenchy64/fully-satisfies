@@ -19,7 +19,7 @@
           (testing v
             (assert (= 1 v))))))
 
-  With clojure.test/{deftest,testing} 1.10.3:
+  With clojure.test/{deftest,testing} 1.10.3 (notice `foo 2` is not mentioned):
 
     ;=> (test-var #'my-test)
     ERROR in (my-test)

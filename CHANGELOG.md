@@ -1,4 +1,7 @@
 # Next - TBD
+- add `areduce` alias for `folda`
+
+# 1.5.1 - 27nd September 2021
 - remove API doc for moved `partially-satisifes?`
 
 # 1.5.0 - 27nd September 2021

@@ -99,7 +99,7 @@
 
   Use in conjuction with `testing` in this namespace."
   [name & body]
-  (when *load-tests*
+  (when t/*load-tests*
     `(def ~(vary-meta name assoc :test `(fn []
                                           (binding [*exceptional-testing-contexts* nil]
                                             (try (do ~@body)

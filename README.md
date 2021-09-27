@@ -10,11 +10,11 @@ Utility functions for Clojure.
 - _never?_ -- a predicate `never?` that always returns false.
 - _run-all! -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
 - _clearing-future_, _clearing-future-call_ -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
-- _deftest+report-uncaught-contexts_, _testing+record-uncaught-contexts_ -- drop-in replacements for `clojure.test/{deftest,testing}` that [report the testing context on uncaught exceptions](https://clojure.atlassian.net/browse/CLJ-2525).
+- _deftest_, _testing_ -- drop-in replacements for `clojure.test/{deftest,testing}` that [report the testing context on uncaught exceptions](https://clojure.atlassian.net/browse/CLJ-2525).
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.4.0)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.0)
 
 ## Dependency
 
@@ -23,14 +23,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.4.0"]
+[io.github.frenchy64/fully-satisfies "1.5.0"]
 ```
 
 Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.4.0", :git/sha "c3ed93c"}}
+         {:git/tag "1.5.0", :git/sha "ccb9390"}}
 ```
 
 Try it in a REPL:
@@ -39,7 +39,7 @@ Try it in a REPL:
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
-       {:git/tag "1.4.0", :git/sha "c3ed93c"}}}'
+       {:git/tag "1.5.0", :git/sha "ccb9390"}}}'
 ;; See usage below for how to proceed
 ```
 

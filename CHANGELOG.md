@@ -1,4 +1,7 @@
 # Next - TBD
+- remove API doc for moved `partially-satisifes?`
+
+# 1.5.0 - 27nd September 2021
 - add `somef`, `everyp`, `never?`, `run-all!`, `clearing-future{-call}`, `deftest+report-uncaught-contexts, `testing+record-uncaught-contexts`
 
 # 1.4.0 - 22nd September 2021

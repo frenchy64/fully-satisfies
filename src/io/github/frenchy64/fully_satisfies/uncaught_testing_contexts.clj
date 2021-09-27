@@ -101,7 +101,8 @@
   [name & body]
   (when *load-tests*
     `(def ~(vary-meta name assoc :test `(fn []
-                                          (try (do ~@body)
-                                               (catch Throwable e#
-                                                 (report-uncaught-exception e#)))))
+                                          (binding [*exceptional-testing-contexts* nil]
+                                            (try (do ~@body)
+                                                 (catch Throwable e#
+                                                   (report-uncaught-exception e#))))))
           (fn [] (t/test-var (var ~name))))))

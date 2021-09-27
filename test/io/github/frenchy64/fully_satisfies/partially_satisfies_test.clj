@@ -144,7 +144,8 @@
   (te [(defprotocol A)
        (deftype T1 [] A)
        (deftype T2 [])]
-      (doseq [partially-satisfies? [partially-satisfies? ps/satisfies?]]
+      (doseq [partially-satisfies? [partially-satisfies? #'ps/satisfies?
+                                    (requiring-resolve 'io.github.frenchy64.fully-satisfies/partially-satisfies?)]]
         (testing partially-satisfies?
           (is (partially-satisfies? A (->T1)))
           (is (not (partially-satisfies? A (->T2)))))))
@@ -152,7 +153,8 @@
          :extend-via-metadata true)
        (defrecord T1 [] A)
        (defrecord T2 []) ]
-      (doseq [partially-satisfies? [partially-satisfies? ps/satisfies?]]
+      (doseq [partially-satisfies? [partially-satisfies? #'ps/satisfies?
+                                    (requiring-resolve 'io.github.frenchy64.fully-satisfies/partially-satisfies?)]]
         (is (partially-satisfies? A (->T1)))
         (is (not (partially-satisfies? A (->T2))))))
   (te [(defprotocol A
@@ -161,7 +163,8 @@
        (defrecord T1 [] A)
        (defrecord T2 [])
        (def this-nstr (-> *ns* ns-name name))]
-      (doseq [partially-satisfies? [partially-satisfies? ps/satisfies?]]
+      (doseq [partially-satisfies? [partially-satisfies? #'ps/satisfies?
+                                    (requiring-resolve 'io.github.frenchy64.fully-satisfies/partially-satisfies?)]]
         (is (partially-satisfies? A (->T1)))
         (is (not (partially-satisfies? A (->T2))))
         (is (partially-satisfies? A (with-meta (->T2)

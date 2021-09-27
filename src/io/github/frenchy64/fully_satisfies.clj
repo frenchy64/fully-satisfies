@@ -92,4 +92,4 @@
 
 (defn partially-satisfies?
   [p v]
-  ((requiring-resolve 'io.github.frenchy64.fully-satisfies.partially-satisifes/partially-satisfies?) p v))
+  ((requiring-resolve 'io.github.frenchy64.fully-satisfies.partially-satisfies/partially-satisfies?) p v))

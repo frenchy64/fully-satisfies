@@ -7,7 +7,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns io.github.frenchy64.fully-satisfies.folda
-  "Variant of `clojure.core/areduce` that allows the array to be named.")
+  "Variant of `clojure.core/areduce` that supports naming the array."
+  (:refer-clojure :exclude [areduce]))
 
 (defmacro folda
   "Reduces an expression across an array a named (if provided) aname,
@@ -21,3 +22,5 @@
         (if (< ~idx l#)
           (recur (unchecked-inc-int ~idx) (let [~aname a#] ~expr))
           ~ret)))))
+
+(defmacro areduce [& args] `(folda ~@args))

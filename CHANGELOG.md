@@ -1,6 +1,5 @@
 # Next - TBD
-- add `some-fn`
-- add `never?`
+- add `somef`, `everyp`, `never?`, `run-all!`, `clearing-future{-call}`, `deftest+report-uncaught-contexts, `testing+record-uncaught-contexts`
 
 # 1.4.0 - 22nd September 2021
 - use simplified but deterministic `find-protocol-impl` from [CLJ-2656](https://clojure.atlassian.net/browse/CLJ-2656)

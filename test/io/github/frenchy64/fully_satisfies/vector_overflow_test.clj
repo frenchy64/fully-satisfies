@@ -1,4 +1,4 @@
-(ns io.github.frenchy64.vector-overflow-test
+(ns io.github.frenchy64.fully-satisfies.vector-overflow-test
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts
              :refer [deftest testing]]))

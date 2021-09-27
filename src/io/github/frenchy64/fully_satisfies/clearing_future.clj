@@ -96,3 +96,6 @@
   not yet finished, calls to deref/@ will block, unless the variant of
   deref with timeout is used. See also - realized?."
   [& body] `(clearing-future-call (^{:once true} fn* [] ~@body))) 
+
+(defn future-call [& args] (apply clearing-future-call args))
+(defmacro future [& body] `(clearing-future ~@body))

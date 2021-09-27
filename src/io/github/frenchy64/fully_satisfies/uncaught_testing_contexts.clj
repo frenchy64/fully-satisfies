@@ -77,7 +77,7 @@
                                          "Uncaught exception, not in assertion.")
                 :expected nil, :actual e}))
 
-(defmacro testing
+(defmacro testing+record-uncaught-contexts
   "Like clojure.test/testing, except records testing contexts on
   uncaught exceptions.
  
@@ -91,7 +91,9 @@
               (f#))
             (throw e#)))))
 
-(defmacro deftest
+(defmacro testing [& args] `(testing+record-uncaught-contexts ~@args))
+
+(defmacro deftest+report-uncaught-contexts
   "Like clojure.test/deftest, except swallows uncaught exceptions
   and reports them as test errors (with improved error messages via
   *exceptional-testing-contexts*). This is normally done by `test-var`,
@@ -106,3 +108,5 @@
                                                  (catch Throwable e#
                                                    (report-uncaught-exception e#))))))
           (fn [] (t/test-var (var ~name))))))
+
+(defmacro deftest [& args] `(deftest+report-uncaught-contexts ~@args))

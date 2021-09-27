@@ -21,7 +21,7 @@
 
   With clojure.test/{deftest,testing} 1.10.3 (notice `foo 2` is not mentioned):
 
-    => (test-var #'my-test)
+    user=> (test-var #'my-test)
     ;ERROR in (my-test)
     ;Uncaught exception, not in assertion.
     ;expected: nil
@@ -30,7 +30,7 @@
       
   With alternatives in this namespace (notice `foo 2` is mentioned):
 
-    => (test-var #'my-test)
+    user=> (test-var #'my-test)
     ;ERROR in (my-test)
     ;Uncaught exception, possibly thrown in testing context: foo 2
     ;expected: nil

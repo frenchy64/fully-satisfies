@@ -21,13 +21,21 @@
 
   With clojure.test/{deftest,testing} 1.10.3:
 
-    ;=> (test-var 'my-test)
-    ERROR in: Uncaught exception, not in assertion.
+    ;=> (test-var #'my-test)
+    ERROR in (my-test)
+    Uncaught exception, not in assertion.
+    expected: nil
+    actual: java.lang.AssertionError: Assert failed: false
+    ...
       
-  With alternatives in this namespace:`
+  With alternatives in this namespace (notice `foo 2` is mentioned):
 
-    ;=> (test-var 'my-test)
-    ERROR in: Uncaught exception, possibly thrown in testing context: foo 2"
+    ;=> (test-var #'my-test)
+    ERROR in (my-test)
+    Uncaught exception, possibly thrown in testing context: foo 2
+    expected: nil
+    actual: java.lang.AssertionError: Assert failed: false
+    ..."
   (:require [clojure.test :as t]))
 
 (def ^:dynamic *exceptional-testing-contexts* nil) ; bound to the last t/*testing-contexts* that did not finished executing

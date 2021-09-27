@@ -14,7 +14,7 @@ Utility functions for Clojure.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.0)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.1)
 
 ## Dependency
 
@@ -23,14 +23,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.5.0"]
+[io.github.frenchy64/fully-satisfies "1.5.1"]
 ```
 
 Clojure CLI:
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.5.0", :git/sha "ccb9390"}}
+         {:git/tag "1.5.1", :git/sha "2a876e2"}}
 ```
 
 Try it in a REPL:
@@ -39,7 +39,7 @@ Try it in a REPL:
 clj -Sdeps \
     '{:deps 
       {io.github.frenchy64/fully-satisfies 
-       {:git/tag "1.5.0", :git/sha "ccb9390"}}}'
+       {:git/tag "1.5.1", :git/sha "2a876e2"}}}'
 ;; See usage below for how to proceed
 ```
 

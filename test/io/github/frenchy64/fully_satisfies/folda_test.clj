@@ -1,4 +1,4 @@
-(ns io.github.frenchy64.fully-satisfies.somef-test
+(ns io.github.frenchy64.fully-satisfies.folda-test
   (:refer-clojure :exclude [areduce])
   (:require [clojure.test :refer [is are]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts
@@ -7,7 +7,7 @@
 
 (deftest folda-test
   ;;FIXME use templating directly
-  (are [folda] (testing folda
+  (are [folda] (testing 'folda
                  (testing "without aname"
                    (is (= [1 2 3]
                           (let [a (int-array [1 2 3])]
@@ -30,12 +30,12 @@
                                      acc []
                                      (conj acc a))))))
                    (testing "aname shadows ret, but only in expr"
-                     (is = [1 2 3]
-                         (let [res (atom [])]
-                           (folda a (int-array [1 2 3])
-                                  i
-                                  a []
-                                  (swap! res conj (aget a i)))))))
+                     (is (= [1 2 3]
+                            (let [res (atom [])]
+                              (folda a (int-array [1 2 3])
+                                     i
+                                     a []
+                                     (swap! res conj (aget a i))))))))
                  true)
        folda
        areduce))

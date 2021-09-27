@@ -22,12 +22,12 @@
   With clojure.test/{deftest,testing} 1.10.3:
 
     ;=> (test-var 'my-test)
-    Uncaught exception, not in assertion.
+    ERROR in: Uncaught exception, not in assertion.
       
   With alternatives in this namespace:`
 
     ;=> (test-var 'my-test)
-    Uncaught exception, possibly thrown in testing context: foo 2"
+    ERROR in: Uncaught exception, possibly thrown in testing context: foo 2"
   (:require [clojure.test :as t]))
 
 (def ^:dynamic *exceptional-testing-contexts* nil) ; bound to the last t/*testing-contexts* that did not finished executing

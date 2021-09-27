@@ -1,4 +1,5 @@
 # Next - TBD
+- add `def-shared-protocol`
 
 # 1.5.2 - 27nd September 2021
 - add `areduce` alias for `folda`

@@ -124,6 +124,8 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 - agents memory leak via conveyed bindings
 - https://github.com/clojure/clojure/blob/ee3553362de9bc3bfd18d4b0b3381e3483c2a34c/src/clj/clojure/core.clj#L4356
 - https://github.com/clojure/clojure/blob/ee3553362de9bc3bfd18d4b0b3381e3483c2a34c/src/clj/clojure/core.clj#L1655
+- https://github.com/clojure/clojure/blob/b8132f92f3c3862aa6cdd8a72e4e74802a63f673/src/clj/clojure/core.clj#L2550
+  - double macro expansion + :tag loss
 
 ## License
 

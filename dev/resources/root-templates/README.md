@@ -118,7 +118,6 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 
 ## TODO
 
-- https://clojure.atlassian.net/browse/CLJ-1796?focusedCommentId=49172
 - https://clojure.atlassian.net/browse/CLJ-2162
 - https://clojure.atlassian.net/browse/CLJ-2069
 - agents memory leak via conveyed bindings

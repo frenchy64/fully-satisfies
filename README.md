@@ -17,7 +17,7 @@ Utility functions for Clojure.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.2)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.3)
 
 ## Dependency
 
@@ -26,14 +26,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.5.2"]
+[io.github.frenchy64/fully-satisfies "1.5.3"]
 ```
 
 Clojure CLI (Maven deps):
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:mvn/version "1.5.2"}
+         {:mvn/version "1.5.3"}
 ```
 
 Clojure CLI (git deps):
@@ -41,16 +41,16 @@ Clojure CLI (git deps):
 ```clojure
   ;; requires `clj -X:deps prep` to compile java
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.5.2", :git/sha "87f1b3c"}}
+         {:git/tag "1.5.3", :git/sha "75be470"}}
 ```
 
 Try it in a REPL:
 
 ```clojure
 # compile
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}' -X:deps prep
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.3", :git/sha "75be470"}}}' -X:deps prep
 # start REPL
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}'
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.3", :git/sha "75be470"}}}'
 ```
 
 ## Usage

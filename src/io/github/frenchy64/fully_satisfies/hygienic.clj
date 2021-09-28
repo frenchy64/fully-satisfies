@@ -9,7 +9,7 @@
 (ns io.github.frenchy64.fully-satisfies.hygienic
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
-                            with-redefs delay vswap! lazy-seq])
+                            with-redefs delay vswap! lazy-seq lazy-cat])
   (:require [clojure.core :as cc]))
 
 (defmacro hygienic-locking
@@ -142,7 +142,7 @@
   `(hygienic-vswap! ~@args))
 
 (defmacro hygienic-lazy-seq
-  "Like clojure.core/with-redefs, except body does not have access to
+  "Like clojure.core/lazy-seq, except body does not have access to
   recur target."
   [& args]
   `(cc/lazy-seq
@@ -152,3 +152,13 @@
 (defmacro lazy-seq
   [& args]
   `(hygienic-lazy-seq ~@args))
+
+(defmacro hygienic-lazy-cat
+  "Like clojure.core/lazy-cat, except body does not have access to
+  recur target."
+  [& colls]
+  `(concat ~@(map #(list `hygienic-lazy-seq %) colls)))
+
+(defmacro lazy-cat
+  [& args]
+  `(hygienic-lazy-cat ~@args))

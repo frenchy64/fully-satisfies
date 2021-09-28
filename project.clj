@@ -4,6 +4,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :url "https://github.com/frenchy64/fully-satisfies"
   :dependencies [[org.clojure/clojure "1.10.3"]]
+  :java-source-paths ["java"]
   :profiles {:bench
              {:source-paths ["scripts"]
               :dependencies [[com.clojure-goes-fast/clj-async-profiler "0.5.1"]

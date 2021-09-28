@@ -29,9 +29,17 @@ Leiningen:
 [io.github.frenchy64/fully-satisfies "1.5.2"]
 ```
 
-Clojure CLI:
+Clojure CLI (Maven deps):
 
 ```clojure
+  :deps {io.github.frenchy64/fully-satisfies 
+         {:mvn/version "1.5.2"}
+```
+
+Clojure CLI (git deps):
+
+```clojure
+  ;; requires `clj -X:deps prep` to compile java
   :deps {io.github.frenchy64/fully-satisfies 
          {:git/tag "1.5.2", :git/sha "87f1b3c"}}
 ```
@@ -39,9 +47,10 @@ Clojure CLI:
 Try it in a REPL:
 
 ```clojure
+# compile
 clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}' -X:deps prep
+# start REPL
 clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}'
-# See usage below for how to proceed
 ```
 
 ## Usage

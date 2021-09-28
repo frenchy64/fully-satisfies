@@ -9,7 +9,7 @@
 (ns io.github.frenchy64.fully-satisfies.hygienic
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
-                            with-redefs delay])
+                            with-redefs delay vswap!])
   (:require [clojure.core :as cc]))
 
 (defmacro hygienic-locking
@@ -117,7 +117,7 @@
   `(hygienic-with-redefs ~@args))
 
 (defmacro hygienic-delay
-  "Like clojure.core/with-redefs, except body is expanded hygienically such that
+  "Like clojure.core/delay, except body is expanded hygienically such that
   `recur`ing into its implementation is not possible."
   [& body]
   `(cc/delay
@@ -127,3 +127,15 @@
 (defmacro delay
   [& body]
   `(hygienic-delay ~@body))
+
+(defmacro hygienic-vswap!
+  "Like clojure.core/with-redefs, except vol is only expanded once
+  and .reset never reflects."
+  [vol f & args]
+  (let [v (with-meta (gensym "vol") {:tag 'clojure.lang.Volatile})]
+    `(let [~v ~vol]
+       (.reset ~v (~f (.deref ~v) ~@args)))))
+
+(defmacro vswap!
+  [& args]
+  `(hygienic-vswap! ~@args))

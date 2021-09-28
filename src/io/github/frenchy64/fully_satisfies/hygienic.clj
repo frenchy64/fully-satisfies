@@ -9,7 +9,7 @@
 (ns io.github.frenchy64.fully-satisfies.hygienic
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
-                            with-redefs delay vswap!])
+                            with-redefs delay vswap! lazy-seq])
   (:require [clojure.core :as cc]))
 
 (defmacro hygienic-locking
@@ -132,10 +132,21 @@
   "Like clojure.core/with-redefs, except vol is only expanded once
   and .reset never reflects."
   [vol f & args]
-  (let [v (with-meta (gensym "vol") {:tag 'clojure.lang.Volatile})]
-    `(let [~v ~vol]
-       (.reset ~v (~f (.deref ~v) ~@args)))))
+  `(let [v# ~vol]
+     (cc/vswap! v# ~f ~@args)))
 
 (defmacro vswap!
   [& args]
   `(hygienic-vswap! ~@args))
+
+(defmacro hygienic-lazy-seq
+  "Like clojure.core/with-redefs, except body does not have access to
+  recur target."
+  [& args]
+  `(cc/lazy-seq
+     (let [res# (do ~@args)]
+       res#)))
+
+(defmacro lazy-seq
+  [& args]
+  `(hygienic-lazy-seq ~@args))

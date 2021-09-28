@@ -1,6 +1,7 @@
 # Next - TBD
 - add `def-shared-protocol`
 - add `vector-overflow` namespace
+- add `latest-protocol` namespace
 
 # 1.5.2 - 27nd September 2021
 - add `areduce` alias for `folda`

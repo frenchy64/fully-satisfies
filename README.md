@@ -39,11 +39,9 @@ Clojure CLI:
 Try it in a REPL:
 
 ```clojure
-clj -Sdeps \
-    '{:deps 
-      {io.github.frenchy64/fully-satisfies 
-       {:git/tag "1.5.2", :git/sha "87f1b3c"}}}'
-;; See usage below for how to proceed
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}' -X:deps prep
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.2", :git/sha "87f1b3c"}}}'
+# See usage below for how to proceed
 ```
 
 ## Usage

@@ -25,7 +25,7 @@
 (defn find-latest-protocol-method [protocol methodk x]
   (get (find-latest-protocol-impl protocol x) methodk))
 
-(def find-protocol-method find-latest-protocol-impl)
+(def find-protocol-method find-latest-protocol-method)
 
 (defn extends-latest?
   "Returns true if atype extends the latest version of the protocol"

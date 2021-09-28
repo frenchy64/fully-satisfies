@@ -67,5 +67,5 @@
                                     (catch clojure.lang.Compiler$CompilerException e
                                       (is (= "Can only recur from tail position"
                                              (-> e .getCause .getMessage)))))))
-          hy/hygienic-locking
-          hy/locking)))))
+          hy/hygienic-delay
+          hy/delay)))))

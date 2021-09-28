@@ -43,11 +43,13 @@
   `(hygienic-with-bindings ~@args))
 
 (defmacro hygienic-sync
-  "Like clojure.core/sync, except body is expanded hygienically."
+  "Like clojure.core/sync, except body is expanded hygienically and
+  does not have a recur target available."
   [flags-ignored-for-now & body]
   `(cc/sync
      ~flags-ignored-for-now
-     (do ~@body)))
+     (let [res# (do ~@body)]
+      res#)))
 
 (defmacro sync [& args]
   `(hygienic-sync ~@args))

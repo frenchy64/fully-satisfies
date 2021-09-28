@@ -27,23 +27,28 @@
 
 (deftest fixed-vector-overflow-test
   (doseq [[id v] {`vo/vector (vo/vector ::first)
-                  `vo/vec (vo/vec [::first])}]
-    (testing id
-      (let [wrap-zero 4294967296]
-        (is (= (get v wrap-zero)
-               (get (transient v) wrap-zero)
-               (v wrap-zero)
-               nil))
-        (is (= (get v wrap-zero :default)
-               (get (transient v) wrap-zero :default)
-               :default))
-        (is (not (contains? v wrap-zero)))
-        (is (not (contains? (transient v) wrap-zero)))
-        (is (= (assoc v wrap-zero :wow)
-               ::FIXME))
-        (is (= (persistent! (assoc! (transient v) wrap-zero :wow))
-               ::FIXME))
-        (is (= (find v wrap-zero)
-               nil))
-        (is (= (find (transient v) wrap-zero)
-               nil))))))
+                  `vo/vec (vo/vec [::first])}
+          wrap-zero [4294967296
+                     4294967296N]]
+    (testing [id wrap-zero]
+      (is (= (get v wrap-zero)
+             (get (transient v) wrap-zero)
+             nil))
+      (is (thrown? IllegalArgumentException
+                   (v wrap-zero)))
+      (is (= (get v wrap-zero :default)
+             (get (transient v) wrap-zero :default)
+             :default))
+      (is (not (contains? v wrap-zero)))
+      (is (not (contains? (transient v) wrap-zero)))
+      (is (thrown? IllegalArgumentException
+                   (assoc v wrap-zero :wow))
+          (try (assoc v wrap-zero :wow)
+               (catch Throwable _)))
+      (is (thrown? IllegalArgumentException
+                   (assoc! (transient v) wrap-zero :wow))
+          (try (assoc! (transient v) wrap-zero :wow)
+               (catch Throwable _)))
+      (is (= (find v wrap-zero)
+             (find (transient v) wrap-zero)
+             nil)))))

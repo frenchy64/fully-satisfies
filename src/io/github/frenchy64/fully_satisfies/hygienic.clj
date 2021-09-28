@@ -9,11 +9,13 @@
 (ns io.github.frenchy64.fully-satisfies.hygienic
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
-                            with-redefs delay vswap! lazy-seq lazy-cat])
+                            with-redefs delay vswap! lazy-seq lazy-cat future
+                            pvalues])
   (:require [clojure.core :as cc]))
 
 (defmacro hygienic-locking
-  "Like clojure.core/locking, except body is expanded hygienically."
+  "Like clojure.core/locking, except body is expanded hygienically. Body
+  cannot leak try/catch syntax."
   [x & body]
   `(cc/locking ~x
      (do ~@body)))
@@ -23,7 +25,8 @@
   `(hygienic-locking ~@args))
 
 (defmacro hygienic-binding
-  "Like clojure.core/binding, except body is expanded hygienically."
+  "Like clojure.core/binding, except body is expanded hygienically. Body
+  cannot leak try/catch syntax."
   [bindings & body]
   `(cc/binding ~bindings
      (do ~@body)))
@@ -33,29 +36,32 @@
   `(hygienic-binding ~@args))
 
 (defmacro hygienic-with-bindings
-  "Like clojure.core/with-bindings, except body is expanded hygienically."
+  "Like clojure.core/with-bindings, except body is expanded hygienically. Body
+  cannot leak :pre/post syntax or use (recur)."
   [binding-map & body]
   `(cc/with-bindings ~binding-map
-     (do ~@body)))
+     (let [res# (do ~@body)]
+       res#)))
 
 (defmacro with-bindings
   [& args]
   `(hygienic-with-bindings ~@args))
 
 (defmacro hygienic-sync
-  "Like clojure.core/sync, except body is expanded hygienically and
-  does not have a recur target available."
+  "Like clojure.core/sync, except body is expanded hygienically. Body
+  cannot leak pre/post syntax or use (recur)."
   [flags-ignored-for-now & body]
   `(cc/sync
      ~flags-ignored-for-now
      (let [res# (do ~@body)]
-      res#)))
+       res#)))
 
 (defmacro sync [& args]
   `(hygienic-sync ~@args))
 
 (defmacro hygienic-with-local-vars
-  "Like clojure.core/with-local-vars, except body is expanded hygienically."
+  "Like clojure.core/with-local-vars, except body is expanded hygienically. Body
+  cannot leak try/catch syntax."
   [name-vals-vec & body]
   `(cc/with-local-vars ~name-vals-vec
      (do ~@body)))
@@ -75,10 +81,12 @@
   `(hygienic-with-in-str ~@args))
 
 (defmacro hygienic-dosync
-  "Like clojure.core/dosync, except body is expanded hygienically."
+  "Like clojure.core/dosync, except body is expanded hygienically. Body
+  cannot leak pre/post syntax or use (recur)"
   [& exprs]
   `(cc/dosync
-     (do ~@exprs)))
+     (let [res# (do ~@exprs)]
+       res#)))
 
 (defmacro dosync
   [& exprs]
@@ -109,10 +117,12 @@
   `(hygienic-with-loading-context ~@args))
 
 (defmacro hygienic-with-redefs
-  "Like clojure.core/with-redefs, except body is expanded hygienically."
+  "Like clojure.core/with-redefs, except body is expanded hygienically. Body does
+  not leak pre/post syntax and does not have a recur target available."
   [bindings & body]
   `(cc/with-redefs ~bindings
-     (do ~@body)))
+     (let [res# (do ~@body)]
+       res#)))
 
 (defmacro with-redefs
   [& args]
@@ -143,7 +153,7 @@
 
 (defmacro hygienic-lazy-seq
   "Like clojure.core/lazy-seq, except body does not have access to
-  recur target."
+  a recur target."
   [& args]
   `(cc/lazy-seq
      (let [res# (do ~@args)]
@@ -155,10 +165,32 @@
 
 (defmacro hygienic-lazy-cat
   "Like clojure.core/lazy-cat, except body does not have access to
-  recur target."
+  a recur target."
   [& colls]
   `(concat ~@(map #(list `hygienic-lazy-seq %) colls)))
 
 (defmacro lazy-cat
   [& args]
   `(hygienic-lazy-cat ~@args))
+
+(defmacro hygienic-future
+  "Like clojure.core/future, except body does not have access to
+  a recur target."
+  [& body]
+  `(cc/future
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro future
+  [& body]
+  `(hygienic-future ~@body))
+
+(defmacro hygienic-pvalues
+  "Like clojure.core/pvalues, except exprs don't have access to
+  recur targets."
+  [& exprs]
+  `(pcalls ~@(map #(list `fn [] `(let [res# ~%] res#)) exprs)))
+
+(defmacro pvalues
+  [& exprs]
+  `(hygienic-pvalues ~@exprs))

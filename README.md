@@ -15,9 +15,6 @@ Utility functions for Clojure.
 - [def-shared-protocol](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.shared-protocol.html#var-def-shared-protocol) -- a variant of `clojure.core/defprotocol` whose [methods can see future extensions](https://clojure.atlassian.net/browse/CLJ-1796).
 - [vector](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vector), [vec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vec) -- a vector implementation that [consistently handles integer overflow cases](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs).
 
-Test suites:
-- [vector overflow](https://github.com/frenchy64/fully-satisfies/blob/main/test/io/github/frenchy64/fully_satisfies/vector_overflow_test.clj) -- a test suite demonstrating [overflow behavior for persistent and transient vectors](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs).
-
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
 [Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.2)

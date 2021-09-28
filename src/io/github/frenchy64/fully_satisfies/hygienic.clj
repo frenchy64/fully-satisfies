@@ -217,3 +217,5 @@
 (defmacro testing
   [& args]
   `(hygienic-testing ~@args))
+
+;; TODO clojure.test/{with-test,deftest,deftest-,set-test,}

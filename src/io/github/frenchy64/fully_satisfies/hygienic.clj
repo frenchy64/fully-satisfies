@@ -11,7 +11,8 @@
                             with-in-str dosync with-precision with-loading-context
                             with-redefs delay vswap! lazy-seq lazy-cat future
                             pvalues])
-  (:require [clojure.core :as cc]))
+  (:require [clojure.core :as cc]
+            [clojure.test :as ct]))
 
 (defmacro hygienic-locking
   "Like clojure.core/locking, except body is expanded hygienically. Body
@@ -194,3 +195,25 @@
 (defmacro pvalues
   [& exprs]
   `(hygienic-pvalues ~@exprs))
+
+(defmacro hygienic-with-test-out
+  "Like clojure.test/with-test-out, except body does not leak
+  try/catch syntax."
+  [& body]
+  `(ct/with-test-out
+     (do ~@body)))
+
+(defmacro with-test-out
+  [& body]
+  `(hygienic-with-test-out ~@body))
+
+(defmacro hygienic-testing
+  "Like clojure.test/testing, except body does not leak
+  try/catch syntax."
+  [string & body]
+  `(cc/testing ~string
+     (do ~@body)))
+
+(defmacro testing
+  [& args]
+  `(hygienic-testing ~@args))

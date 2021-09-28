@@ -11,10 +11,10 @@ Utility functions for Clojure.
 - [run-all!](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.run-all.html#var-run-all.21) -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
 - [clearing-future](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.clearing-future.html#var-clearing-future) -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
 - [deftest](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uncaught-testing-contexts.html#var-deftest.2Breport-uncaught-contexts), [testing](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uncaught-testing-contexts.html#var-testing.2Brecord-uncaught-contexts) -- drop-in replacements for `clojure.test/{deftest,testing}` that [report the testing context on uncaught exceptions](https://clojure.atlassian.net/browse/CLJ-2525).
-- [folda](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.folda.html#var-folda) -- a variant of `clojure.core/areduce` that supports naming the array.
+- [folda](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.folda.html#var-folda) -- a variant of `clojure.core/areduce` that [supports naming the array](https://clojure.atlassian.net/browse/CLJ-115).
 - [def-shared-protocol](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.shared-protocol.html#var-def-shared-protocol) -- a variant of `clojure.core/defprotocol` whose [methods can see future extensions](https://clojure.atlassian.net/browse/CLJ-1796).
 - [vector](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vector), [vec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vec) -- a vector implementation that [consistently handles integer overflow cases](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs).
-- [latest protocol ops](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.latest-protocol.html) -- implementations of `satisfies?`, `find-protocol-impl`, `find-protocl-method`, `extends?`, `extenders` that look up the latest version of the protocol [such that they have the same behavior with partial](https://clojure.atlassian.net/browse/CLJ-2094).
+- [latest protocol ops](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.latest-protocol.html) -- implementations of `satisfies?`, `find-protocol-impl`, `find-protocol-method`, `extends?`, `extenders` that look up the latest version of the protocol [such that they have the same behavior with partial](https://clojure.atlassian.net/browse/CLJ-2094).
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
@@ -115,6 +115,13 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 - https://clojure.atlassian.net/browse/CLJ-1814
 - https://clojure.atlassian.net/browse/CLJ-2656
   - result of making this library and realizing `supers` call is suspicious
+
+## TODO
+
+- https://clojure.atlassian.net/browse/CLJ-1796?focusedCommentId=49172
+- https://clojure.atlassian.net/browse/CLJ-2162
+- https://clojure.atlassian.net/browse/CLJ-2069
+- agents memory leak via conveyed bindings
 
 ## License
 

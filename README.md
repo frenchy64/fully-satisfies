@@ -15,7 +15,7 @@ Utility functions for Clojure.
 - [def-shared-protocol](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.shared-protocol.html#var-def-shared-protocol) -- a variant of `clojure.core/defprotocol` whose [methods can see future extensions](https://clojure.atlassian.net/browse/CLJ-1796).
 - [vector](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vector), [vec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vec) -- a vector implementation that [consistently handles integer overflow cases](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs), resolving [a known general attack vector](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11084#a11084) caused by [undefined behavior](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11081#a11081).
 - [latest protocol ops](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.latest-protocol.html) -- implementations of `satisfies?`, `find-protocol-impl`, `find-protocol-method`, `extends?`, `extenders` that look up the latest version of the protocol [such that they have the same behavior with partial](https://clojure.atlassian.net/browse/CLJ-2094).
-- [hygienic core macros](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.hygienic.html) -- hygienic versions of `locking` ([upstream report](https://clojure.atlassian.net/browse/CLJ-2573)), `binding`, `with-bindings`, `sync`, `with-local-vars`, `with-in-str`, `dosync`, `with-precision`, `with-loading-context`, `with-redefs`
+- [hygienic core macros](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.hygienic.html) -- hygienic versions of `locking` ([upstream report](https://clojure.atlassian.net/browse/CLJ-2573)), `binding`, `with-bindings`, `sync`, `with-local-vars`, `with-in-str`, `dosync`, `with-precision`, `with-loading-context`, `with-redefs`, `delay`
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
@@ -126,6 +126,8 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 - https://github.com/clojure/clojure/blob/ee3553362de9bc3bfd18d4b0b3381e3483c2a34c/src/clj/clojure/core.clj#L1655
 - https://github.com/clojure/clojure/blob/b8132f92f3c3862aa6cdd8a72e4e74802a63f673/src/clj/clojure/core.clj#L2550
   - double macro expansion + :tag loss
+- gather examples like https://github.com/clojure/clojure/blob/b8132f92f3c3862aa6cdd8a72e4e74802a63f673/src/clj/clojure/core.clj#L3316
+  - user-provided `recur` must fail with `Can only recur from tail position`
 
 ## License
 

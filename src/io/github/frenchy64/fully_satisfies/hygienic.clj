@@ -9,7 +9,7 @@
 (ns io.github.frenchy64.fully-satisfies.hygienic
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
-                            with-redefs])
+                            with-redefs delay])
   (:require [clojure.core :as cc]))
 
 (defmacro hygienic-locking
@@ -115,3 +115,15 @@
 (defmacro with-redefs
   [& args]
   `(hygienic-with-redefs ~@args))
+
+(defmacro hygienic-delay
+  "Like clojure.core/with-redefs, except body is expanded hygienically such that
+  `recur`ing into its implementation is not possible."
+  [& body]
+  `(cc/delay
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro delay
+  [& body]
+  `(hygienic-delay ~@body))

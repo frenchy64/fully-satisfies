@@ -18,7 +18,7 @@ Utility functions for Clojure.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.3)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.5.4)
 
 ## Dependency
 
@@ -27,14 +27,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.5.3"]
+[io.github.frenchy64/fully-satisfies "1.5.4"]
 ```
 
 Clojure CLI (Maven deps):
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:mvn/version "1.5.3"}
+         {:mvn/version "1.5.4"}
 ```
 
 Clojure CLI (git deps):
@@ -42,16 +42,16 @@ Clojure CLI (git deps):
 ```clojure
   ;; requires `clj -X:deps prep` to compile java
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.5.3", :git/sha "75be470"}}
+         {:git/tag "1.5.4", :git/sha "065ba87"}}
 ```
 
 Try it in a REPL:
 
 ```clojure
 # compile
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.3", :git/sha "75be470"}}}' -X:deps prep
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.4", :git/sha "065ba87"}}}' -X:deps prep
 # start REPL
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.3", :git/sha "75be470"}}}'
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.5.4", :git/sha "065ba87"}}}'
 ```
 
 ## Usage
@@ -118,7 +118,6 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 
 ## TODO
 
-- https://clojure.atlassian.net/browse/CLJ-1796?focusedCommentId=49172
 - https://clojure.atlassian.net/browse/CLJ-2162
 - https://clojure.atlassian.net/browse/CLJ-2069
 - agents memory leak via conveyed bindings

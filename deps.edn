@@ -1,6 +1,7 @@
 {:paths ["src" "target/classes"]
  :deps/prep-lib
  {:ensure "target/classes"
-  :alias :build
+  :alias :prep
   :fn compile-java}
- :aliases {:build {:extra-deps {io.github.clojure/tools.build {:git/tag "v0.5.1" :git/sha "21da7d4"}}}}}
+ :aliases {:prep {:extra-deps {io.github.clojure/tools.build {:git/tag "v0.5.1" :git/sha "21da7d4"}}
+                  :ns-default prep}}}

@@ -1,3 +1,6 @@
+# Next - TBD
+- add `hygienic` namespace
+
 # 1.6.0 - 27nd September 2021
 - add `def-shared-protocol`
 - add `vector-overflow` namespace

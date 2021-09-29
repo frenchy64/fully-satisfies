@@ -1,5 +1,5 @@
 # Next - TBD
-- add `hygienic` namespace
+- add `non-leaky` namespace
 
 # 1.6.0 - 27nd September 2021
 - add `def-shared-protocol`

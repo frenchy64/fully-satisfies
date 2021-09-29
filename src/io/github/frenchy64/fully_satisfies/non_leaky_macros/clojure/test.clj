@@ -30,4 +30,46 @@
   [& args]
   `(non-leaky-testing ~@args))
 
-;; TODO clojure.test/{with-test,deftest,deftest-,set-test,}
+(defmacro non-leaky-deftest
+  "Like clojure.test/deftest, except body does not have access to a recur target."
+  [name & body]
+  `(ct/deftest ~name
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro deftest
+  [& args]
+  `(non-leaky-deftest ~@args))
+
+(defmacro non-leaky-deftest-
+  "Like clojure.test/deftest-, except body does not have access to a recur target."
+  [name & body]
+  `(ct/deftest- ~name
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro deftest-
+  [& args]
+  `(non-leaky-deftest- ~@args))
+
+(defmacro non-leaky-with-test
+  "Like clojure.test/with-test, except body does not have access to a recur target."
+  [definition & body]
+  `(ct/with-test ~definition
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro with-test
+  [& args]
+  `(non-leaky-with-test ~@args))
+
+(defmacro non-leaky-set-test
+  "Like clojure.test/set-test, except body does not have access to a recur target."
+  [name & body]
+  `(ct/set-test ~name
+     (let [res# (do ~@body)]
+       res#)))
+
+(defmacro set-test
+  [& args]
+  `(non-leaky-set-test ~@args))

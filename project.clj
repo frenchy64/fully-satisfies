@@ -15,7 +15,8 @@
              :dev {:dependencies [[org.clojure/test.check "1.1.0"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
-                                                com.andrewmcveigh/cljs-time]]]}}
+                                                com.andrewmcveigh/cljs-time]]
+                                  [org.clojure/core.async "1.3.618"]]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

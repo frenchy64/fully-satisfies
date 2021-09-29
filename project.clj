@@ -16,7 +16,8 @@
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]
-                                  [org.clojure/core.async "1.3.618"]]}}
+                                  [org.clojure/core.async "1.3.618"]
+                                  [org.clojure/core.logic "1.0.0"]]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

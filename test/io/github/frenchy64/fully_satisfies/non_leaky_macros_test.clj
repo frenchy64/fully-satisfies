@@ -1,3 +1,4 @@
+;; TODO move to non-leaky-macros.clojure.core-test
 (ns io.github.frenchy64.fully-satisfies.non-leaky-macros-test
   (:refer-clojure :exclude [locking binding with-bindings sync with-local-vars
                             with-in-str dosync with-precision with-loading-context
@@ -5,7 +6,7 @@
   (:require [clojure.core :as cc]
             [clojure.test :refer [is are]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
-            [io.github.frenchy64.fully-satisfies.non-leaky-macros :as nl]
+            [io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.core :as nl-cc]
             [clojure.template :as temp]))
 
 (deftest locking-leak-witnesses-and-fixes
@@ -33,8 +34,8 @@
                                     (non-leaky-locking
                                       1
                                       (catch Exception e (inc 41))))
-             nl/non-leaky-locking
-             nl/locking)
+             nl-cc/non-leaky-locking
+             nl-cc/locking)
         (temp/do-template
           [non-leaky-locking] (let [a (atom :init)]
                                 (try (non-leaky-locking
@@ -43,8 +44,8 @@
                                        (finally (reset! a :finally)))
                                      (catch Exception _))
                                 (is (= :init @a)))
-          nl/non-leaky-locking
-          nl/locking)))))
+          nl-cc/non-leaky-locking
+          nl-cc/locking)))))
 
 (def this-nsym (ns-name *ns*))
 
@@ -67,5 +68,5 @@
                                      (catch clojure.lang.Compiler$CompilerException e
                                        (is (= "Can only recur from tail position"
                                               (-> e .getCause .getMessage)))))))
-          nl/non-leaky-delay
-          nl/delay)))))
+          nl-cc/non-leaky-delay
+          nl-cc/delay)))))

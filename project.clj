@@ -17,7 +17,8 @@
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]
                                   [org.clojure/core.async "1.3.618"]
-                                  [org.clojure/core.logic "1.0.0"]]}}
+                                  [org.clojure/core.logic "1.0.0"]
+                                  [org.clojure/tools.trace "0.7.11"]]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

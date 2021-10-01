@@ -1,7 +1,7 @@
 # Next - TBD
 
 # 1.7.0 - 30th September 2021
-- add `non-leaky` namespaces
+- add `non-leaky-macros` namespaces
 
 # 1.6.0 - 27nd September 2021
 - add `def-shared-protocol`

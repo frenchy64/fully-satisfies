@@ -35,7 +35,7 @@ Clojure CLI (Maven deps):
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:mvn/version "1.7.0"}
+         {:mvn/version "1.7.0"}}
 ```
 
 Clojure CLI (git deps):

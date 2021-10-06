@@ -122,6 +122,18 @@ Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped impro
 - https://clojure.atlassian.net/browse/CLJ-2162
 - https://clojure.atlassian.net/browse/CLJ-2069
 - agents memory leak via conveyed bindings
+- https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11137#c11137
+```
+Clojure 1.10.3
+user=> (get (into-array [1 2 42]) 4294967296)
+1
+user=> (get "123" 4294967296)
+\1
+user=> (get (into-array [1 2 42]) 4294967296 :not-found)
+1
+user=> (get "123" 4294967296 :not-found)
+\1
+```
 
 ## License
 

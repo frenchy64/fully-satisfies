@@ -99,7 +99,7 @@
   *exceptional-testing-contexts*). This is normally done by `test-var`,
   with an unhelpful error message.
 
-  Use in conjuction with `testing` in this namespace."
+  Use in conjunction with `testing` in this namespace."
   [name & body]
   (when t/*load-tests*
     `(def ~(vary-meta name assoc :test `(fn []

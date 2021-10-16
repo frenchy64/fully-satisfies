@@ -12,7 +12,6 @@
                    args))
   ([expand-fn remaining-fixed args]
    (letfn [(expand-kvs-seq [even-kvs-so-far? args]
-             (prn 'expand-kvs-seq even-kvs-so-far? args)
              (lazy-seq
                (when-let [[f & n] (seq args)]
                  (if n
@@ -21,7 +20,6 @@
                      (expand-fn f)
                      args)))))
            (expand-fixed-seq [remaining-fixed args]
-             (prn 'expand-fixed-seq remaining-fixed args)
              (lazy-seq
                (when (seq args)
                  (cons (first args)

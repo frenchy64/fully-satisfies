@@ -2,50 +2,50 @@
   (:require [clojure.test :refer [is are]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts
              :refer [deftest testing]]
-            [io.github.frenchy64.fully-satisfies.expand-kvs :refer [expand-kvs-seq]]))
+            [io.github.frenchy64.fully-satisfies.expand-kvs :refer [flatten-trailing-map]]))
 
-(deftest expand-kvs-seq-test
+(deftest flatten-trailing-map-test
   (is (= []
-         (expand-kvs-seq
+         (flatten-trailing-map
            2
            (list))))
   (is (= []
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list))))
   (is (= [1 2 :a 1]
-         (expand-kvs-seq
+         (flatten-trailing-map
            2
            (list 1 2 (sorted-map :a 1)))))
   (is (= [:a 1]
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list (sorted-map :a 1)))))
   (is (= [:a 1 :b 2 :c 3]
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list (sorted-map :a 1 :b 2 :c 3)))))
   (is (= []
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list (sorted-map)))))
   (is (= [:a 1 :b 2]
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list :a 1 (sorted-map :b 2)))))
   (is (= [:a 1]
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list :a 1 (sorted-map)))))
   (is (= [1 2 3 :a 1 :b 2]
-         (expand-kvs-seq
+         (flatten-trailing-map
            3
            (list 1 2 3 :a 1 (sorted-map :b 2)))))
   (is (= [:uneven]
-         (expand-kvs-seq
+         (flatten-trailing-map
            0
            (list :uneven))))
   (is (= [:less :than :four]
-         (expand-kvs-seq
+         (flatten-trailing-map
            4
            (list :less :than :four)))))

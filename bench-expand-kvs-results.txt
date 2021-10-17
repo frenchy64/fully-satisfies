@@ -1,0 +1,1021 @@
+{0
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples (89819449 80834667 80262864 81549624 82941682 154513017),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [4.080582957604213E-8 (3.520263366792903E-8 5.6483518201631366E-8)],
+   :final-gc-time 29071787,
+   :execution-count 2333463,
+   :variance
+   [1.5841147800755185E-16
+    (2.8120663682868663E-19 2.952434731195229E-16)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.8143241236895772,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 1},
+   :warmup-time 5005547062,
+   :lower-q
+   [3.4396458825359564E-8
+    (3.4396458825359564E-8 3.4641503636440774E-8)],
+   :warmup-executions 110874784,
+   :sample-count 6,
+   :upper-q
+   [6.238221909882436E-8 (3.554445988644345E-8 6.621618470059307E-8)],
+   :total-time 0.569921303,
+   :sample-variance [1.5841147800755185E-16 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [4.0706402387067345E-8 (2.947915896372747E-9 7.846488887776194E-8)],
+   :results ([] [] [] [] [] [])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (58835919 57982168 56749327 55731814 76058831 61797562),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.121608157394678E-8
+    (1.0475934345900268E-8 1.2764156589822618E-8)],
+   :final-gc-time 50798252,
+   :execution-count 5468478,
+   :variance
+   [2.008126364972267E-18
+    (6.958445758163193E-20 4.012547852232832E-18)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.31520668344402614,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5003232136,
+   :lower-q
+   [1.0191467168744211E-8
+    (1.0191467168744211E-8 1.037753594327343E-8)],
+   :warmup-executions 268541891,
+   :sample-count 6,
+   :upper-q
+   [1.3582604222783745E-8
+    (1.0739587893560147E-8 1.3908592299356422E-8)],
+   :total-time 0.367155621,
+   :sample-variance [1.918084988754873E-18 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.1190061201672568E-8 (7.035212841167236E-9 1.53449095621779E-8)],
+   :results ([] [] [] [] [] [])}},
+ 1
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples (102753800 95436277 90377178 96159784 93537366 93756838),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.2750920987868786E-7
+    (1.2421759794390734E-7 1.3320280797404048E-7)],
+   :final-gc-time 54550822,
+   :execution-count 748345,
+   :variance
+   [3.2322383767046393E-17
+    (6.073331334765638E-18 7.294058866994901E-17)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.13888888888888867,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5013598978,
+   :lower-q
+   [1.2076940181333476E-7
+    (1.2076940181333476E-7 1.2499230435160253E-7)],
+   :warmup-executions 36490604,
+   :sample-count 6,
+   :upper-q
+   [1.3608577544448083E-7
+    (1.2724925953270216E-7 1.3730805978525947E-7)],
+   :total-time 0.572021243,
+   :sample-variance [3.072431113544819E-17 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.2739695439046607E-7
+    (1.1076809994348044E-7 1.440258088374517E-7)],
+   :results ([1] [1] [1] [1] [1] [1])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (97112069 88196891 88376872 87645703 88970703 87508557),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [4.935753006004943E-8 (4.841293934536158E-8 5.1850295878299735E-8)],
+   :final-gc-time 28672173,
+   :execution-count 1815893,
+   :variance
+   [4.158169191537521E-18
+    (4.8239219508559296E-20 8.01376093592767E-18)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.13888888888888876,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 1},
+   :warmup-time 5001098952,
+   :lower-q
+   [4.819037079827942E-8 (4.819037079827942E-8 4.8265896173397885E-8)],
+   :warmup-executions 84012397,
+   :sample-count 6,
+   :upper-q
+   [5.287765819627038E-8 (4.8656156709123284E-8 5.347895993871886E-8)],
+   :total-time 0.537810795,
+   :sample-variance [4.153366758804046E-18 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [4.936146155087332E-8 (4.3247518401870675E-8 5.547540469987597E-8)],
+   :results ([1] [1] [1] [1] [1] [1])}},
+ 2
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples (107381687 98240085 97413263 98291793 100529332 99839297),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [2.370315005700302E-7
+    (2.3254880947597407E-7 2.4630339315695886E-7)],
+   :final-gc-time 42783885,
+   :execution-count 423077,
+   :variance
+   [7.517024384178042E-17
+    (5.650212788733938E-18 1.579736549483395E-16)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.13888888888888884,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5003709888,
+   :lower-q
+   [2.302494888637293E-7 (2.302494888637293E-7 2.3096627150613248E-7)],
+   :warmup-executions 20621667,
+   :sample-count 6,
+   :upper-q
+   [2.5158278103040346E-7
+    (2.3598375000295455E-7 2.538112140343247E-7)],
+   :total-time 0.601695457,
+   :sample-variance [7.48881525919184E-17 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [2.370315005700302E-7
+    (2.1107011822379786E-7 2.6299288291626256E-7)],
+   :results ([1 2] [1 2] [1 2] [1 2] [1 2] [1 2])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (115286489 122728122 94851076 95770341 97423526 96276185),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.2677733511133276E-7
+    (1.1741307888874224E-7 1.3996775888958968E-7)],
+   :final-gc-time 35233108,
+   :execution-count 818148,
+   :variance
+   [2.30046288959856E-16 (9.40137805418574E-17 3.408515219316404E-16)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.3131173778964982,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5014692571,
+   :lower-q
+   [1.1593388482279491E-7
+    (1.1593388482279491E-7 1.1705747737573154E-7)],
+   :warmup-executions 40878973,
+   :sample-count 6,
+   :upper-q
+   [1.4614109855429582E-7
+    (1.1890282488620642E-7 1.5000723829918304E-7)],
+   :total-time 0.622335739,
+   :sample-variance [2.1871532831289014E-16 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.2677733511133276E-7
+    (8.241025322829689E-8 1.7114441699436865E-7)],
+   :results ([1 2] [1 2] [1 2] [1 2] [1 2] [1 2])}},
+ 3
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples (101204904 99142927 97235862 94867875 95902752 99583690),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [3.088504168795212E-7 (3.027332507142452E-7 3.141855282050635E-7)],
+   :final-gc-time 28003544,
+   :execution-count 317118,
+   :variance
+   [6.634267613594519E-17
+    (2.688408871873824E-17 1.1979835545593687E-16)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.1388888888888889,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5019912986,
+   :lower-q
+   [2.99156386581651E-7 (2.99156386581651E-7 3.0084150537024074E-7)],
+   :warmup-executions 15319036,
+   :sample-count 6,
+   :upper-q
+   [3.183267959403125E-7 (3.1188561946972425E-7 3.191395758045901E-7)],
+   :total-time 0.58793801,
+   :sample-variance [5.743156277014619E-17 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [3.090006506515976E-7 (2.8626556620197844E-7 3.317357351012168E-7)],
+   :results ([1 2 3] [1 2 3] [1 2 3] [1 2 3] [1 2 3] [1 2 3])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (102893765 93247632 95179627 94096503 97590958 95670185),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.3162747293664632E-7
+    (1.2883929022268237E-7 1.3633683817385937E-7)],
+   :final-gc-time 27568231,
+   :execution-count 734080,
+   :variance
+   [2.378053471593441E-17
+    (2.1561109940344952E-18 4.898515080870682E-17)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.13888888888888862,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5095714394,
+   :lower-q
+   [1.2702652571926765E-7
+    (1.2702652571926765E-7 1.2818289968395815E-7)],
+   :warmup-executions 35727102,
+   :sample-count 6,
+   :upper-q
+   [1.3893692444965126E-7
+    (1.3032664695945946E-7 1.4016696409110725E-7)],
+   :total-time 0.57867867,
+   :sample-variance [2.258039806602948E-17 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.3138410663687883E-7
+    (1.1712845573647216E-7 1.4563975753728548E-7)],
+   :results ([1 2 3] [1 2 3] [1 2 3] [1 2 3] [1 2 3] [1 2 3])}},
+ 4
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples (100478222 92401658 97489605 99451894 99725521 95853050),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [3.745123805163796E-7 (3.6286723757203645E-7 3.817825808462018E-7)],
+   :final-gc-time 52460100,
+   :execution-count 259938,
+   :variance
+   [1.4568496626125362E-16
+    (3.616371874963241E-17 2.896242927176072E-16)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.13888888888888887,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5044953723,
+   :lower-q
+   [3.5547575960421335E-7
+    (3.5547575960421335E-7 3.6875351045249256E-7)],
+   :warmup-executions 12886955,
+   :sample-count 6,
+   :upper-q
+   [3.8605333194838775E-7
+    (3.825759661919381E-7 3.8654687656287274E-7)],
+   :total-time 0.58539995,
+   :sample-variance [1.3708200793490023E-16 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [3.7534588376202533E-7
+    (3.402212759860785E-7 4.1047049153797215E-7)],
+   :results
+   ([1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (101216404 96446345 94871749 106855954 136733085 99376626),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.5725176468269223E-7 (1.4560222889132E-7 1.8557624947025027E-7)],
+   :final-gc-time 28689983,
+   :execution-count 676420,
+   :variance
+   [5.5031460500821305E-16
+    (2.1292673839475118E-17 1.1210762333436135E-15)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.47074576127637374,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5049000772,
+   :lower-q
+   [1.402556828597617E-7 (1.402556828597617E-7 1.42583520593714E-7)],
+   :warmup-executions 31112888,
+   :sample-count 6,
+   :upper-q
+   [1.955789300656397E-7
+    (1.4929545511664353E-7 2.0214228585789896E-7)],
+   :total-time 0.635500163,
+   :sample-variance [5.363749302332833E-16 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.5658421370351753E-7 (8.71049047540213E-8 2.260635226530138E-7)],
+   :results
+   ([1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4] [1 2 3 4])}},
+ 5
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples
+   (114316144 118316224 120090558 104208984 105466410 106665923),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [8.658198140005449E-7 (8.305548270360716E-7 9.058334980608845E-7)],
+   :final-gc-time 29152484,
+   :execution-count 128495,
+   :variance
+   [3.1826459781784942E-15
+    (1.7458928784714744E-15 4.582852528648176E-15)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.14962810294164958,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5019815913,
+   :lower-q
+   [8.109964123117632E-7 (8.109964123117632E-7 8.133865237947003E-7)],
+   :warmup-executions 6000868,
+   :sample-count 6,
+   :upper-q
+   [9.289758842756529E-7 (8.822122757694853E-7 9.345932370909375E-7)],
+   :total-time 0.669064243,
+   :sample-variance [2.92072569004855E-15 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [8.678213717784092E-7 (7.056901557512759E-7 1.0299525878055425E-6)],
+   :results
+   ([1 2 3 4 ({:a 1, :b 2})]
+    [1 2 3 4 ({:a 1, :b 2})]
+    [1 2 3 4 ({:a 1, :b 2})]
+    [1 2 3 4 ({:a 1, :b 2})]
+    [1 2 3 4 ({:a 1, :b 2})]
+    [1 2 3 4 ({:a 1, :b 2})])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples
+   (109004148 167117359 127180793 108292337 102201225 103453984),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [1.0276400131452984E-6
+    (9.068798705473874E-7 1.2569117250346492E-6)],
+   :final-gc-time 31744776,
+   :execution-count 116645,
+   :variance
+   [4.657964062851748E-14
+    (7.707693960041199E-16 9.055674424478879E-14)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.6404261648564264,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 1, :high-severe 0},
+   :warmup-time 5004094003,
+   :lower-q
+   [8.761732178833212E-7 (8.761732178833212E-7 8.869131467272493E-7)],
+   :warmup-executions 5451741,
+   :sample-count 6,
+   :upper-q
+   [1.3704248585451585E-6
+    (9.337320213039565E-7 1.4327005786788976E-6)],
+   :total-time 0.717249846,
+   :sample-variance [4.5845672173862727E-14 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [1.0248329632646063E-6
+    (3.824848881801047E-7 1.6671810383491077E-6)],
+   :results
+   ([1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)])}},
+ 7
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples
+   (110392493 100551735 94356654 101394535 100682671 98714028),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [7.611334845322504E-7 (7.376294044219405E-7 7.961016749926536E-7)],
+   :final-gc-time 28244004,
+   :execution-count 132717,
+   :variance
+   [1.634982411875978E-15
+    (3.709450701512855E-16 3.893130794204662E-15)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.14103511805531324,
+   :outliers
+   {:low-severe 0, :low-mild 1, :high-mild 0, :high-severe 1},
+   :warmup-time 5018790196,
+   :lower-q
+   [7.109613237188907E-7 (7.109613237188907E-7 7.16919506355629E-7)],
+   :warmup-executions 6366588,
+   :sample-count 6,
+   :upper-q
+   [8.226434085309343E-7 (7.585034622542704E-7 8.317886404906682E-7)],
+   :total-time 0.606092116,
+   :sample-variance [1.5673449827871215E-15 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [7.611334845322504E-7 (6.423643604086631E-7 8.799026086558378E-7)],
+   :results
+   ([1 2 3 4 (:a 1 {:b 2})]
+    [1 2 3 4 (:a 1 {:b 2})]
+    [1 2 3 4 (:a 1 {:b 2})]
+    [1 2 3 4 (:a 1 {:b 2})]
+    [1 2 3 4 (:a 1 {:b 2})]
+    [1 2 3 4 (:a 1 {:b 2})])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples (83635416 97091651 118856963 110165668 84748476 80797736),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [9.521443364172809E-7 (8.522682884091637E-7 1.0666228555884866E-6)],
+   :final-gc-time 31395913,
+   :execution-count 99872,
+   :variance
+   [2.840565065398843E-14
+    (1.270546676598043E-14 3.945080734231572E-14)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.47922171878980707,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5046915300,
+   :lower-q
+   [8.090128965075296E-7 (8.090128965075296E-7 8.374260653636656E-7)],
+   :warmup-executions 6298572,
+   :sample-count 6,
+   :upper-q
+   [1.1628514398429992E-6
+    (9.567121327799584E-7 1.1900929489746877E-6)],
+   :total-time 0.57529591,
+   :sample-variance [2.4759434509059806E-14 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [9.60055387562747E-7 (4.880014599426728E-7 1.4321093151828213E-6)],
+   :results
+   ([1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)])}},
+ 8
+ {:approach1
+  {:overhead 8.209882173576424E-9,
+   :samples
+   (113331545 103586973 104872780 100728654 103911429 102686044),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [6.576612380540207E-7 (6.437450214196559E-7 6.874798055191417E-7)],
+   :final-gc-time 29897653,
+   :execution-count 159433,
+   :variance
+   [7.664228800049706E-16
+    (3.212368245266922E-17 1.6662979355365237E-15)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.1388888888888888,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 1},
+   :warmup-time 5016928752,
+   :lower-q
+   [6.317930039577754E-7 (6.317930039577754E-7 6.440701987668801E-7)],
+   :warmup-executions 7594656,
+   :sample-count 6,
+   :upper-q
+   [7.034555612702514E-7 (6.51756091900673E-7 7.108411997516198E-7)],
+   :total-time 0.629117425,
+   :sample-variance [7.559846809020452E-16 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [6.576612380540207E-7 (5.751757112743582E-7 7.401467648336831E-7)],
+   :results
+   ([1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)])},
+  :approach2
+  {:overhead 8.209882173576424E-9,
+   :samples
+   (107129993 141841611 126239554 99455363 99326504 100348239),
+   :runtime-details
+   {:spec-vendor "Oracle Corporation",
+    :spec-name "Java Virtual Machine Specification",
+    :vm-version "17+35",
+    :name "22044@Ambroses-MBP.attlocal.net",
+    :clojure-version-string "1.10.3",
+    :java-runtime-version "17+35",
+    :java-version "17",
+    :vm-name "OpenJDK 64-Bit Server VM",
+    :vm-vendor "Eclipse Adoptium",
+    :clojure-version
+    {:major 1, :minor 10, :incremental 3, :qualifier nil},
+    :spec-version "17",
+    :sun-arch-data-model "64",
+    :input-arguments
+    ["-Dfile.encoding=UTF-8"
+     "-Djdk.attach.allowAttachSelf"
+     "-Dclojure.compile.path=/Users/ambrose/Projects/fully-satisfies/target/classes"
+     "-Dfully-satisfies.version=1.7.1-SNAPSHOT"
+     "-Dclojure.debug=false"]},
+   :mean
+   [7.252751746880686E-7 (6.564506512902598E-7 8.37416812909668E-7)],
+   :final-gc-time 56921441,
+   :execution-count 155563,
+   :variance
+   [1.4108256036003507E-14
+    (4.645303827494555E-15 2.236242957508785E-14)],
+   :os-details
+   {:arch "x86_64",
+    :available-processors 8,
+    :name "Mac OS X",
+    :version "11.5"},
+   :tail-quantile 0.025,
+   :outlier-variance 0.47572601516181345,
+   :outliers
+   {:low-severe 0, :low-mild 0, :high-mild 0, :high-severe 0},
+   :warmup-time 5018156991,
+   :lower-q
+   [6.38496969073623E-7 (6.38496969073623E-7 6.393253087173686E-7)],
+   :warmup-executions 7537343,
+   :sample-count 6,
+   :upper-q
+   [8.839033623033755E-7 (6.832104918907453E-7 9.117952919396001E-7)],
+   :total-time 0.674341264,
+   :sample-variance [1.2973957909104742E-14 (0.0 0.0)],
+   :options
+   {:max-gc-attempts 100,
+    :samples 6,
+    :target-execution-time 100000000,
+    :warmup-jit-period 5000000000,
+    :tail-quantile 0.025,
+    :bootstrap-size 500,
+    :overhead 8.209882173576424E-9},
+   :sample-mean
+   [7.224739216051804E-7 (3.807640721979052E-7 1.0641837710124554E-6)],
+   :results
+   ([1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)]
+    [1 2 3 4 (:a 1 :b 2)])}}}

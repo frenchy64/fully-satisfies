@@ -29,6 +29,7 @@
     (doall args) ;;walk args like `conform!`
     (.applyTo ^clojure.lang.IFn the-function-being-checked args)))
 
+;; approach2 entry point
 (let [spec-checker-approach2 spec-checker-approach2]
   (defn invoke-dispatch
     ([] (spec-checker-approach2))
@@ -69,9 +70,9 @@
                    {(count input)
                     (sorted-map
                       :approach1 (do (println "Benchmarking approach1 with" input)
-                                     (bench-fn approach1 {}))
+                                     (doto (bench-fn approach1 {}) pp/pprint))
                       :approach2 (do (println "Benchmarking approach2 with" input)
-                                     (bench-fn approach2 {})))})))
+                                     (doto (bench-fn approach2 {}) pp/pprint)))})))
           cases)))
 
 (comment
@@ -80,6 +81,7 @@
   (invoke-dispatch 1)
   (spec-checker)
   (spec-checker 1)
+
   )
 
 (defn bench []
@@ -87,4 +89,10 @@
   (let [results (bench*)]
     (spit "bench-expand-kvs-results.txt"
           (with-out-str
-            (pp/pprint results)))))
+            (pp/pprint results)))
+    (spit "bench-expand-kvs-pretty.txt"
+          (with-out-str
+            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
+              (println size)
+              (c/report-result approach1)
+              (c/report-result approach2))))))

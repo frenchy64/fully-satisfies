@@ -58,18 +58,21 @@
 
 (assert (apply distinct? (map (comp count :input) cases)))
 
+(def quick? true)
+
 (defn bench* []
-  (into (sorted-map)
-        (map (fn [{:keys [input] :as case}]
-               (let [approach1 (eval `(fn [] (spec-checker-approach1 ~@input)))
-                     approach2 (eval `(fn [] (invoke-dispatch ~@input)))]
-                 {(count input)
-                  (sorted-map
-                    :approach1 (do (println "Benchmarking approach1 with" input)
-                                   (c/quick-bench (approach1)))
-                    :approach2 (do (println "Benchmarking approach2 with" input)
-                                   (c/quick-bench (approach2))))})))
-        cases))
+  (let [bench-fn (if quick? c/quick-benchmark* c/benchmark*)]
+    (into (sorted-map)
+          (map (fn [{:keys [input] :as case}]
+                 (let [approach1 (eval `(fn [] (spec-checker-approach1 ~@input)))
+                       approach2 (eval `(fn [] (invoke-dispatch ~@input)))]
+                   {(count input)
+                    (sorted-map
+                      :approach1 (do (println "Benchmarking approach1 with" input)
+                                     (bench-fn approach1 {}))
+                      :approach2 (do (println "Benchmarking approach2 with" input)
+                                     (bench-fn approach2 {})))})))
+          cases)))
 
 (comment
   (c/quick-bench (apply spec-checker (flatten-trailing-map 4 [])))

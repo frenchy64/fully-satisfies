@@ -7,13 +7,13 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns io.github.frenchy64.fully-satisfies.everyp
-  "An implementation of clojure.core/every-pred with a simple operational equivalence."
+  "An implementation of clojure.core/every-pred with a simple definitional equivalence."
   (:refer-clojure :exclude [every-pred]))
 
 (defn everyp
   "Combines predicates into a variable-arity conjunction.
   
-  Operationally equivalent to:
+  Definitionally equivalent to:
 
     (defn everyp [& ps]
       (fn [& args] (every? #(every? % args) ps)))"

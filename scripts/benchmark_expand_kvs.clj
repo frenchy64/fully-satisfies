@@ -114,26 +114,26 @@
   (spit "bench-expand-kvs-mean.txt"
         (with-out-str
           (let [first-iteration (atom true)]
-            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
+            (doseq [[info {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
               (when-not (first (reset-vals! first-iteration false))
                 (println))
-              (println size :approach1)
+              (println info :approach1)
               (c/report-point-estimate "Execution time mean" (:mean approach1))
               (println)
-              (println size :approach2)
+              (println info :approach2)
               (c/report-point-estimate "Execution time mean" (:mean approach2)))))))
 
 (defn regen-pretty []
   (spit "bench-expand-kvs-pretty.txt"
         (with-out-str
           (let [first-iteration (atom true)]
-            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
+            (doseq [[info {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
               (when-not (first (reset-vals! first-iteration false))
                 (println))
-              (println size :approach1)
+              (println info :approach1)
               (c/report-result approach1)
               (println)
-              (println size :approach2)
+              (println info :approach2)
               (c/report-result approach2))))))
 
 (defn bench []
@@ -147,17 +147,14 @@
 
 (defn mean-line-plot* []
   (let [results (read-string (slurp "bench-expand-kvs-results.txt"))]
-    {:data {:values (mapcat (fn [[k {:keys [approach1 approach2]}]]
-                              (let [nargs (if (number? k)
-                                            k
-                                            (first k))]
-                                (assert (nat-int? nargs))
-                                [{:nargs nargs
-                                  :time (first (:mean approach1))
-                                  :approach "approach1"}
-                                 {:nargs nargs
-                                  :time (first (:mean approach2))
-                                  :approach "approach2"}]))
+    {:data {:values (mapcat (fn [[[nargs] {:keys [approach1 approach2]}]]
+                              (assert (nat-int? nargs) (pr-str nargs))
+                              [{:nargs nargs
+                                :time (first (:mean approach1))
+                                :approach "approach1"}
+                               {:nargs nargs
+                                :time (first (:mean approach2))
+                                :approach "approach2"}])
                             results)}
      :encoding {:x {:field "nargs" :type "ordinal"}
                 :y {:field "time" :type "quantitative"}

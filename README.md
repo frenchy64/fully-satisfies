@@ -134,6 +134,7 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
+- `count+last` vs `count+butlast+last`
 
 ## License
 

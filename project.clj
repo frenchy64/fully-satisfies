@@ -8,7 +8,8 @@
   :profiles {:bench
              {:source-paths ["scripts"]
               :dependencies [[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
-                             [criterium/criterium "0.4.6"]]
+                             [criterium/criterium "0.4.6"]
+                             [metasoarous/oz "1.6.0-alpha36"]]
               :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}

@@ -1,6 +1,7 @@
 (ns benchmark-expand-kvs
   (:require [criterium.core :as c]
             [clojure.pprint :as pp]
+            [oz.core :as oz]
             [io.github.frenchy64.fully-satisfies.expand-kvs :refer [flatten-trailing-map]]))
 
 ;; approach 1:
@@ -55,7 +56,19 @@
    {:input [1 2 3 4 :a 1 (sorted-map :b 2)]
     :expected [1 2 3 4 [:a 1 :b 2]]}
    {:input [1 2 3 4 :a 1 :b 2]
-    :expected [1 2 3 4 [:a 1 :b 2]]}])
+    :expected [1 2 3 4 [:a 1 :b 2]]}
+   {:input [1 2 3 4 :a 1 :b 2 {:c 3}]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 {:d 4}]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 {:e 5}]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5]]}])
 
 (assert (apply distinct? (map (comp count :input) cases)))
 
@@ -66,8 +79,11 @@
     (into (sorted-map)
           (map (fn [{:keys [input] :as case}]
                  (let [approach1 (eval `(fn [] (spec-checker-approach1 ~@input)))
-                       approach2 (eval `(fn [] (invoke-dispatch ~@input)))]
-                   {(count input)
+                       approach2 (eval `(fn [] (invoke-dispatch ~@input)))
+                       nargs (count input)
+                       fixed? (<= nargs 4)
+                       trailing? (and (not fixed?) (odd? nargs))]
+                   {[nargs (if fixed? :fixed :rest) (if trailing? :trailing :no-trailing)]
                     (sorted-map
                       :approach1 (do (println "Benchmarking approach1 with" input)
                                      (doto (bench-fn approach1 {}) pp/pprint))
@@ -81,6 +97,8 @@
   (invoke-dispatch 1)
   (spec-checker)
   (spec-checker 1)
+
+  (oz/start-server!)
 
   )
 
@@ -118,3 +136,25 @@
             (pp/pprint results)))
     (regen-pretty)
     (regen-mean)))
+
+(defn mean-line-plot* []
+  (let [results (read-string (slurp "bench-expand-kvs-results.txt"))]
+    {:data {:values (mapcat (fn [[k {:keys [approach1 approach2]}]]
+                              (let [nargs (if (number? k)
+                                            k
+                                            (first k))]
+                                (assert (nat-int? nargs))
+                                [{:nargs nargs
+                                  :time (first (:mean approach1))
+                                  :approach "approach1"}
+                                 {:nargs nargs
+                                  :time (first (:mean approach2))
+                                  :approach "approach2"}]))
+                            results)}
+     :encoding {:x {:field "nargs" :type "ordinal"}
+                :y {:field "time" :type "quantitative"}
+                :color {:field "approach" :type "nominal"}}
+     :mark "line"}))
+
+(comment
+  (oz/view! (mean-line-plot*)))

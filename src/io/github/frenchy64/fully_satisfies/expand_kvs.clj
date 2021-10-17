@@ -17,7 +17,7 @@
   ([flatten-fn remaining-fixed args]
    (letfn [(flatten-kvs [even-kvs-so-far? args]
              (lazy-seq
-               (when-let [[f & n] (seq args)]
+               (when-some [[f & n :as args] (seq args)]
                  (if n
                    (cons f (flatten-kvs (not even-kvs-so-far?) n))
                    (if even-kvs-so-far?
@@ -25,7 +25,7 @@
                      args)))))
            (flatten-fixed [remaining-fixed args]
              (lazy-seq
-               (when (seq args)
+               (when-some [args (seq args)]
                  (cons (first args)
                        (let [remaining-fixed (dec remaining-fixed)]
                          (if (pos? remaining-fixed)

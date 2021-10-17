@@ -17,6 +17,7 @@
 
     (defn somef [& fs]
       (fn [& args] (some #(some % args) fs)))"
+  {:arglists '([& fs])}
   ([] ;; fully-satisifes: added zero-arity
      (fn
        ([] nil)

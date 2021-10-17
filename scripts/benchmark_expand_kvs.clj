@@ -5,9 +5,9 @@
             [io.github.frenchy64.fully-satisfies.expand-kvs :refer [flatten-trailing-map]]))
 
 ;; approach 1:
-;; - use flatten-trailing-map to flatten args inside spec-checking-fn
+;; - use flatten-trailing-map to flatten args inside spec-checker-approach1
 ;; approach 2:
-;; - generate a thunk and only flatten args in the rest arity
+;; - use an intermediate function `invoke-dispatch` and only flatten args in the rest arity
 
 (defn the-function-being-checked
   ([] [])

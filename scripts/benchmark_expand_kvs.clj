@@ -68,11 +68,19 @@
    {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 {:e 5}]
     :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5]]}
    {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5]
-    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5]]}])
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5 {:f 6}]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5 :f 6]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5 :f 6]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5 :f 6]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5 :f 6 {:g 7}]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5 :f 6 :g 7]]}
+   {:input [1 2 3 4 :a 1 :b 2 :c 3 :d 4 :e 5 :f 6 :g 7]
+    :expected [1 2 3 4 [:a 1 :b 2 :c 3 :d 4 :e 5 :f 6 :g 7]]}])
 
 (assert (apply distinct? (map (comp count :input) cases)))
 
-(def quick? true)
+(def quick? false)
 
 (defn bench* []
   (let [bench-fn (if quick? c/quick-benchmark* c/benchmark*)]

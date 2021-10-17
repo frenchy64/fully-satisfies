@@ -1,0 +1,47 @@
+0 :approach1
+             Execution time mean : 40.805830 ns
+
+0 :approach2
+             Execution time mean : 11.216082 ns
+
+1 :approach1
+             Execution time mean : 127.509210 ns
+
+1 :approach2
+             Execution time mean : 49.357530 ns
+
+2 :approach1
+             Execution time mean : 237.031501 ns
+
+2 :approach2
+             Execution time mean : 126.777335 ns
+
+3 :approach1
+             Execution time mean : 308.850417 ns
+
+3 :approach2
+             Execution time mean : 131.627473 ns
+
+4 :approach1
+             Execution time mean : 374.512381 ns
+
+4 :approach2
+             Execution time mean : 157.251765 ns
+
+5 :approach1
+             Execution time mean : 865.819814 ns
+
+5 :approach2
+             Execution time mean : 1.027640 µs
+
+7 :approach1
+             Execution time mean : 761.133485 ns
+
+7 :approach2
+             Execution time mean : 952.144336 ns
+
+8 :approach1
+             Execution time mean : 657.661238 ns
+
+8 :approach2
+             Execution time mean : 725.275175 ns

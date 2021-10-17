@@ -84,15 +84,37 @@
 
   )
 
+(defn regen-mean []
+  (spit "bench-expand-kvs-mean.txt"
+        (with-out-str
+          (let [first-iteration (atom true)]
+            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
+              (when-not (first (reset-vals! first-iteration false))
+                (println))
+              (println size :approach1)
+              (c/report-point-estimate "Execution time mean" (:mean approach1))
+              (println)
+              (println size :approach2)
+              (c/report-point-estimate "Execution time mean" (:mean approach2)))))))
+
+(defn regen-pretty []
+  (spit "bench-expand-kvs-pretty.txt"
+        (with-out-str
+          (let [first-iteration (atom true)]
+            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
+              (when-not (first (reset-vals! first-iteration false))
+                (println))
+              (println size :approach1)
+              (c/report-result approach1)
+              (println)
+              (println size :approach2)
+              (c/report-result approach2))))))
+
 (defn bench []
   (println "Starting benchmarks...")
   (let [results (bench*)]
     (spit "bench-expand-kvs-results.txt"
           (with-out-str
             (pp/pprint results)))
-    (spit "bench-expand-kvs-pretty.txt"
-          (with-out-str
-            (doseq [[size {:keys [approach1 approach2]}] (read-string (slurp "bench-expand-kvs-results.txt"))]
-              (println size)
-              (c/report-result approach1)
-              (c/report-result approach2))))))
+    (regen-pretty)
+    (regen-mean)))

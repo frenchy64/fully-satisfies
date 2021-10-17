@@ -6,6 +6,8 @@
   if there is an uneven number of remaining (variable) arguments.
  
   Done lazily in a single pass."
+  ([args]
+   (flatten-trailing-map 0 args))
   ([remaining-fixed args]
    (flatten-trailing-map #(if (map? %)
                             (apply concat %)

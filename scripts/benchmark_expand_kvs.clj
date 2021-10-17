@@ -1,8 +1,14 @@
 (ns benchmark-expand-kvs
   (:require [criterium.core :as c]
+            [clojure.pprint :as pp]
             [io.github.frenchy64.fully-satisfies.expand-kvs :refer [flatten-trailing-map]]))
 
-(defn fixed-arities
+;; approach 1:
+;; - use flatten-trailing-map to flatten args inside spec-checking-fn
+;; approach 2:
+;; - generate a thunk and only flatten args in the rest arity
+
+(defn the-function-being-checked
   ([] [])
   ([a] [a])
   ([a b] [a b])
@@ -11,57 +17,71 @@
   ([a b c d & m] [a b c d m]))
 
 ;;simulate spec-checking-fn
-(let [fixed-arities fixed-arities]
-  (defn apply-fixed-arities
+(let [the-function-being-checked the-function-being-checked]
+  (defn spec-checker-approach1
+    [& args]
+    (doall (flatten-trailing-map 4 args)) ;; flatten args and walk like `conform!`
+    (.applyTo ^clojure.lang.IFn the-function-being-checked args)))
+
+(let [the-function-being-checked the-function-being-checked]
+  (defn spec-checker-approach2
     [& args]
     (doall args) ;;walk args like `conform!`
-    (.applyTo ^clojure.lang.IFn fixed-arities args)))
+    (.applyTo ^clojure.lang.IFn the-function-being-checked args)))
 
-(let [apply-fixed-arities apply-fixed-arities]
+(let [spec-checker-approach2 spec-checker-approach2]
   (defn invoke-dispatch
-    ([] (apply-fixed-arities))
-    ([a] (apply-fixed-arities a))
-    ([a b] (apply-fixed-arities a b))
-    ([a b c] (apply-fixed-arities a b c))
-    ([a b c d] (apply-fixed-arities a b c d))
-    ([a b c d & m] (apply apply-fixed-arities a b c d (flatten-trailing-map 0 m)))))
+    ([] (spec-checker-approach2))
+    ([a] (spec-checker-approach2 a))
+    ([a b] (spec-checker-approach2 a b))
+    ([a b c] (spec-checker-approach2 a b c))
+    ([a b c d] (spec-checker-approach2 a b c d))
+    ([a b c d & m] (apply spec-checker-approach2 a b c d (flatten-trailing-map 0 m)))))
 
 (def cases
   [{:input []
     :expected []}
-   ;{:input [1]
-   ; :expected [1]}
-   ;{:input [1 2]
-   ; :expected [1 2]}
-   ;{:input [1 2 3]
-   ; :expected [1 2 3]}
-   ;{:input [1 2 3 4]
-   ; :expected [1 2 3 4]}
-   ;{:input [1 2 3 4 :a 1 :b 2]
-   ; :expected [1 2 3 4 [:a 1 :b 2]]}
-   ;{:input [1 2 3 4 {:a 1}]
-   ; :expected [1 2 3 4 [:a 1]]}
-   ;{:input [1 2 3 4 :a 1 {:b 2}]
-   ; :expected [1 2 3 4 [:a 1 :b 2]]}
-   ])
+   {:input [1]
+    :expected [1]}
+   {:input [1 2]
+    :expected [1 2]}
+   {:input [1 2 3]
+    :expected [1 2 3]}
+   {:input [1 2 3 4]
+    :expected [1 2 3 4]}
+   {:input [1 2 3 4 (sorted-map :a 1 :b 2)]
+    :expected [1 2 3 4 [:a 1 :b 2]]}
+   {:input [1 2 3 4 :a 1 (sorted-map :b 2)]
+    :expected [1 2 3 4 [:a 1 :b 2]]}
+   {:input [1 2 3 4 :a 1 :b 2]
+    :expected [1 2 3 4 [:a 1 :b 2]]}])
 
-(defn bench-flatten-trailing-map []
-  (c/bench
-    (doseq [{:keys [input expected] :as case} cases]
-      (assert (= expected (apply fixed-arities (flatten-trailing-map 4 input)))
-              (pr-str case)))))
+(assert (apply distinct? (map (comp count :input) cases)))
 
-(defn bench-invoke-dispatch []
-  (c/bench
-    (doseq [{:keys [input expected] :as case} cases]
-      (assert (= expected (invoke-dispatch input))
-              (pr-str case)))))
+(defn bench* []
+  (into (sorted-map)
+        (map (fn [{:keys [input] :as case}]
+               (let [approach1 (eval `(fn [] (spec-checker-approach1 ~@input)))
+                     approach2 (eval `(fn [] (invoke-dispatch ~@input)))]
+                 {(count input)
+                  (sorted-map
+                    :approach1 (do (println "Benchmarking approach1 with" input)
+                                   (c/quick-bench (approach1)))
+                    :approach2 (do (println "Benchmarking approach2 with" input)
+                                   (c/quick-bench (approach2))))})))
+        cases))
+
+(comment
+  (c/quick-bench (apply spec-checker (flatten-trailing-map 4 [])))
+  (invoke-dispatch)
+  (invoke-dispatch 1)
+  (spec-checker)
+  (spec-checker 1)
+  )
 
 (defn bench []
   (println "Starting benchmarks...")
-  (spit "bench-results.txt"
-        (with-out-str
-          (println "bench flatten-trailing-map")
-          (bench-flatten-trailing-map)
-          (println "\n\nbench fixed args")
-          (bench-invoke-dispatch))))
+  (let [results (bench*)]
+    (spit "bench-expand-kvs-results.txt"
+          (with-out-str
+            (pp/pprint results)))))

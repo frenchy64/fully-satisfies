@@ -3,7 +3,7 @@
 (defn flatten-trailing-map
   "Given arguments to some function with remaining-fixed number of fixed args,
   return a lazy seq that keeps the fixed args and flattens the last map argument
-  if there is an uneven number of remaining (variable) arguments.
+  if there is an uneven number of remaining (variable) arguments using flatten-fn.
  
   Done lazily in a single pass."
   ([args]

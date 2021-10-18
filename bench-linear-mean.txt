@@ -1,0 +1,179 @@
+0 [:count+last :counted]
+             Execution time mean : 49.142288 ns
+
+0 [:count+last :uncounted]
+             Execution time mean : 46.365656 ns
+
+0 [:count+last-reference :counted]
+             Execution time mean : 143.169350 ns
+
+0 [:count+last-reference :uncounted]
+             Execution time mean : 140.590655 ns
+
+1 [:butlast+last :counted]
+             Execution time mean : 204.605043 ns
+
+1 [:butlast+last :uncounted]
+             Execution time mean : 205.247564 ns
+
+1 [:butlast+last-reference :counted]
+             Execution time mean : 130.818188 ns
+
+1 [:butlast+last-reference :uncounted]
+             Execution time mean : 128.877687 ns
+
+1 [:count+last :counted]
+             Execution time mean : 99.075655 ns
+
+1 [:count+last :uncounted]
+             Execution time mean : 95.238109 ns
+
+1 [:count+last-reference :counted]
+             Execution time mean : 207.622470 ns
+
+1 [:count+last-reference :uncounted]
+             Execution time mean : 218.239794 ns
+
+5 [:butlast+last :counted]
+             Execution time mean : 355.339383 ns
+
+5 [:butlast+last :uncounted]
+             Execution time mean : 362.870623 ns
+
+5 [:butlast+last-reference :counted]
+             Execution time mean : 705.503395 ns
+
+5 [:butlast+last-reference :uncounted]
+             Execution time mean : 699.038939 ns
+
+5 [:count+last :counted]
+             Execution time mean : 191.531827 ns
+
+5 [:count+last :uncounted]
+             Execution time mean : 202.690064 ns
+
+5 [:count+last-reference :counted]
+             Execution time mean : 565.233453 ns
+
+5 [:count+last-reference :uncounted]
+             Execution time mean : 554.480208 ns
+
+10 [:butlast+last :counted]
+             Execution time mean : 495.510657 ns
+
+10 [:butlast+last :uncounted]
+             Execution time mean : 469.244442 ns
+
+10 [:butlast+last-reference :counted]
+             Execution time mean : 1.353077 µs
+
+10 [:butlast+last-reference :uncounted]
+             Execution time mean : 1.301960 µs
+
+10 [:count+last :counted]
+             Execution time mean : 318.755792 ns
+
+10 [:count+last :uncounted]
+             Execution time mean : 335.347008 ns
+
+10 [:count+last-reference :counted]
+             Execution time mean : 1.014178 µs
+
+10 [:count+last-reference :uncounted]
+             Execution time mean : 1.025547 µs
+
+100 [:butlast+last :counted]
+             Execution time mean : 3.721976 µs
+
+100 [:butlast+last :uncounted]
+             Execution time mean : 3.698825 µs
+
+100 [:butlast+last-reference :counted]
+             Execution time mean : 12.421436 µs
+
+100 [:butlast+last-reference :uncounted]
+             Execution time mean : 12.853259 µs
+
+100 [:count+last :counted]
+             Execution time mean : 2.600601 µs
+
+100 [:count+last :uncounted]
+             Execution time mean : 2.692611 µs
+
+100 [:count+last-reference :counted]
+             Execution time mean : 9.075431 µs
+
+100 [:count+last-reference :uncounted]
+             Execution time mean : 9.338333 µs
+
+1000 [:butlast+last :counted]
+             Execution time mean : 36.116366 µs
+
+1000 [:butlast+last :uncounted]
+             Execution time mean : 37.748843 µs
+
+1000 [:butlast+last-reference :counted]
+             Execution time mean : 121.180889 µs
+
+1000 [:butlast+last-reference :uncounted]
+             Execution time mean : 116.525162 µs
+
+1000 [:count+last :counted]
+             Execution time mean : 25.274901 µs
+
+1000 [:count+last :uncounted]
+             Execution time mean : 25.262019 µs
+
+1000 [:count+last-reference :counted]
+             Execution time mean : 94.986497 µs
+
+1000 [:count+last-reference :uncounted]
+             Execution time mean : 89.698446 µs
+
+10000 [:butlast+last :counted]
+             Execution time mean : 365.180467 µs
+
+10000 [:butlast+last :uncounted]
+             Execution time mean : 353.221342 µs
+
+10000 [:butlast+last-reference :counted]
+             Execution time mean : 1.310389 ms
+
+10000 [:butlast+last-reference :uncounted]
+             Execution time mean : 1.222155 ms
+
+10000 [:count+last :counted]
+             Execution time mean : 257.371002 µs
+
+10000 [:count+last :uncounted]
+             Execution time mean : 250.875778 µs
+
+10000 [:count+last-reference :counted]
+             Execution time mean : 868.884164 µs
+
+10000 [:count+last-reference :uncounted]
+             Execution time mean : 936.452379 µs
+
+100000 [:butlast+last :counted]
+             Execution time mean : 3.739504 ms
+
+100000 [:butlast+last :uncounted]
+             Execution time mean : 3.714994 ms
+
+100000 [:butlast+last-reference :counted]
+             Execution time mean : 12.214204 ms
+
+100000 [:butlast+last-reference :uncounted]
+             Execution time mean : 12.407894 ms
+
+100000 [:count+last :counted]
+             Execution time mean : 2.795466 ms
+
+100000 [:count+last :uncounted]
+             Execution time mean : 2.946780 ms
+
+100000 [:count+last-reference :counted]
+             Execution time mean : 9.445245 ms
+
+100000 [:count+last-reference :uncounted]
+             Execution time mean : 9.324766 ms

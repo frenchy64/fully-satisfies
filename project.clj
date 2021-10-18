@@ -31,7 +31,8 @@
                                     :password  :env/clojars_token
                                     :sign-releases false}]]
   :aliases {"bench" ["with-profile" "+bench" "run" "-m" "benchmark/bench"]
-            "bench-expand-kvs" ["with-profile" "+bench" "run" "-m" "benchmark-expand-kvs/bench"]}
+            "bench-expand-kvs" ["with-profile" "+bench" "run" "-m" "benchmark-expand-kvs/bench"]
+            "bench-linear" ["with-profile" "+bench" "run" "-m" "benchmark-linear/bench"]}
   :release-tasks [["clean"]
                   ["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]

@@ -25,4 +25,4 @@
         (if n
           (recur (inc c) n)
           [(int c) f]))
-      [(int 0) (first s)])))
+      [(int 0) nil])))

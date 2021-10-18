@@ -1,6 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.linear
-  "Linear-time sequence functions"
-  (:import [clojure.lang Counted]))
+  "Linear-time sequence functions")
 
 (set! *unchecked-math* :warn-on-boxed)
 
@@ -17,7 +16,7 @@
 (defn count+last
   "Same as (juxt count last)."
   [s]
-  (if (instance? Counted s)
+  (if (counted? s)
     [(count s) (last s)]
     (if-some [s (seq s)]
       (loop [c 1 [f & n] s]

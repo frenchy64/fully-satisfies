@@ -35,10 +35,17 @@
                                            pp/pprint))}))]
                    {size
                     (into (sorted-map)
-                          (for [id [:butlast+last :butlast+last-reference]
+                          (for [id (concat
+                                     (when (pos? size)
+                                       [:butlast+last
+                                        :butlast+last-reference])
+                                     [:count+last
+                                      :count+last-reference])
                                 input-kind [:counted :uncounted]]
                             (gen-case id input-kind)))})))
           (list 0
+                1
+                5
                 10
                 100
                 1000
@@ -101,9 +108,9 @@
                                   :time (first (:mean approach2))
                                   :approach "approach2"}])
                               results)}
-       :encoding {:x {:field "nargs" :type "ordinal"}
+       :encoding {:x {:field "size" :type "ordinal"}
                   :y {:field "time" :type "quantitative"}
-                  :color {:field "approach" :type "nominal"}}
+                  :color {:field "f" :type "nominal"}}
        :mark "line"}]]))
 
 (comment

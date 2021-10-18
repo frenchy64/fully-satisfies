@@ -7,7 +7,8 @@
   "Same as (juxt butlast last) for non-empty seqs."
   [s]
   (if-some [s (seq s)]
-    (loop [ret (transient []) [f & n] s]
+    (loop [ret (transient [])
+           [f & n] s]
       (if n
         (recur (conj! ret f) n)
         [(seq (persistent! ret)) f]))
@@ -19,7 +20,8 @@
   (if (counted? s)
     [(count s) (last s)]
     (if-some [s (seq s)]
-      (loop [c 1 [f & n] s]
+      (loop [c 1
+             [f & n] s]
         (if n
           (recur (inc c) n)
           [(int c) f]))

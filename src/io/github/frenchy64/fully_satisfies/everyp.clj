@@ -18,7 +18,7 @@
     (defn everyp [& ps]
       (fn [& args] (every? #(every? % args) ps)))"
   {:arglists '([& ps])}
-  ([] ;; fully-satisifes: added zero-arity
+  ([] ;; fully-satisfies: added zero-arity
      (fn
        ([] true)
        ([x] true)

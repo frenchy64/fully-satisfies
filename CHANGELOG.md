@@ -12,7 +12,7 @@
 - add `areduce` alias for `folda`
 
 # 1.5.1 - 27nd September 2021
-- remove API doc for moved `partially-satisifes?`
+- remove API doc for moved `partially-satisfies?`
 
 # 1.5.0 - 27nd September 2021
 - add `somef`, `everyp`, `never?`, `run-all!`, `clearing-future{-call}`, `deftest+report-uncaught-contexts, `testing+record-uncaught-contexts`, `folda`

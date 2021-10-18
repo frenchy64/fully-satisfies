@@ -18,17 +18,17 @@
     (defn somef [& fs]
       (fn [& args] (some #(some % args) fs)))"
   {:arglists '([& fs])}
-  ([] ;; fully-satisifes: added zero-arity
+  ([] ;; fully-satisfies: added zero-arity
      (fn
        ([] nil)
        ([x] nil)
        ([x y] nil)
        ([x y z] nil)
        ([x y z & args] nil)))
-  ([f] ;; fully-satisifes: renamed ps to fs
+  ([f] ;; fully-satisfies: renamed ps to fs
      (fn sf1
        ([] nil)
-       ([x] (or (f x) nil)) ;; fully-satisifes: end (or ...) calls outside `some` with nil
+       ([x] (or (f x) nil)) ;; fully-satisfies: end (or ...) calls outside `some` with nil
        ([x y] (or (f x) (f y) nil))
        ([x y z] (or (f x) (f y) (f z) nil))
        ([x y z & args] (or (sf1 x y z)

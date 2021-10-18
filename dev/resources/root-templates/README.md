@@ -106,7 +106,7 @@ clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "{◊current-v
 
 ## Thanks
 
-Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea of `fully-satisfies?` and its name. My initial stance that `fully-satisifes?` was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.
+Thanks [Wanderson Ferreira](https://github.com/wandersoncferreira) for the idea of `fully-satisfies?` and its name. My initial stance that `fully-satisfies?` was impossible to implement quickly proved to be incorrect after Wanderson's asked the right questions and decompiled some bytecode.
 
 Wanderson and [Mark Herman, II](https://github.com/turbodog99) also helped improve early iterations of `fully-satisfies?`.
 

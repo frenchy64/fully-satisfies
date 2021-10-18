@@ -7,12 +7,12 @@
 (defn butlast+last
   "Same as (juxt butlast last) for non-empty seqs."
   [s]
-  (let [s (seq s)]
-    (assert s "input must be non-empty")
+  (if-some [s (seq s)]
     (loop [ret (transient []) [f & n] s]
       (if n
         (recur (conj! ret f) n)
-        [(seq (persistent! ret)) f]))))
+        [(seq (persistent! ret)) f]))
+    (throw (AssertionError. "input must be non-empty"))))
 
 (defn count+last
   "Same as (juxt count last)."

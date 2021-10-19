@@ -48,9 +48,9 @@
                 5
                 10
                 100
-                1000
-                10000
-                100000))))
+                #_1000
+                #_10000
+                #_100000))))
 
 (comment
   (c/quick-bench (apply spec-checker (flatten-trailing-map 4 [])))
@@ -104,25 +104,35 @@
                                  :f k})
                               rs))
                        results)
-        groups (group-by (comp {:count+last :count+last
-                                :count+last-reference :count+last
-                                :butlast+last :butlast+last
-                                :butlast+last-reference :butlast+last}
-                               first
-                               :f) values)]
-    (map (fn [[k values]]
-           (assert (keyword? k) (pr-str k))
-           [:div
-            [:h1 (name k)]
-            (map (fn [limit]
-                   [:vega-lite
-                    {:data {:values (filter #(<= (:size %) limit) values)}
-                     :encoding {:x {:field "size" :type "quantitative"}
-                                :y {:field "time" :type "quantitative"}
-                                :color {:field "f" :type "nominal"}}
-                     :mark "line"}])
-                 [10 100 1000 1000000])])
-         groups)))
+        groups (group-by (comp first :f) values)]
+    (concat
+      (map (fn [[k values]]
+             (assert (keyword? k) (pr-str k))
+             [:div
+              [:h1 (name k)]
+              (map (fn [limit]
+                     [:vega-lite
+                      {:data {:values (filter #(<= (:size %) limit) values)}
+                       :encoding {:x {:field "size" :type "quantitative"}
+                                  :y {:field "time" :type "quantitative"}
+                                  :color {:field "f" :type "nominal"}}
+                       :mark "line"}])
+                   [10 100 1000 1000000])])
+           {:count+last (concat (:count+last groups)
+                                (:count+last-reference groups))
+            :butlast+last (concat (:butlast+last groups)
+                                  (:butlast+last-reference groups))})
+      [[:div
+        [:h1 "butlast+last vs count+last"]
+        (for [limit [10 100 #_1000 #_1000000]]
+          [:vega-lite
+           {:data {:values (filter #(<= (:size %) limit)
+                                   (concat (:count+last groups)
+                                           (:butlast+last groups)))}
+            :encoding {:x {:field "size" :type "quantitative"}
+                       :y {:field "time" :type "quantitative"}
+                       :color {:field "f" :type "nominal"}}
+            :mark "line"}])]])))
 
 (comment
   (oz/start-server!)

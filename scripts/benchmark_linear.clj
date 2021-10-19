@@ -95,23 +95,35 @@
     (regen-mean)))
 
 (defn plots* []
-  (let [results (read-string (slurp "bench-linear-results.txt"))]
-    [:div
-     [:h1 ""]
-     [:vega-lite
-      {:data {:values (mapcat (fn [[[nargs] {:keys [approach1 approach2]}]]
-                                (assert (nat-int? nargs) (pr-str nargs))
-                                [{:nargs nargs
-                                  :time (first (:mean approach1))
-                                  :approach "approach1"}
-                                 {:nargs nargs
-                                  :time (first (:mean approach2))
-                                  :approach "approach2"}])
-                              results)}
-       :encoding {:x {:field "size" :type "ordinal"}
-                  :y {:field "time" :type "quantitative"}
-                  :color {:field "f" :type "nominal"}}
-       :mark "line"}]]))
+  (let [results (read-string (slurp "bench-linear-results.txt"))
+        values (mapcat (fn [[size rs]]
+                         (assert (nat-int? size) (pr-str size))
+                         (map (fn [[k {[mean] :mean}]]
+                                {:size size
+                                 :time mean
+                                 :f k})
+                              rs))
+                       results)
+        groups (group-by (comp {:count+last :count+last
+                                :count+last-reference :count+last
+                                :butlast+last :butlast+last
+                                :butlast+last-reference :butlast+last}
+                               first
+                               :f) values)]
+    (map (fn [[k values]]
+           (assert (keyword? k) (pr-str k))
+           [:div
+            [:h1 (name k)]
+            (map (fn [limit]
+                   [:vega-lite
+                    {:data {:values (filter #(<= (:size %) limit) values)}
+                     :encoding {:x {:field "size" :type "ordinal"}
+                                :y {:field "time" :type "quantitative"}
+                                :color {:field "f" :type "nominal"}}
+                     :mark "line"}])
+                 [10 100 1000 1000000])])
+         groups)))
 
 (comment
+  (oz/start-server!)
   (oz/view! (plots*)))

@@ -34,7 +34,7 @@
                                         k [id input-kind]]
                                     {[id input-kind]
                                      (do (println (format "Benchmarking %s with size %s" k size))
-                                         (doto (bench-fn #(f uncounted-input) {})
+                                         (doto (bench-fn #(f input) {})
                                            pp/pprint))}))]
                    {size
                     (into (sorted-map)

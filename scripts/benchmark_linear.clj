@@ -117,7 +117,7 @@
             (map (fn [limit]
                    [:vega-lite
                     {:data {:values (filter #(<= (:size %) limit) values)}
-                     :encoding {:x {:field "size" :type "ordinal"}
+                     :encoding {:x {:field "size" :type "quantitative"}
                                 :y {:field "time" :type "quantitative"}
                                 :color {:field "f" :type "nominal"}}
                      :mark "line"}])

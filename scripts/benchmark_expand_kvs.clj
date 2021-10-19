@@ -156,7 +156,7 @@
                                 :time (first (:mean approach2))
                                 :approach "approach2"}])
                             results)}
-     :encoding {:x {:field "nargs" :type "ordinal"}
+     :encoding {:x {:field "nargs" :type "quantitative"}
                 :y {:field "time" :type "quantitative"}
                 :color {:field "approach" :type "nominal"}}
      :mark "line"}))

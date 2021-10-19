@@ -15,7 +15,7 @@
     (into (sorted-map)
           (map (fn [size]
                  {:pre [(nat-int? size)]}
-                 (let [counted-input (into [] (range size))
+                 (let [counted-input (apply list (range size))
                        _ (assert (counted? counted-input))
                        uncounted-input (take size (range))
                        _ (assert (not (counted? uncounted-input)))
@@ -24,6 +24,9 @@
                                                 :counted counted-input
                                                 :uncounted uncounted-input)
                                         f (case id
+                                            :last last
+                                            :count count
+                                            :butlast butlast
                                             :butlast+last butlast+last
                                             :butlast+last-reference butlast+last-reference
                                             :count+last count+last
@@ -39,7 +42,10 @@
                                      (when (pos? size)
                                        [:butlast+last
                                         :butlast+last-reference])
-                                     [:count+last
+                                     [:butlast
+                                      :last
+                                      :count
+                                      :count+last
                                       :count+last-reference])
                                 input-kind [:counted :uncounted]]
                             (gen-case id input-kind)))})))
@@ -119,9 +125,13 @@
                        :mark "line"}])
                    [10 100 1000 1000000])])
            {:count+last (concat (:count+last groups)
-                                (:count+last-reference groups))
+                                (:count+last-reference groups)
+                                (:last groups)
+                                (:count groups))
             :butlast+last (concat (:butlast+last groups)
-                                  (:butlast+last-reference groups))})
+                                  (:butlast+last-reference groups)
+                                  (:last groups)
+                                  (:butlast groups))})
       [[:div
         [:h1 "butlast+last vs count+last"]
         (for [limit [10 100 #_1000 #_1000000]]

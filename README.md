@@ -135,6 +135,7 @@ user=> (get "123" 4294967296 :not-found)
 \1
 ```
 - `count+last` vs `count+butlast+last`
+- defmulti with opt-in `:default` dispatch cache https://clojure.atlassian.net/browse/CLJ-2626
 
 ## License
 

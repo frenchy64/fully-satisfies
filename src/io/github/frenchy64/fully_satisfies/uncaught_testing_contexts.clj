@@ -93,6 +93,16 @@
 
 (defmacro testing [& args] `(testing+record-uncaught-contexts ~@args))
 
+;; a function so `resolve` can be used 
+(defn -run-test-body
+  "For libraries that mimic clojure.test's API. f
+  should be a thunk that runs the test."
+  [f]
+  (binding [*exceptional-testing-contexts* nil]
+    (try (f)
+         (catch Throwable e
+           (report-uncaught-exception e)))))
+
 (defmacro deftest+report-uncaught-contexts
   "Like clojure.test/deftest, except swallows uncaught exceptions
   and reports them as test errors (with improved error messages via
@@ -102,11 +112,7 @@
   Use in conjunction with `testing` in this namespace."
   [name & body]
   (when t/*load-tests*
-    `(def ~(vary-meta name assoc :test `(fn []
-                                          (binding [*exceptional-testing-contexts* nil]
-                                            (try (do ~@body)
-                                                 (catch Throwable e#
-                                                   (report-uncaught-exception e#))))))
+    `(def ~(vary-meta name assoc :test `(fn [] (-run-test-body #(do ~@body))))
           (fn [] (t/test-var (var ~name))))))
 
 (defmacro deftest [& args] `(deftest+report-uncaught-contexts ~@args))

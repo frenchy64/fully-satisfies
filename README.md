@@ -136,6 +136,7 @@ user=> (get "123" 4294967296 :not-found)
 ```
 - `count+last` vs `count+butlast+last`
 - defmulti with opt-in `:default` dispatch cache https://clojure.atlassian.net/browse/CLJ-2626
+- `thrown?`, `thrown-with-msg?` inherits try syntax https://github.com/clojure/clojure/blob/5ffe3833508495ca7c635d47ad7a1c8b820eab76/src/clj/clojure/test.clj#L504-L535
 
 ## License
 

@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.unrolling-macro-test
   (:require [io.github.frenchy64.fully-satisfies.unrolling-macro
-             :refer [defunrolled unrolled-fn-tail gensym-pretty pprint-unrolled]]))
+             :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled]]))
 
 (defn maybe-apply [f fixed-args rest-args]
   (if rest-args
@@ -61,6 +61,11 @@
                                                                (list outer-f acc))
                                                              (maybe-apply (peek fixed-fs) fixed-args rest-args)
                                                              (pop fixed-fs)))})))))})
+
+(comment
+  (unrolled-fn-tail unrolled-comp-spec)
+  (prettify-unrolled (unrolled-fn-tail unrolled-comp-spec))
+  )
 
 (defunrolled unrolled-comp
   "Takes a set of functions and returns a fn that is the composition
@@ -188,7 +193,7 @@
 
 
 (comment
-  (pprint-unrolled (unrolled-fn-tail unrolled-partial-spec))
+  (prettify-unrolled (unrolled-fn-tail unrolled-partial-spec))
   (int \x)
   (take 100 (single-char-syms-from \x))
   (take 100 (map char 

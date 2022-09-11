@@ -5,12 +5,16 @@
 (defn gensym-pretty [sym]
   (with-meta (gensym sym) {::original (symbol sym)}))
 
-(defn pprint-unrolled [form]
-  (walk/prewalk (fn [v]
-                  (or (when (symbol? v)
-                        (-> v meta ::original))
-                      v))
-                form))
+(defn prettify-unrolled [v]
+  (walk/prewalk
+    (fn [v]
+      (or (when (symbol? v)
+            (-> v meta ::original))
+          (when (and (qualified-symbol? v)
+                     (= "clojure.core" (namespace v)))
+            (symbol "cc" (name v)))
+          v))
+    v))
 
 (defn unrolled-fn-tail
   ":arities        a list of the number of arguments for each arity (add 1 for rest arg).
@@ -36,7 +40,7 @@
                     [1])
         rest-arity (when (not= :skip rest-arity)
                      (or rest-arity (apply max arities)))
-        argvs (map (fn [nargs]
+        names (map (fn [nargs]
                      (let [fixed-args (if fixed-names
                                         (into [] (comp (take nargs)
                                                        (map gensym-pretty))
@@ -45,17 +49,28 @@
                            _ (assert (= nargs (count fixed-args)))
                            rest-arg (when (= nargs rest-arity)
                                       (gensym-pretty (or rest-name 'rest)))]
+                       [fixed-args rest-arg]))
+                   arities)
+        arities (map (fn [[fixed-args rest-arg]]
                        (list (cond-> fixed-args
                                rest-arg (conj '& rest-arg))
-                             (unrolled-arity this fixed-args rest-arg))))
-                   arities)]
-    (cond-> argvs
-      (= 1 (count argvs)) first)))
+                             (unrolled-arity this fixed-args rest-arg)))
+                     names)]
+    (with-meta (cond-> arities
+                 (= 1 (count arities)) first)
+               {::names names})))
+
+(defn fn-tail->arglists [fn-tail]
+  (map (fn [[fixed-args rest-arg]]
+         (cond-> (mapv (comp ::original meta) fixed-args)
+           rest-arg (conj (-> rest-arg meta ::original))))
+       (-> fn-tail meta ::names)))
 
 (defmacro defunrolled [nme doc attr config]
-  `(defn ~nme ~doc ~attr
-     ~@(unrolled-fn-tail (-> config resolve deref
-                             (assoc :this (symbol (-> *ns* ns-name name) (name nme)))))))
+  (let [fn-tail (unrolled-fn-tail (-> config resolve deref
+                                      (assoc :this (symbol (-> *ns* ns-name name) (name nme)))))]
+    `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
+       ~@fn-tail)))
 
 ;; all from clojure.core, for reference
 (comment

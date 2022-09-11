@@ -22,20 +22,29 @@
    :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
                    Default: nil
    :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
-                    where this and rest-arg are nilable. Returns the body of the arity."
+                    where this and rest-arg are nilable. Returns the body of the arity.
+   :fixed-names    a distinct list of variable names to use for fixed arguments
+   :rest-name      a name to use for rest argument"
   [{:keys [this
            arities
            rest-arity
-           unrolled-arity]}]
+           unrolled-arity
+           fixed-names
+           rest-name]}]
   (let [arities (or (not-empty (sort arities))
                     (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
                     [1])
         rest-arity (when (not= :skip rest-arity)
                      (or rest-arity (apply max arities)))
         argvs (map (fn [nargs]
-                     (let [fixed-args (mapv #(gensym-pretty (str "fixed" %)) (range nargs))
+                     (let [fixed-args (if fixed-names
+                                        (into [] (comp (take nargs)
+                                                       (map gensym-pretty))
+                                              fixed-names)
+                                        (mapv #(gensym-pretty (str "fixed" %)) (range nargs)))
+                           _ (assert (= nargs (count fixed-args)))
                            rest-arg (when (= nargs rest-arity)
-                                      (gensym-pretty "rest"))]
+                                      (gensym-pretty (or rest-name 'rest)))]
                        (list (cond-> fixed-args
                                rest-arg (conj '& rest-arg))
                              (unrolled-arity this fixed-args rest-arg))))

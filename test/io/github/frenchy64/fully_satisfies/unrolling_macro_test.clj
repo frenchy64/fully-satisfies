@@ -179,7 +179,7 @@
    :unrolled-arity (fn [_ [f & fixed-args] rest-args]
                      `(fn ~@(unrolled-fn-tail
                               {:arities (range (if rest-args 0 5))
-                               :fixed-names (map #(symbol (str "arg" %)) (next (range)))
+                               :fixed-names (single-char-syms-from \x)
                                :rest-name 'args
                                :unrolled-arity (fn [_ fixed-additional-args rest-additional-args]
                                                  (maybe-apply f

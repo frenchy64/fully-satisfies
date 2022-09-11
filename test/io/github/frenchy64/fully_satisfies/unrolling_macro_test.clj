@@ -248,6 +248,38 @@
                                                               (concat fixed-args fixed-additional-args)
                                                               (maybe-concat rest-additional-args rest-args)))})))})
 
+(deftest unrolled-partial-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-partial-spec))
+         '(([f]
+            (cc/fn
+              ([] (f))
+              ([x] (f x))
+              ([x y] (f x y))
+              ([x y z] (f x y z))
+              ([x y z & args] (cc/apply f x y z args))))
+           ([f arg1]
+            (cc/fn
+              ([] (f arg1))
+              ([x] (f arg1 x))
+              ([x y] (f arg1 x y))
+              ([x y z] (f arg1 x y z)) ([x y z & args] (cc/apply f arg1 x y z args))))
+           ([f arg1 arg2]
+            (cc/fn
+              ([] (f arg1 arg2))
+              ([x] (f arg1 arg2 x))
+              ([x y] (f arg1 arg2 x y))
+              ([x y z] (f arg1 arg2 x y z))
+              ([x y z & args] (cc/apply f arg1 arg2 x y z args))))
+           ([f arg1 arg2 arg3]
+            (cc/fn
+              ([] (f arg1 arg2 arg3))
+              ([x] (f arg1 arg2 arg3 x))
+              ([x y] (f arg1 arg2 arg3 x y))
+              ([x y z] (f arg1 arg2 arg3 x y z))
+              ([x y z & args] (cc/apply f arg1 arg2 arg3 x y z args))))
+           ([f arg1 arg2 arg3 & more]
+            (cc/fn [& args] (cc/apply f arg1 arg2 arg3 (cc/concat args more))))))))
+
 
 (comment
   (prettify-unrolled (unrolled-fn-tail unrolled-partial-spec))
@@ -260,3 +292,15 @@
   (int \z)
   (- (int \z) (int \a))
   )
+
+(defunrolled unrolled-partial
+  "Takes a function f and fewer than the normal arguments to f, and
+  returns a fn that takes a variable number of additional args. When
+  called, the returned function calls f with args + additional args."
+  {:added "1.0"
+   :static true}
+  unrolled-partial-spec)
+
+(deftest unrolled-partial-test
+  (is (= (-> #'unrolled-partial meta :arglists)
+         '([f] [f arg1] [f arg1 arg2] [f arg1 arg2 arg3] [f arg1 arg2 arg3 & more]))))

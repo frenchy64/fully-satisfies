@@ -133,24 +133,56 @@
          ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
 
 (def unrolled-juxt-spec
-  {:arities (range 1 4)
+  {:arities (range 1 5)
+   :fixed-names (single-char-syms-from \f)
+   :rest-name 'fs
    :unrolled-arity (fn [_ fixed-fs rest-fs]
-                     (if rest-fs
-                       (let [fs (gensym-pretty "fs")]
-                         `(let [~fs ~(maybe-list* fixed-fs rest-fs)]
-                            (fn ~@(unrolled-fn-tail
-                                    {:arities (range 4)
-                                     :unrolled-arity (fn [_ fixed-args rest-args]
-                                                       (let [v (gensym-pretty 'acc)
-                                                             f (gensym-pretty 'f)]
-                                                         `(#'clojure.core/reduce1 
-                                                            (fn [~v ~f] (conj ~v ~(maybe-apply f fixed-args rest-args)))
-                                                            [] ~fs)))}))))
-                       `(fn ~@(unrolled-fn-tail
-                                {:arities (range 4)
-                                 :unrolled-arity (fn [_ fixed-args rest-args]
-                                                   (mapv #(maybe-apply % fixed-args rest-args)
-                                                         fixed-fs))}))))})
+                     (let [fs (gensym-pretty "fs")
+                           body `(fn ~@(unrolled-fn-tail
+                                         {:arities (range 5)
+                                          :fixed-names (single-char-syms-from \x)
+                                          :rest-name 'args
+                                          :unrolled-arity (fn [_ fixed-args rest-args]
+                                                            (if rest-fs
+                                                              (let [v (gensym-pretty 'acc)
+                                                                    f (gensym-pretty 'f)]
+                                                                `(reduce (fn [~v ~f] (conj ~v ~(maybe-apply f fixed-args rest-args))) [] ~fs))
+                                                              (mapv #(maybe-apply % fixed-args rest-args) fixed-fs)))}))]
+                       (if rest-fs
+                         `(let [~fs ~(maybe-list* fixed-fs rest-fs)] ~body)
+                         body)))})
+
+(deftest unrolled-juxt-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-juxt-spec))
+         '(([f]
+            (cc/fn
+              ([] [(f)])
+              ([x] [(f x)])
+              ([x y] [(f x y)])
+              ([x y z] [(f x y z)])
+              ([x y z & args] [(cc/apply f x y z args)])))
+           ([f g]
+            (cc/fn
+              ([] [(f) (g)])
+              ([x] [(f x) (g x)])
+              ([x y] [(f x y) (g x y)])
+              ([x y z] [(f x y z) (g x y z)])
+              ([x y z & args] [(cc/apply f x y z args) (cc/apply g x y z args)])))
+           ([f g h]
+            (cc/fn
+              ([] [(f) (g) (h)])
+              ([x] [(f x) (g x) (h x)])
+              ([x y] [(f x y) (g x y) (h x y)])
+              ([x y z] [(f x y z) (g x y z) (h x y z)])
+              ([x y z & args] [(cc/apply f x y z args) (cc/apply g x y z args) (cc/apply h x y z args)])))
+           ([f g h & fs]
+            (cc/let [fs (cc/list* f g h fs)]
+              (cc/fn
+                ([] (cc/reduce (cc/fn [acc f] (cc/conj acc (f))) [] fs))
+                ([x] (cc/reduce (cc/fn [acc f] (cc/conj acc (f x))) [] fs))
+                ([x y] (cc/reduce (cc/fn [acc f] (cc/conj acc (f x y))) [] fs))
+                ([x y z] (cc/reduce (cc/fn [acc f] (cc/conj acc (f x y z))) [] fs))
+                ([x y z & args] (cc/reduce (cc/fn [acc f] (cc/conj acc (cc/apply f x y z args))) [] fs)))))))))
 
 (defunrolled unrolled-juxt 
   "Takes a set of functions and returns a fn that is the juxtaposition

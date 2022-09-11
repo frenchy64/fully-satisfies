@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.unrolling-macro
-  "A macro for unrolling function combinators"
+  "Utilities for unrolling functions."
   (:require [clojure.walk :as walk]))
 
 (defn gensym-pretty [sym]
@@ -59,7 +59,6 @@
                                rest-arg (conj '& rest-arg))
                              (unrolled-arity this fixed-args rest-arg)))
                      names)]
-    (prn names)
     (with-meta (cond-> arities
                  (= 1 (count arities)) first)
                {::names names})))

@@ -93,6 +93,10 @@
    :static true}
   unrolled-comp-spec)
 
+(deftest unrolled-comp-test
+  (is (= (-> #'unrolled-comp meta :arglists)
+         '([] [f] [f g] [f g & fs]))))
+
 #_
 (defn juxt 
   "Takes a set of functions and returns a fn that is the juxtaposition
@@ -193,6 +197,10 @@
   {:added "1.1"
    :static true}
   unrolled-juxt-spec)
+
+(deftest unrolled-juxt-test
+  (is (= (-> #'unrolled-juxt meta :arglists)
+         '([f] [f g] [f g h] [f g h & fs]))))
 
 #_
 (defn partial

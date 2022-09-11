@@ -66,7 +66,7 @@
 (defn fn-tail->arglists [fn-tail]
   (map (fn [[fixed-args rest-arg]]
          (cond-> (mapv (comp ::original meta) fixed-args)
-           rest-arg (conj (-> rest-arg meta ::original))))
+           rest-arg (conj '& (-> rest-arg meta ::original))))
        (-> fn-tail meta ::names)))
 
 (defmacro defunrolled [nme doc attr config]

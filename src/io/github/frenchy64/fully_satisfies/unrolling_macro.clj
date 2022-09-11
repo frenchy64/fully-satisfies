@@ -2,6 +2,30 @@
   "Utilities for unrolling functions."
   (:require [clojure.walk :as walk]))
 
+(defn maybe-apply [f fixed-args rest-args]
+  (if rest-args
+    `(apply ~f ~@fixed-args ~rest-args)
+    (list* f fixed-args)))
+
+(defn maybe-list* [fixed-args rest-args]
+  (if (seq fixed-args)
+    `(list* ~@fixed-args ~rest-args)
+    rest-args))
+
+(defn maybe-concat [& colls]
+  (when-some [rests (not-empty (remove nil? colls))]
+    (if (next rests)
+      `(concat ~@colls)
+      (first colls))))
+
+(defn single-char-syms-from [c]
+  {:pre [(<= (int \a) (int c) (int \z))]}
+  (concat (map (comp symbol str char)
+               (take 26
+                     (drop (- (int c) (int \a))
+                           (cycle (range (int \a) (inc (int \z)))))))
+          (map #(symbol (str c %)) (range))))
+
 (defn gensym-pretty [sym]
   (with-meta (gensym sym) {::original (symbol sym)}))
 

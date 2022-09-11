@@ -2,31 +2,72 @@
   (:require [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.unrolling-macro
-             :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled]]))
+             :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled
+                     maybe-apply
+                     maybe-list*
+                     maybe-concat
+                     single-char-syms-from]]))
 
-(defn maybe-apply [f fixed-args rest-args]
-  (if rest-args
-    `(apply ~f ~@fixed-args ~rest-args)
-    (list* f fixed-args)))
 
-(defn maybe-list* [fixed-args rest-args]
-  (if (seq fixed-args)
-    `(list* ~@fixed-args ~rest-args)
-    rest-args))
 
-(defn maybe-concat [& colls]
-  (when-some [rests (not-empty (remove nil? colls))]
-    (if (next rests)
-      `(concat ~@colls)
-      (first colls))))
 
-(defn single-char-syms-from [c]
-  {:pre [(<= (int \a) (int c) (int \z))]}
-  (concat (map (comp symbol str char)
-               (take 26
-                     (drop (- (int c) (int \a))
-                           (cycle (range (int \a) (inc (int \z)))))))
-          (map #(symbol (str c %)) (range))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/vector
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn vector
+  "Creates a new vector containing the args."
+  {:added "1.0"
+   :static true}
+  ([] [])
+  ([a] [a])
+  ([a b] [a b])
+  ([a b c] [a b c])
+  ([a b c d] [a b c d])
+	([a b c d e] [a b c d e])
+	([a b c d e f] [a b c d e f])
+  ([a b c d e f & args]
+     (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d (cons e (cons f args))))))))))
+
+(def unrolled-vector-spec
+  {:arities (range 8)
+   :fixed-names (single-char-syms-from \a)
+   :rest-name 'args
+   :unrolled-arity (fn [_ fixed-args rest-arg]
+                     (if rest-arg
+                       `(. clojure.lang.LazilyPersistentVector
+                           (~'create ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args))))
+                       fixed-args))})
+
+(deftest unrolled-vector-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-vector-spec))
+         '(([] [])
+           ([a] [a])
+           ([a b] [a b])
+           ([a b c] [a b c])
+           ([a b c d] [a b c d])
+           ([a b c d e] [a b c d e])
+           ([a b c d e f] [a b c d e f])
+           ([a b c d e f & args] (. clojure.lang.LazilyPersistentVector (create (cc/cons a (cc/cons b (cc/cons c (cc/cons d (cc/cons e (cc/cons f args)))))))))))))
+
+(defunrolled unrolled-vector
+  "Creates a new vector containing the args."
+  {:added "1.0"
+   :static true}
+  unrolled-vector-spec)
+
+(deftest unrolled-vector-test
+  (is (= (-> #'unrolled-vector meta :arglists)
+         '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/comp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 #_
 (defn comp
   "Takes a set of functions and returns a fn that is the composition
@@ -97,6 +138,15 @@
 (deftest unrolled-comp-test
   (is (= (-> #'unrolled-comp meta :arglists)
          '([] [f] [f g] [f g & fs]))))
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/juxt
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #_
 (defn juxt 
@@ -202,6 +252,17 @@
 (deftest unrolled-juxt-test
   (is (= (-> #'unrolled-juxt meta :arglists)
          '([f] [f g] [f g h] [f g h & fs]))))
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/partial
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 #_
 (defn partial

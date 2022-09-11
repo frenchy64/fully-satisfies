@@ -1,5 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.unrolling-macro-test
-  (:require [io.github.frenchy64.fully-satisfies.unrolling-macro
+  (:require [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
+            [clojure.test :refer [is]]
+            [io.github.frenchy64.fully-satisfies.unrolling-macro
              :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled]]))
 
 (defn maybe-apply [f fixed-args rest-args]
@@ -25,7 +27,6 @@
                      (drop (- (int c) (int \a))
                            (cycle (range (int \a) (inc (int \z)))))))
           (map #(symbol (str c %)) (range))))
-
 #_
 (defn comp
   "Takes a set of functions and returns a fn that is the composition
@@ -48,6 +49,8 @@
 
 (def unrolled-comp-spec
   {:arities (range 4)
+   :fixed-names (single-char-syms-from \f)
+   :rest-name 'fs
    :unrolled-arity (fn [this fixed-fs rest-fs]
                      (if rest-fs
                        `(#'clojure.core/reduce1 ~this ~(maybe-list* fixed-fs rest-fs))
@@ -56,6 +59,8 @@
                          1 (first fixed-fs)
                          `(fn ~@(unrolled-fn-tail
                                   {:arities (range 5)
+                                   :fixed-names (single-char-syms-from \x)
+                                   :rest-name 'args
                                    :unrolled-arity (fn [_ fixed-args rest-args]
                                                      (reduce (fn [acc outer-f]
                                                                (list outer-f acc))
@@ -66,6 +71,18 @@
   (unrolled-fn-tail unrolled-comp-spec)
   (prettify-unrolled (unrolled-fn-tail unrolled-comp-spec))
   )
+
+(deftest unrolled-comp-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-comp-spec))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn 
+                    ([] (f (g)))
+                    ([x] (f (g x)))
+                    ([x y] (f (g x y)))
+                    ([x y z] (f (g x y z)))
+                    ([x y z & args] (f (cc/apply g x y z args)))))
+           ([f g & fs] ((var cc/reduce1) nil (cc/list* f g fs)))))))
 
 (defunrolled unrolled-comp
   "Takes a set of functions and returns a fn that is the composition

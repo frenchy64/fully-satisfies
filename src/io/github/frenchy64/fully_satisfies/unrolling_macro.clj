@@ -41,14 +41,17 @@
         rest-arity (when (not= :skip rest-arity)
                      (or rest-arity (apply max arities)))
         names (map (fn [nargs]
-                     (let [fixed-args (if fixed-names
-                                        (into [] (comp (take nargs)
+                     (let [rest-arg (when (= nargs rest-arity)
+                                      (gensym-pretty (or rest-name 'rest)))
+                           nfixed (cond-> nargs
+                                    rest-arg dec)
+                           _ (assert (nat-int? nfixed))
+                           fixed-args (if fixed-names
+                                        (into [] (comp (take nfixed)
                                                        (map gensym-pretty))
                                               fixed-names)
-                                        (mapv #(gensym-pretty (str "fixed" %)) (range nargs)))
-                           _ (assert (= nargs (count fixed-args)))
-                           rest-arg (when (= nargs rest-arity)
-                                      (gensym-pretty (or rest-name 'rest)))]
+                                        (mapv #(gensym-pretty (str "fixed" %)) (range nfixed)))
+                           _ (assert (= nfixed (count fixed-args)))]
                        [fixed-args rest-arg]))
                    arities)
         arities (map (fn [[fixed-args rest-arg]]
@@ -56,6 +59,7 @@
                                rest-arg (conj '& rest-arg))
                              (unrolled-arity this fixed-args rest-arg)))
                      names)]
+    (prn names)
     (with-meta (cond-> arities
                  (= 1 (count arities)) first)
                {::names names})))

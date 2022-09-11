@@ -52,8 +52,9 @@
    :fixed-names (single-char-syms-from \f)
    :rest-name 'fs
    :unrolled-arity (fn [this fixed-fs rest-fs]
+                     (assert this)
                      (if rest-fs
-                       `(#'clojure.core/reduce1 ~this ~(maybe-list* fixed-fs rest-fs))
+                       `(reduce ~this ~(maybe-list* fixed-fs rest-fs))
                        (case (count fixed-fs)
                          0 `identity
                          1 (first fixed-fs)
@@ -73,7 +74,7 @@
   )
 
 (deftest unrolled-comp-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-comp-spec))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc unrolled-comp-spec :this 'unrolled-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn 
@@ -82,7 +83,7 @@
                     ([x y] (f (g x y)))
                     ([x y z] (f (g x y z)))
                     ([x y z & args] (f (cc/apply g x y z args)))))
-           ([f g & fs] ((var cc/reduce1) nil (cc/list* f g fs)))))))
+           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs)))))))
 
 (defunrolled unrolled-comp
   "Takes a set of functions and returns a fn that is the composition

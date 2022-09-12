@@ -38,16 +38,18 @@
   (when (rest-argv? argv)
     (peek argv)))
 
-(defn prettify-unrolled [v]
-  (walk/prewalk
-    (fn [v]
-      (or (when (symbol? v)
-            (-> v meta ::original))
-          (when (and (qualified-symbol? v)
-                     (= "clojure.core" (namespace v)))
-            (symbol "cc" (name v)))
-          v))
-    v))
+(defn prettify-unrolled
+  ([v] (prettify-unrolled v {}))
+  ([v {:keys [unqualify-core] :as _opts}]
+   (walk/prewalk
+     (fn [v]
+       (or (when (symbol? v)
+             (-> v meta ::original))
+           (when (and (qualified-symbol? v)
+                      (= "clojure.core" (namespace v)))
+             (symbol (when-not unqualify-core "cc") (name v)))
+           v))
+     v)))
 
 (defn gensym-pretty-argvs [argvs]
   {:pre [(every? argv? argvs)]

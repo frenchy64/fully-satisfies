@@ -778,6 +778,7 @@
                                                 {:outer-size 3
                                                  :inner-size 4
                                                  :smaller-arities? true})))
+
          '(([] (cc/fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
            ([p1] (cc/fn
                    ([] true)
@@ -812,6 +813,40 @@
                                              (cc/boolean (cc/and (tp p1)
                                                                  (tp p2)
                                                                  (cc/every? tp ps))))))))))
+  ;; potentially useful implementation. maybe the non-rest arities should fully unroll.
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+                                              {:smaller-arities? true}))
+                            {:unqualify-core true})
+         '(([] (fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
+           ([p1] (fn ([] true)
+                   ([x] (boolean (p1 x)))
+                   ([x y] (boolean (and (p1 x) (p1 y))))
+                   ([x y z] (boolean (and (p1 x) (p1 y) (p1 z))))
+                   ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args))))))
+           ([p1 p2] (fn ([] true)
+                      ([x] (boolean (and (p1 x) (p2 x))))
+                      ([x y] (let [tp (fn [p] (and (p x) (p y)))]
+                               (boolean (and (tp p1) (tp p2)))))
+                      ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
+                                 (boolean (and (tp p1) (tp p2)))))
+                      ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
+                                        (boolean (and (tp p1) (tp p2)))))))
+           ([p1 p2 p3] (fn ([] true)
+                         ([x] (boolean (and (p1 x) (p2 x) (p3 x))))
+                         ([x y] (let [tp (fn [p] (and (p x) (p y)))]
+                                  (boolean (and (tp p1) (tp p2) (tp p3)))))
+                         ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
+                                    (boolean (and (tp p1) (tp p2) (tp p3)))))
+                         ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
+                                           (boolean (and (tp p1) (tp p2) (tp p3)))))))
+           ([p1 p2 p3 & ps] (fn ([] true)
+                              ([x] (boolean (and (p1 x) (p2 x) (p3 x) (every? (fn [p] (p x)) ps))))
+                              ([x y] (let [tp (fn [p] (and (p x) (p y)))]
+                                       (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
+                              ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
+                                         (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
+                              ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
+                                                (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps))))))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
                  ([] true)

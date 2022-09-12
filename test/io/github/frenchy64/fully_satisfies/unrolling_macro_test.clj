@@ -7,7 +7,6 @@
                      single-char-syms-from
                      uniformly-flowing-argvs]]))
 
-
 (defn maybe-apply [f fixed-args rest-args]
   (if rest-args
     `(apply ~f ~@fixed-args ~rest-args)
@@ -80,6 +79,22 @@
   (cond->> expr
     (not (boolean-expr? expr)) (list `boolean)))
 
+(deftest uniformly-flowing-argvs-test
+  (is (= (uniformly-flowing-argvs {:rest-name 'rest})
+         '([& rest])))
+  (is (= (map #(uniformly-flowing-argvs
+                 {:arities (range %)
+                  :fixed-names (single-char-syms-from \a)
+                  :rest-name 'args})
+              (range 6))
+
+         '(([& args])
+           ([] [& args])
+           ([] [a] [a & args])
+           ([] [a] [a b] [a b & args])
+           ([] [a] [a b] [a b c] [a b c & args])
+           ([] [a] [a b] [a b c] [a b c d] [a b c d & args])))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/vector
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,18 +114,31 @@
   ([a b c d e f & args]
      (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d (cons e (cons f args))))))))))
 
-(def unrolled-vector-spec
-  {:argvs (uniformly-flowing-argvs
-            {:arities (range 8)
-             :fixed-names (single-char-syms-from \a)
-             :rest-name 'args})
-   :unrolled-arity (fn [_ fixed-args rest-arg]
-                     (if rest-arg
-                       `(clojure.lang.LazilyPersistentVector/create
-                          ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args)))
-                       fixed-args))})
+(defn unrolled-vector-spec*
+  ([] (unrolled-vector-spec* {}))
+  ([{:keys [size] :or {size 7}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range size)
+              :fixed-names (single-char-syms-from \a)
+              :rest-name 'args})
+    :unrolled-arity (fn [_ fixed-args rest-arg]
+                      (if rest-arg
+                        `(clojure.lang.LazilyPersistentVector/create
+                           ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args)))
+                        fixed-args))}))
+
+(def unrolled-vector-spec (unrolled-vector-spec*))
 
 (deftest unrolled-vector-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 0})))
+         '([& args] (clojure.lang.LazilyPersistentVector/create args))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 1})))
+         '(([] [])
+           ([& args] (clojure.lang.LazilyPersistentVector/create args)))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 2})))
+         '(([] [])
+           ([a] [a])
+           ([a & args] (clojure.lang.LazilyPersistentVector/create (cc/cons a args))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-vector-spec))
          '(([] [])
            ([a] [a])
@@ -617,18 +645,25 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
+(comment
+  (uniformly-flowing-argvs
+    {:arities (range 1)})
+)
+
 (defn unrolled-naive-everyp-spec
   ([] (unrolled-naive-everyp-spec {}))
-  ([{:keys [rest-arity] :or {rest-arity 4}}]
-   (assert (pos? rest-arity))
+  ([{:keys [outer-rest-arity inner-rest-arity] :or {outer-rest-arity 4
+                                                    inner-rest-arity 4}}]
+   (assert (nat-int? outer-rest-arity))
+   (assert (nat-int? inner-rest-arity))
    {:argvs (uniformly-flowing-argvs
-             {:arities (range 0 (inc rest-arity))
+             {:arities (range outer-rest-arity)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
               :rest-name 'ps})
     :unrolled-arity (fn [_ fixed-preds rest-pred]
                       `(fn ~@(unrolled-fn-tail
                                {:argvs (uniformly-flowing-argvs
-                                         {:arities (range 5)
+                                         {:arities (range inner-rest-arity)
                                           :fixed-names (single-char-syms-from \x)
                                           :rest-name 'args})
                                 :unrolled-arity (fn [_ fixed-args rest-arg]
@@ -643,6 +678,14 @@
                                                                                          (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))}))
 
 (deftest unrolled-naive-everyp-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec
+                                                {:outer-rest-arity 0
+                                                 :inner-rest-arity 0})))
+         '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec
+                                                {:outer-rest-arity 1
+                                                 :inner-rest-arity 0})))
+         '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
   (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec)))
          '(([] (cc/fn
                  ([] true)

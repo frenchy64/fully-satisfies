@@ -76,16 +76,24 @@
            fixed-names
            rest-name]}]
   {:post [(every? argv? %)]}
-  (let [arities (or (not-empty (sort arities))
-                    (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
-                    [1])
-        rest-arity (when (not= :skip rest-arity)
-                     (or rest-arity (apply max arities)))]
+  (let [[arities rest-arity] (or (when-some [arities (not-empty (vec (sort arities)))]
+                                   (if (= :skip rest-arity)
+                                     [arities nil]
+                                     (or (when (and (not rest-arity)
+                                                    (= [0] arities))
+                                           [[0 1] 1])
+                                         (when rest-arity
+                                           [arities rest-arity])
+                                         (let [rest-arity (inc (apply max arities))]
+                                           [(conj arities rest-arity) rest-arity]))))
+                                 (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
+                                 [[1] 1])]
     (map (fn [nargs]
+           (assert (nat-int? nargs) (pr-str nargs))
            (let [rest-arg (when (= nargs rest-arity)
                             (or rest-name 'rest))
-                 nfixed (cond-> nargs
-                          rest-arg dec)
+                 nfixed (max 0 (cond-> nargs
+                                 rest-arg dec))
                  _ (assert (nat-int? nfixed))
                  fixed-args (if fixed-names
                               (into [] (take nfixed) fixed-names)

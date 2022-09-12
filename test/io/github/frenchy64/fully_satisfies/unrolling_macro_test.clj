@@ -715,12 +715,12 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
+;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
 (defn unrolled-naive-everyp-spec*
   ([] (unrolled-naive-everyp-spec* {}))
-  ([{:keys [outer-size inner-size smaller-final-arity?]
+  ([{:keys [outer-size inner-size smaller-arities?]
      :or {outer-size 4
-          inner-size 4
-          smaller-final-arity? false}}]
+          inner-size 4}}]
    (assert (nat-int? outer-size))
    (assert (nat-int? inner-size))
    {:argvs (uniformly-flowing-argvs
@@ -734,7 +734,9 @@
                                           :fixed-names (single-char-syms-from \x)
                                           :rest-name 'args})
                                 :unrolled-arity (fn [_ fixed-args rest-arg]
-                                                  (let [tp (when (and (seq fixed-preds) rest-pred smaller-final-arity?)
+                                                  (let [tp (when (and smaller-arities?
+                                                                      (< 1 (cond-> (count fixed-preds) rest-pred inc))
+                                                                      (< 1 (cond-> (count fixed-args) rest-arg inc)))
                                                              (gensym-pretty 'tp))
                                                         tp-gen (fn [p]
                                                                  (cond-> (mapv #(list p %) fixed-args)
@@ -773,33 +775,43 @@
                      ([] true)
                      ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
   (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
-                                                {:outer-size 2
+                                                {:outer-size 3
                                                  :inner-size 4
-                                                 :smaller-final-arity? true})))
-
-         '(([] (cc/fn
-                 ([] true)
-                 ([x] true)
-                 ([x y] true)
-                 ([x y z] true)
-                 ([x y z & args] true)))
-           ([p1] (cc/fn 
+                                                 :smaller-arities? true})))
+         '(([] (cc/fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
+           ([p1] (cc/fn
                    ([] true)
                    ([x] (cc/boolean (p1 x)))
                    ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
                    ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
                    ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
-           ([p1 & ps] (cc/fn
-                        ([] (cc/let [tp (cc/fn [p] true)]
-                              (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
-                        ([x] (cc/let [tp (cc/fn [p] (p x))]
-                               (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
-                        ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
-                                 (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
-                        ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
-                                   (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
-                        ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
-                                          (cc/boolean (cc/and (tp p1) (cc/every? tp ps))))))))))
+           ([p1 p2] (cc/fn
+                      ([] true)
+                      ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
+                      ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
+                               (cc/boolean (cc/and (tp p1)
+                                                   (tp p2)))))
+                      ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
+                                 (cc/boolean (cc/and (tp p1)
+                                                     (tp p2)))))
+                      ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
+                                        (cc/boolean (cc/and (tp p1)
+                                                            (tp p2)))))))
+           ([p1 p2 & ps] (cc/fn
+                           ([] true)
+                           ([x] (cc/boolean (cc/and (p1 x) (p2 x) (cc/every? (cc/fn [p] (p x)) ps))))
+                           ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
+                                    (cc/boolean (cc/and (tp p1)
+                                                        (tp p2)
+                                                        (cc/every? tp ps)))))
+                           ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
+                                      (cc/boolean (cc/and (tp p1)
+                                                          (tp p2)
+                                                          (cc/every? tp ps)))))
+                           ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
+                                             (cc/boolean (cc/and (tp p1)
+                                                                 (tp p2)
+                                                                 (cc/every? tp ps))))))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
                  ([] true)

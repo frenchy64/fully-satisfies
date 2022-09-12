@@ -24,6 +24,61 @@
       `(concat ~@colls)
       (first colls))))
 
+(defn maybe-and [exprs]
+  (let [exprs (remove true? exprs)]
+    (case (count exprs)
+      0 true
+      1 (first exprs)
+      `(and ~@exprs))))
+
+(defn true-expression? [coll]
+  (true? coll))
+
+(defn single-arg-true-function? [coll]
+  (boolean (when (seq? coll)
+             (when (and (= 3 (count coll))
+                        (= `fn (first coll))
+                        (vector? (second coll))
+                        (= 1 (count (second coll))))
+               (true-expression? (last coll))))))
+
+(deftest single-arg-true-function?-test
+  (is (single-arg-true-function? `(fn [_] true)))
+  (is (not (single-arg-true-function? `(fn [] true))))
+  (is (not (single-arg-true-function? `(fn [_] false)))))
+
+(defn maybe-every? [f coll]
+  (if (single-arg-true-function? f)
+    true
+    `(every? ~f ~coll)))
+
+(deftest maybe-every?-test
+  (is (= true (maybe-every? `(fn [_] true) 'coll)))
+  (is (= `(every? (fn [~'_ ~'_] true) ~'coll) (maybe-every? `(fn [~'_ ~'_] true) 'coll)))
+  (is (= `(every? (fn [~'p] ~'p) ~'coll) (maybe-every? `(fn [~'p] ~'p) 'coll))))
+
+(defn boolean-function? [sym]
+  (boolean
+    (when (qualified-symbol? sym)
+      (let [v (resolve sym)]
+        (when (var? v)
+          (#{Boolean} (-> v meta :tag)))))))
+
+(deftest boolean-function?-test
+  (is (boolean-function? `every?))
+  (is (not (boolean-function? `some))))
+
+(defn boolean-expr? [expr]
+  (boolean (or (boolean? expr)
+               (when (seq? expr)
+                 (boolean-function? (first expr)))
+               (and (seq? expr)
+                    (-> expr first #{`and})
+                    (every? boolean? (rest expr))))))
+
+(defn maybe-boolean [expr]
+  (cond->> expr
+    (not (boolean-expr? expr)) (list `boolean)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/vector
@@ -578,69 +633,49 @@
                                :unrolled-arity (fn [_ fixed-args rest-arg]
                                                  (let [tp (fn [p]
                                                             (cond-> (mapv #(list p %) fixed-args)
-                                                              rest-arg (conj `(cc/every? ~p ~rest-arg))))]
-                                                   `(boolean
-                                                      (and ~@(-> []
-                                                                 (into (mapcat tp fixed-preds))
-                                                                 (cond->
-                                                                   rest-pred (conj (let [p (gensym-pretty 'p)]
-                                                                                     `(cc/every? (fn [~p] (and ~@(tp p))) ~rest-pred)))))))))})))})
+                                                              rest-arg (conj (maybe-every? p rest-arg))))]
+                                                   (maybe-boolean
+                                                     (maybe-and (-> []
+                                                                    (into (mapcat tp fixed-preds))
+                                                                    (cond->
+                                                                      rest-pred (conj (let [p (gensym-pretty 'p)]
+                                                                                        (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))})
 
 (deftest unrolled-naive-everyp-spec-test
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
-                 ([] (cc/boolean (cc/and)))
-                 ([x] (cc/boolean (cc/and)))
-                 ([x y] (cc/boolean (cc/and)))
-                 ([x y z] (cc/boolean (cc/and)))
-                 ([x y z & args] (cc/boolean (cc/and)))))
-          ([p1] (cc/fn ([] (cc/boolean (cc/and)))
-                  ([x] (cc/boolean (cc/and (p1 x))))
-                  ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
-                  ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
-                  ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
-          ([p1 p2] (cc/fn
-                     ([] (cc/boolean (cc/and)))
-                     ([x] (cc/boolean (cc/and (p1 x)
-                                              (p2 x))))
-                     ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
-                                                (p2 x) (p2 y))))
-                     ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
-                                                  (p2 x) (p2 y) (p2 z))))
-                     ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
-                                                         (p2 x) (p2 y) (p2 z) (cc/every? p2 args))))))
-          ([p1 p2 p3] (cc/fn
-                        ([] (cc/boolean (cc/and)))
-                        ([x] (cc/boolean (cc/and (p1 x)
-                                                 (p2 x)
-                                                 (p3 x))))
-                        ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
-                                                   (p2 x) (p2 y)
-                                                   (p3 x) (p3 y))))
-                        ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
-                                                     (p2 x) (p2 y) (p2 z)
-                                                     (p3 x) (p3 y) (p3 z))))
-                        ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
-                                                            (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
-                                                            (p3 x) (p3 y) (p3 z) (cc/every? p3 args))))))
-          ([p1 p2 p3 & ps] (cc/fn
-                             ([] (cc/boolean (cc/and (cc/every? (cc/fn [p] (cc/and)) ps))))
-                             ([x] (cc/boolean (cc/and (p1 x)
-                                                      (p2 x)
-                                                      (p3 x)
-                                                      (cc/every? (cc/fn [p] (cc/and (p x))) ps))))
-                             ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
-                                                        (p2 x) (p2 y)
-                                                        (p3 x) (p3 y)
-                                                        (cc/every? (cc/fn [p] (cc/and (p x) (p y))) ps))))
-                             ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
-                                                          (p2 x) (p2 y) (p2 z)
-                                                          (p3 x) (p3 y) (p3 z)
-                                                          (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) ps))))
-                             ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
-                                                                 (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
-                                                                 (p3 x) (p3 y) (p3 z) (cc/every? p3 args)
-                                                                 (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args))) ps))))))))))
+                 ([] true)
+                 ([x] true)
+                 ([x y] true)
+                 ([x y z] true)
+                 ([x y z & args] true)))
+           ([p1] (cc/fn
+                   ([] true)
+                   ([x] (cc/boolean (p1 x)))
+                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
+                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
+                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+           ([p1 p2] (cc/fn
+                      ([] true)
+                      ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
+                      ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y))))
+                      ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
+                      ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args))))))
+           ([p1 p2 p3] (cc/fn
+                         ([] true)
+                         ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x))))
+                         ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
+                         ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
+                         ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args) (p3 x) (p3 y) (p3 z) (cc/every? p3 args))))))
+           ([p1 p2 p3 & ps] (cc/fn
+                              ([] true)
+                              ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x) (cc/every? (cc/fn [p] (p x)) ps))))
+                              ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y) (cc/every? (cc/fn [p] (cc/and (p x) (p y))) ps))))
+                              ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z) (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) ps))))
+                              ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
+                                                                  (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
+                                                                  (p3 x) (p3 y) (p3 z) (cc/every? p3 args)
+                                                                  (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args))) ps))))))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -120,6 +120,7 @@
       (-> (select-keys config [:this :unrolled-arity])
           (assoc :names names)))))
 
+;TODO propagate :tag on argv
 (defn fn-tail->arglists [fn-tail]
   (map (fn [[fixed-args rest-arg]]
          (cond-> fixed-args

@@ -336,29 +336,69 @@
   ([f g & fs]
      (reduce1 comp (list* f g fs))))
 
-(def unrolled-comp-spec
-  {:argvs (uniformly-flowing-argvs
-            {:arities (range 4)
-             :fixed-names (single-char-syms-from \f)
-             :rest-name 'fs})
-   :unrolled-arity (fn [this fixed-fs rest-fs]
-                     (assert this)
-                     (if rest-fs
-                       `(reduce ~this ~(maybe-list* fixed-fs rest-fs))
-                       (case (count fixed-fs)
-                         0 `identity
-                         1 (first fixed-fs)
-                         `(fn ~@(unrolled-fn-tail
-                                  {:argvs (uniformly-flowing-argvs
-                                            {:arities (range 5)
-                                             :fixed-names (single-char-syms-from \x)
-                                             :rest-name 'args})
-                                   :unrolled-arity (fn [_ fixed-args rest-args]
-                                                     (reduce (fn [acc outer-f]
-                                                               (list outer-f acc))
-                                                             (maybe-apply (peek fixed-fs) fixed-args rest-args)
-                                                             (pop fixed-fs)))})))))})
+(defn unrolled-comp-spec*
+  ([] (unrolled-comp-spec* {}))
+  ([{:keys [outer-size inner-size] :or {outer-size 3 inner-size 4}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range outer-size)
+              :fixed-names (single-char-syms-from \f)
+              :rest-name 'fs})
+    :unrolled-arity (fn [this fixed-fs rest-fs]
+                      (assert this)
+                      (if rest-fs
+                        `(reduce ~this ~(maybe-list* fixed-fs rest-fs))
+                        (case (count fixed-fs)
+                          0 `identity
+                          1 (first fixed-fs)
+                          `(fn ~@(unrolled-fn-tail
+                                   {:argvs (uniformly-flowing-argvs
+                                             {:arities (range inner-size)
+                                              :fixed-names (single-char-syms-from \x)
+                                              :rest-name 'args})
+                                    :unrolled-arity (fn [_ fixed-args rest-args]
+                                                      (reduce (fn [acc outer-f]
+                                                                (list outer-f acc))
+                                                              (maybe-apply (peek fixed-fs) fixed-args rest-args)
+                                                              (pop fixed-fs)))})))))}))
+
+(def unrolled-comp-spec (unrolled-comp-spec*))
+
 (deftest unrolled-comp-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 0 :inner-size 0}) :this 'unrolled-comp)))
+         '([& fs] (cc/reduce unrolled-comp fs))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 1 :inner-size 0}) :this 'unrolled-comp)))
+         '(([] cc/identity)
+           ([& fs] (cc/reduce unrolled-comp fs)))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 2 :inner-size 0}) :this 'unrolled-comp)))
+         '(([] cc/identity) 
+           ([f] f)
+           ([f & fs] (cc/reduce unrolled-comp (cc/list* f fs))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 0}) :this 'unrolled-comp)))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn [& args] (f (cc/apply g args))))
+           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 1}) :this 'unrolled-comp)))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn
+                    ([] (f (g)))
+                    ([& args] (f (cc/apply g args)))))
+           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 2}) :this 'unrolled-comp)))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn
+                    ([] (f (g)))
+                    ([x] (f (g x)))
+                    ([x & args] (f (cc/apply g x args)))))
+           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 4 :inner-size 0}) :this 'unrolled-comp)))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn [& args] (f (cc/apply g args))))
+           ([f g h] (cc/fn [& args] (g (f (cc/apply h args)))))
+           ([f g h & fs] (cc/reduce unrolled-comp (cc/list* f g h fs))))))
   (is (= (prettify-unrolled (unrolled-fn-tail (assoc unrolled-comp-spec :this 'unrolled-comp)))
          '(([] cc/identity)
            ([f] f)

@@ -560,7 +560,7 @@
                      :rest-name 'ps})))
    :unrolled-arity (fn [_ fixed-preds rest-pred]
                      (let [this (gensym-pretty (symbol (str "ep" (if rest-pred "n" (count fixed-preds)))))
-                           body `(fn ~epn
+                           body `(fn ~this
                                    ~@(unrolled-fn-tail
                                        {:argvs (uniformly-flowing-argvs
                                                  {:arities (range 5)
@@ -569,18 +569,27 @@
                                         :unrolled-arity (fn [_ fixed-args rest-arg]
                                                           ;; FIXME
                                                           (let [p (gensym-pretty 'p)]
-                                                            (if rest-arg
-                                                              (if rest-pred
-                                                                (if (empty? fixed-args)
-                                                                  `(every? #(every? % ~rest-arg) ~rest-pred)
-                                                                  `(boolean (and (~this ~@fixed-args)
-                                                                                 (every? #(every? % ~rest-arg) ~rest-pred))))
-                                                                (if (empty? fixed-args)
-                                                                  `(every? (and (p1 %) (p2 %) (p3 %)) args)
-                                                                  `(every? (fn [~p] (and (~p x) (~p y) (~p z))) ~rest-pred)))
-                                                              (if rest-pred
-                                                                (if (seq fixed-args)
-                                                                  `(boolean (and ~@(mapcat (fn [p] (map #(list p %) fixed-args)) fixed-preds)))
-                                                                  true)))))}))]
+                                                            (cond
+                                                              rest-arg (cond
+                                                                         rest-pred (if (and (empty? fixed-args)
+                                                                                            (empty? fixed-preds))
+                                                                                     ;; [& ps] [& args]
+                                                                                     `(every? #(every? % ~rest-arg) ~rest-pred)
+                                                                                     ;; [p* & ps] [x* & args]
+                                                                                     `(boolean (and (~this ~@fixed-args)
+                                                                                                    (every? #(every? % ~rest-arg) ~rest-pred))))
+                                                                         :else (if (empty? fixed-args)
+                                                                                 ;; [p*] []
+                                                                                 `(every? (and (p1 %) (p2 %) (p3 %)) args)
+                                                                                 ;; [p*] [x+]
+                                                                                 `(every? (fn [~p] (and (~p x) (~p y) (~p z))) ~rest-pred)))
+                                                              :else (cond
+                                                                      rest-pred (if (seq fixed-args)
+                                                                                  ;; [p* & ps] [x+]
+                                                                                  `(boolean (and ~@(mapcat (fn [p] (map #(list p %) fixed-args)) fixed-preds)))
+                                                                                  ;; [p* & ps] []
+                                                                                  true)
+                                                                      ;; [p*] [x*]
+                                                                      :else `(boolean (and ~@(mapcat (fn [p] (map #(list p %) fixed-args)) fixed-preds)))))))}))]
                        (if rest-pred
                          `(let [~rest-pred ~(maybe-list* fixed-preds rest-pred)] ~body))))})

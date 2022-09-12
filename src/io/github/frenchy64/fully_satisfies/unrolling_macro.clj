@@ -53,8 +53,6 @@
   {:pre [(every? argv? argvs)]
    :post [(every? argv? %)]}
   (sort (map (fn [argv]
-               (prn argv)
-               (prn (argv->fixed-args argv))
                (let [pretty-rest-arg (some-> (argv->rest-arg argv) gensym-pretty)]
                  (cond-> (mapv gensym-pretty (argv->fixed-args argv))
                    pretty-rest-arg (conj '& pretty-rest-arg))))

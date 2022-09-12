@@ -253,33 +253,46 @@
   ([^clojure.lang.IFn f a b c d & args]
      (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
 
-(def unrolled-apply-spec
-  {:argvs (let [rest-arity 6
-                f (with-meta 'f {:tag 'clojure.lang.IFn})
-                args 'args]
-            (-> (mapv (fn [i]
-                        (-> [f]
-                            (into (take i) (single-char-syms-from \x))
-                            (conj args)))
-                      (range (- rest-arity 2)))
-                (conj (-> [f]
-                          (into (take (- rest-arity 2))
-                                (single-char-syms-from \a))
-                          (conj '& args)))))
-   :unrolled-arity (fn [_ [f & fixed-args] rest-arg]
-                     (let [[fixed-args last-fixed] (if rest-arg
-                                                     [fixed-args nil]
-                                                     [(butlast fixed-args) (last fixed-args)])]
-                       `(. ~f (~'applyTo
-                                ~(if rest-arg
-                                   (reduce (fn [acc x] `(cons ~x ~acc))
-                                           `(#'clojure.core/spread ~rest-arg)
-                                           (reverse fixed-args))
-                                   (if (empty? fixed-args)
-                                     `(seq ~last-fixed)
-                                     `(list* ~@fixed-args ~last-fixed)))))))})
+(defn unrolled-apply-spec*
+  ([] (unrolled-apply-spec* {}))
+  ([{:keys [size] :or {size 4}}]
+   {:argvs (let [rest-arity (+ 2 size)
+                 f (with-meta 'f {:tag 'clojure.lang.IFn})
+                 args 'args]
+             (-> (mapv (fn [i]
+                         (-> [f]
+                             (into (take i) (single-char-syms-from \x))
+                             (conj args)))
+                       (range (- rest-arity 2)))
+                 (conj (-> [f]
+                           (into (take (- rest-arity 2))
+                                 (single-char-syms-from \a))
+                           (conj '& args)))))
+    :unrolled-arity (fn [_ [f & fixed-args] rest-arg]
+                      (let [[fixed-args last-fixed] (if rest-arg
+                                                      [fixed-args nil]
+                                                      [(butlast fixed-args) (last fixed-args)])]
+                        `(. ~f (~'applyTo
+                                 ~(if rest-arg
+                                    (reduce (fn [acc x] `(cons ~x ~acc))
+                                            `(#'clojure.core/spread ~rest-arg)
+                                            (reverse fixed-args))
+                                    (if (empty? fixed-args)
+                                      `(seq ~last-fixed)
+                                      `(list* ~@fixed-args ~last-fixed)))))))}))
+
+(def unrolled-apply-spec (unrolled-apply-spec*))
 
 (deftest unrolled-apply-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 0})))
+         '([f & args] (. f (applyTo ((var cc/spread) args))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 1})))
+         '(([f args] (. f (applyTo (cc/seq args))))
+           ([f a & args] (. f (applyTo (cc/cons a ((var cc/spread) args))))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 2})))
+         '(([f args] (. f (applyTo (cc/seq args))))
+           ([f x args] (. f (applyTo (cc/list* x args))))
+           ([f a b & args] (. f (applyTo (cc/cons a (cc/cons b ((var cc/spread) args)))))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-apply-spec))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))

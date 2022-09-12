@@ -7,7 +7,7 @@
                      maybe-list*
                      maybe-concat
                      single-char-syms-from
-                     uniformly-flowing-names]]))
+                     uniformly-flowing-argvs]]))
 
 
 
@@ -32,7 +32,7 @@
      (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d (cons e (cons f args))))))))))
 
 (def unrolled-vector-spec
-  {:names (uniformly-flowing-names
+  {:argvs (uniformly-flowing-argvs
             {:arities (range 8)
              :fixed-names (single-char-syms-from \a)
              :rest-name 'args})
@@ -84,17 +84,16 @@
      (cons a (cons b (cons c (cons d (spread more)))))))
 
 (def unrolled-list*-spec
-  {:names (let [rest-arity 5]
+  {:argvs (let [rest-arity 5]
             (assert (pos? rest-arity))
             (-> (mapv (fn [i]
-                        [(-> (into [] (take (dec i))
-                                   (single-char-syms-from \a))
-                             (conj 'args))
-                         nil])
+                        (-> (into [] (take (dec i))
+                                  (single-char-syms-from \a))
+                            (conj 'args)))
                       (range 1 rest-arity))
-                (conj [(into [] (take (dec rest-arity))
-                             (single-char-syms-from \a))
-                       'more])))
+                (conj (-> (into [] (take (dec rest-arity))
+                                (single-char-syms-from \a))
+                          (conj '& 'more)))))
    :unrolled-arity (fn [_ fixed-args rest-arg]
                      (if (and (= 1 (count fixed-args)) (not rest-arg))
                        `(seq ~(first fixed-args))
@@ -146,19 +145,18 @@
      (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
 
 (def unrolled-apply-spec
-  {:names (let [rest-arity 6
+  {:argvs (let [rest-arity 6
                 f (with-meta 'f {:tag 'clojure.lang.IFn})
                 args 'args]
             (-> (mapv (fn [i]
-                        [(-> [f]
-                             (into (take i) (single-char-syms-from \x))
-                             (conj args))
-                         nil])
+                        (-> [f]
+                            (into (take i) (single-char-syms-from \x))
+                            (conj args)))
                       (range (- rest-arity 2)))
-                (conj [(-> [f]
-                           (into (take (- rest-arity 2))
-                                 (single-char-syms-from \a)))
-                       args])))
+                (conj (-> [f]
+                          (into (take (- rest-arity 2))
+                                (single-char-syms-from \a))
+                          (conj '& args)))))
    :unrolled-arity (fn [_ [f & fixed-args] rest-arg]
                      (let [[fixed-args last-fixed] (if rest-arg
                                                      [fixed-args nil]
@@ -217,7 +215,7 @@
      (reduce1 comp (list* f g fs))))
 
 (def unrolled-comp-spec
-  {:names (uniformly-flowing-names
+  {:argvs (uniformly-flowing-argvs
             {:arities (range 4)
              :fixed-names (single-char-syms-from \f)
              :rest-name 'fs})
@@ -229,7 +227,7 @@
                          0 `identity
                          1 (first fixed-fs)
                          `(fn ~@(unrolled-fn-tail
-                                  {:names (uniformly-flowing-names
+                                  {:argvs (uniformly-flowing-argvs
                                             {:arities (range 5)
                                              :fixed-names (single-char-syms-from \x)
                                              :rest-name 'args})
@@ -319,14 +317,14 @@
          ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
 
 (def unrolled-juxt-spec
-  {:names (uniformly-flowing-names
+  {:argvs (uniformly-flowing-argvs
             {:arities (range 1 5)
              :fixed-names (single-char-syms-from \f)
              :rest-name 'fs})
    :unrolled-arity (fn [_ fixed-fs rest-fs]
-                     (let [fs (gensym-pretty "fs")
+                     (let [fs (gensym-pretty 'fs)
                            body `(fn ~@(unrolled-fn-tail
-                                         {:names (uniformly-flowing-names
+                                         {:argvs (uniformly-flowing-argvs
                                                    {:arities (range 5)
                                                     :fixed-names (single-char-syms-from \x)
                                                     :rest-name 'args})
@@ -431,13 +429,13 @@
    (fn [& args] (apply f arg1 arg2 arg3 (concat more args)))))
 
 (def unrolled-partial-spec
-  {:names (uniformly-flowing-names
+  {:argvs (uniformly-flowing-argvs
             {:arities (range 1 6)
              :fixed-names (cons 'f (map #(symbol (str "arg" %)) (next (range))))
              :rest-name 'more})
    :unrolled-arity (fn [_ [f & fixed-args] rest-args]
                      `(fn ~@(unrolled-fn-tail
-                              {:names (uniformly-flowing-names
+                              {:argvs (uniformly-flowing-argvs
                                         {:arities (range (if rest-args 0 5))
                                          :fixed-names (single-char-syms-from \x)
                                          :rest-name 'args})

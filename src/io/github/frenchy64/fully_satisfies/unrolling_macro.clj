@@ -28,9 +28,31 @@
 
 (defn gensym-pretty [sym]
   (assert (not (-> sym meta ::original)) sym)
+  (assert (symbol? sym) (pr-str sym))
   (with-meta (gensym sym)
              (into (select-keys (meta sym) [:tag])
                    {::original (symbol sym)})))
+
+(defn rest-argv? [argv]
+  ;{:pre [(argv? argv)]}
+  (= '& (nth argv (- (count argv) 2) nil)))
+
+(defn argv? [argv]
+  (and (vector? argv)
+       (or (rest-argv? argv)
+           (not-any? #{'&} argv))))
+
+(defn argv->fixed-args [argv]
+  {:pre [(argv? argv)]
+   :post [(every? simple-symbol? %)]}
+  (cond-> argv
+    (rest-argv? argv) (subvec 0 (- (count argv) 2))))
+
+(defn argv->rest-arg [argv]
+  {:pre [(argv? argv)]
+   :post [((some-fn nil? simple-symbol?) %)]}
+  (when (rest-argv? argv)
+    (peek argv)))
 
 (defn prettify-unrolled [v]
   (walk/prewalk
@@ -43,16 +65,19 @@
           v))
     v))
 
-(defn gensym-pretty-names [names]
-  (sort-by
-    (juxt (comp count first) (comp some? second))
-    (map (fn [[fixed-args rest-arg]]
-           [(mapv gensym-pretty fixed-args) (some-> rest-arg gensym-pretty)])
-         names)))
+(defn gensym-pretty-argvs [argvs]
+  {:pre [(every? argv? argvs)]
+   :post [(every? argv? %)]}
+  (sort (map (fn [argv]
+               (prn argv)
+               (prn (argv->fixed-args argv))
+               (let [pretty-rest-arg (some-> (argv->rest-arg argv) gensym-pretty)]
+                 (cond-> (mapv gensym-pretty (argv->fixed-args argv))
+                   pretty-rest-arg (conj '& pretty-rest-arg))))
+             argvs)))
 
-(defn uniformly-flowing-names
-  "Generates a list of [fixed-args rest-arg] pairs, where fixed-args is a vector
-  of symbols naming fixed arguments, and rest-arg is a nilable symbol naming a rest argument.
+(defn uniformly-flowing-argvs
+  "Generates a list argument vectors.
 
   Use this function if you have a uniform pattern of arities like [], [x], [x y], [x y & args].
   
@@ -68,6 +93,7 @@
            rest-arity
            fixed-names
            rest-name]}]
+  {:post [(every? argv? %)]}
   (let [arities (or (not-empty (sort arities))
                     (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
                     [1])
@@ -83,40 +109,46 @@
                               (into [] (take nfixed) fixed-names)
                               (mapv #(symbol (str "fixed" %)) (range nfixed)))
                  _ (assert (= nfixed (count fixed-args)))]
-             [fixed-args rest-arg]))
+             (cond-> fixed-args
+               rest-arg (conj '& rest-arg))))
          arities)))
 
 (defn unrolled-fn-tail
-  ":names          a list of pairs [fixed-args rest-arg] for each arity.
+  ":argvs          a list of argvs of the form [fixed-args*] or [fixed-args* & rest-arg].
                    fixed-args is a list of symbols naming fixed arguments, and rest-arg
                    is a nilable symbol naming a possible rest-argument.
    :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
                    Default: nil
    :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
                     where this and rest-arg are nilable. Returns the body of the arity."
-  [{:keys [names unrolled-arity this]}]
-  (let [arities (->> (gensym-pretty-names names)
-                     (map (fn [[fixed-args rest-arg]]
-                            (list (cond-> fixed-args
-                                    rest-arg (conj '& rest-arg))
-                                  (unrolled-arity this fixed-args rest-arg)))))]
+  [{:keys [argvs unrolled-arity this]}]
+  (assert (every? argv? argvs) (pr-str argvs this))
+  (let [arities (->> (gensym-pretty-argvs argvs)
+                     (map (fn [argv]
+                            {:pre [(argv? argv)]}
+                            (let [fixed-args (argv->fixed-args argv)
+                                  rest-arg (argv->rest-arg argv)]
+                              (list (cond-> fixed-args
+                                      rest-arg (conj '& rest-arg))
+                                    (unrolled-arity this fixed-args rest-arg))))))]
     (with-meta (cond-> arities
                  (= 1 (count arities)) first)
-               {::names names})))
+               {::argvs argvs})))
 
 ;TODO propagate :tag on argv
 (defn fn-tail->arglists [fn-tail]
-  (map (fn [[fixed-args rest-arg]]
-         (cond-> fixed-args
-           rest-arg (conj '& rest-arg)))
-       (-> fn-tail meta ::names)))
+  (map (fn [argv]
+         (let [rest-arg (argv->rest-arg argv)]
+           (cond-> (argv->fixed-args argv)
+             rest-arg (conj '& rest-arg))))
+       (-> fn-tail meta ::argvs)))
 
 (defmacro defunrolled [nme doc attr config]
   (assert (symbol? config))
   (let [config-var (or (resolve config)
                        (requiring-resolve
                          (if (simple-symbol? config)
-                           (symbol (-> *ns* ns-name str) (name config))
+                           (symbol (-> *ns* ns-name name) (name config))
                            config)))
         _ (assert (var? config-var) config)
         fn-tail (unrolled-fn-tail (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]

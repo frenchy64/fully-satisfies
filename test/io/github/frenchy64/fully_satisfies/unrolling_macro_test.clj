@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.unrolling-macro-test
-  (:require [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
+  (:require [clojure.core :as cc]
+            [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.unrolling-macro
              :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled
@@ -22,12 +23,6 @@
     (if (next rests)
       `(concat ~@colls)
       (first colls))))
-
-(defn maybe-and [coll]
-  (case (count coll)
-    0 true
-    1 (first coll)
-    `(and ~@coll)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -504,92 +499,134 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; clojure.core/every-pred
+;; everyp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-#_
-(defn every-pred
-  "Takes a set of predicates and returns a function f that returns true if all of its
-  composing predicates return a logical true value against all of its arguments, else it returns
-  false. Note that f is short-circuiting in that it will stop execution on the first
-  argument that triggers a logical false result against the original predicates."
-  {:added "1.3"}
-  ([p]
-     (fn ep1
-       ([] true)
-       ([x] (boolean (p x)))
-       ([x y] (boolean (and (p x) (p y))))
-       ([x y z] (boolean (and (p x) (p y) (p z))))
-       ([x y z & args] (boolean (and (ep1 x y z)
-                                     (every? p args))))))
+#_ ;; naive expansion of (fixed) everyp
+(defn everyp
+  ([]
+   (fn
+     ([] (boolean (and)))
+     ([x] (boolean (and)))
+     ([x y] (boolean (and)))
+     ([x y z] (boolean (and)))
+     ([x y z & args] (boolean (and)))))
+  ([p1]
+   (fn
+     ([] (boolean (and)))
+     ([x] (boolean (and (p1 x))))
+     ([x y] (boolean (and (p1 x) (p1 y))))
+     ([x y z] (boolean (and (p1 x) (p1 y) (p1 z))))
+     ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args))))))
   ([p1 p2]
-     (fn ep2
-       ([] true)
-       ([x] (boolean (and (p1 x) (p2 x))))
-       ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y))))
-       ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
-       ([x y z & args] (boolean (and (ep2 x y z)
-                                     (every? #(and (p1 %) (p2 %)) args))))))
+   (fn
+     ([] (boolean (and)))
+     ([x] (boolean (and (p1 x)
+                        (p2 x))))
+     ([x y] (boolean (and (p1 x) (p1 y)
+                          (p2 x) (p2 y))))
+     ([x y z] (boolean (and (p1 x) (p1 y) (p1 z)
+                            (p2 x) (p2 y) (p2 z))))
+     ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args)
+                                   (p2 x) (p2 y) (p2 z) (every? p2 args))))))
   ([p1 p2 p3]
-     (fn ep3
-       ([] true)
-       ([x] (boolean (and (p1 x) (p2 x) (p3 x))))
-       ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
-       ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
-       ([x y z & args] (boolean (and (ep3 x y z)
-                                     (every? #(and (p1 %) (p2 %) (p3 %)) args))))))
+   (fn
+     ([] (boolean (and)))
+     ([x] (boolean (and (p1 x)
+                        (p2 x)
+                        (p3 x))))
+     ([x y] (boolean (and (p1 x) (p1 y)
+                          (p2 x) (p2 y)
+                          (p3 x) (p3 y))))
+     ([x y z] (boolean (and (p1 x) (p1 y) (p1 z)
+                            (p2 x) (p2 y) (p2 z)
+                            (p3 x) (p3 y) (p3 z))))
+     ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args)
+                                   (p2 x) (p2 y) (p2 z) (every? p2 args)
+                                   (p3 x) (p3 y) (p3 z) (every? p3 args))))))
   ([p1 p2 p3 & ps]
-     (let [ps (list* p1 p2 p3 ps)]
-       (fn epn
-         ([] true)
-         ([x] (every? #(% x) ps))
-         ([x y] (every? #(and (% x) (% y)) ps))
-         ([x y z] (every? #(and (% x) (% y) (% z)) ps))
-         ([x y z & args] (boolean (and (epn x y z)
-                                       (every? #(every? % args) ps))))))))
+   (fn
+     ([] (boolean (and (every? (fn [p] (and)) ps))))
+     ([x] (boolean (and (p1 x) (p2 x) (p3 x)
+                        (every? (fn [p] (and (p x))) ps))))
+     ([x y] (boolean (and (p1 x) (p1 y) (p1 z)
+                          (p2 x) (p2 y) (p2 z)
+                          (every? (fn [p] (and (p x) (p y))) ps))))
+     ([x y z] (boolean (and (p1 x) (p1 y) (p1 z)
+                            (p2 x) (p2 y) (p2 z)
+                            (p3 x) (p3 y) (p3 z)
+                            (every? (fn [p] (and (p x) (p y) (p z))) ps))))
+     ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args)
+                                   (p2 x) (p2 y) (p2 z) (every? p2 args)
+                                   (p3 x) (p3 y) (p3 z) (every? p3 args)
+                                   (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
 
-(def unrolled-partial-spec
+(def unrolled-everyp-spec
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
-            (cons '[p]
-                  (uniformly-flowing-argvs
-                    {:arities (range 2 (inc rest-arity))
-                     :fixed-names (map #(symbol (str "p" %)) (next (range)))
-                     :rest-name 'ps})))
+            (uniformly-flowing-argvs
+              {:arities (range 0 (inc rest-arity))
+               :fixed-names (map #(symbol (str "p" %)) (next (range)))
+               :rest-name 'ps}))
    :unrolled-arity (fn [_ fixed-preds rest-pred]
-                     (let [this (gensym-pretty (symbol (str "ep" (if rest-pred "n" (count fixed-preds)))))
-                           body `(fn ~this
-                                   ~@(unrolled-fn-tail
-                                       {:argvs (uniformly-flowing-argvs
-                                                 {:arities (range 5)
-                                                  :fixed-names (single-char-syms-from \x)
-                                                  :rest-name 'args})
-                                        :unrolled-arity (fn [_ fixed-args rest-arg]
-                                                          ;; FIXME
-                                                          (let [p (gensym-pretty 'p)]
-                                                            (cond
-                                                              rest-arg (cond
-                                                                         rest-pred (if (and (empty? fixed-args)
-                                                                                            (empty? fixed-preds))
-                                                                                     ;; [& ps] [& args]
-                                                                                     `(every? #(every? % ~rest-arg) ~rest-pred)
-                                                                                     ;; [p* & ps] [x* & args]
-                                                                                     `(boolean (and (~this ~@fixed-args)
-                                                                                                    (every? #(every? % ~rest-arg) ~rest-pred))))
-                                                                         :else (if (empty? fixed-args)
-                                                                                 ;; [p*] []
-                                                                                 `(every? (and (p1 %) (p2 %) (p3 %)) args)
-                                                                                 ;; [p*] [x+]
-                                                                                 `(every? (fn [~p] (and (~p x) (~p y) (~p z))) ~rest-pred)))
-                                                              :else (cond
-                                                                      rest-pred (if (seq fixed-args)
-                                                                                  ;; [p* & ps] [x+]
-                                                                                  `(boolean (and ~@(mapcat (fn [p] (map #(list p %) fixed-args)) fixed-preds)))
-                                                                                  ;; [p* & ps] []
-                                                                                  true)
-                                                                      ;; [p*] [x*]
-                                                                      :else `(boolean (and ~@(mapcat (fn [p] (map #(list p %) fixed-args)) fixed-preds)))))))}))]
-                       (if rest-pred
-                         `(let [~rest-pred ~(maybe-list* fixed-preds rest-pred)] ~body))))})
+                     `(fn ~@(unrolled-fn-tail
+                              {:argvs (uniformly-flowing-argvs
+                                        {:arities (range 5)
+                                         :fixed-names (single-char-syms-from \x)
+                                         :rest-name 'args})
+                               :unrolled-arity (fn [_ fixed-args rest-arg]
+                                                 (let [pred-tests (fn [p] (mapv #(list p %) fixed-args))]
+                                                   `(boolean
+                                                      (and ~@(-> []
+                                                                 (into (mapcat #(cond-> (pred-tests %)
+                                                                                  rest-arg (conj `(cc/every? ~% ~rest-arg)))
+                                                                               fixed-preds))
+                                                                 (cond->
+                                                                   rest-pred (conj (let [p (gensym-pretty 'p)]
+                                                                                     `(cc/every? (fn [~p] (and ~@(pred-tests p))) ~rest-arg)))))))))})))})
+
+
+(deftest unrolled-everyp-spec
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-everyp-spec))
+         '(([] (cc/fn
+                 ([] (cc/boolean (cc/and)))
+                 ([x] (cc/boolean (cc/and)))
+                 ([x y] (cc/boolean (cc/and)))
+                 ([x y z] (cc/boolean (cc/and)))
+                 ([x y z & args] (cc/boolean (cc/and)))))
+           ([p1] (cc/fn 
+                   ([] (cc/boolean (cc/and)))
+                   ([x] (cc/boolean (cc/and (p1 x))))
+                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
+                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
+                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+           ([p1 p2] (cc/fn
+                      ([] (cc/boolean (cc/and)))
+                      ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
+                      ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y))))
+                      ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
+                      ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args))))))
+           ([p1 p2 p3] (cc/fn 
+                         ([] (cc/boolean (cc/and)))
+                         ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x))))
+                         ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
+                         ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
+                         ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args) (p3 x) (p3 y) (p3 z) (cc/every? p3 args))))))
+           ([p1 p2 p3 & ps]
+            (cc/fn
+              ([] (cc/boolean (cc/and (cc/every? (cc/fn [p] (cc/and)) nil))))
+              ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x) (cc/every? (cc/fn [p] (cc/and (p x))) nil))))
+              ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
+                                         (p2 x) (p2 y)
+                                         (p3 x) (p3 y)
+                                         (cc/every? (cc/fn [p] (cc/and (p x) (p y))) nil))))
+              ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
+                                           (p2 x) (p2 y) (p2 z)
+                                           (p3 x) (p3 y) (p3 z)
+                                           (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) nil))))
+              ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
+                                                  (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
+                                                  (p3 x) (p3 y) (p3 z) (cc/every? p3 args)
+                                                  (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) args))))))))))

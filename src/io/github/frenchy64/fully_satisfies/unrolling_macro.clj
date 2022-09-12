@@ -44,12 +44,49 @@
     v))
 
 (defn gensym-pretty-names [names]
-  (->> names
-       (map (fn [[fixed-args rest-arg]]
-              [(mapv gensym-pretty fixed-args) (some-> rest-arg gensym-pretty)]))
-       (sort-by (juxt (comp count first) (comp some? second)))))
+  (sort-by
+    (juxt (comp count first) (comp some? second))
+    (map (fn [[fixed-args rest-arg]]
+           [(mapv gensym-pretty fixed-args) (some-> rest-arg gensym-pretty)])
+         names)))
 
-(defn unrolled-fn-tail*
+(defn uniformly-flowing-names
+  "Generates a list of [fixed-args rest-arg] pairs, where fixed-args is a vector
+  of symbols naming fixed arguments, and rest-arg is a nilable symbol naming a rest argument.
+
+  Use this function if you have a uniform pattern of arities like [], [x], [x y], [x y & args].
+  
+   :arities        a list of the number of arguments for each arity (add 1 for rest arg).
+                   If empty, a single [& rest] arity will be generated. Idiom: (range 0),
+                   for (fn [& rest]), (range 1) for (fn ([]) ([& rest])).
+   :rest-arity     the number of arguments (fixed + rest) that the rest arity will take.
+                   If :skip, no arity will have rest arguments.
+                   Default: (if (seq arities) (apply max arities) [1]).
+   :fixed-names    a distinct list of variable names to use for fixed arguments
+   :rest-name      a name to use for rest argument"
+  [{:keys [arities
+           rest-arity
+           fixed-names
+           rest-name]}]
+  (let [arities (or (not-empty (sort arities))
+                    (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
+                    [1])
+        rest-arity (when (not= :skip rest-arity)
+                     (or rest-arity (apply max arities)))]
+    (map (fn [nargs]
+           (let [rest-arg (when (= nargs rest-arity)
+                            (or rest-name 'rest))
+                 nfixed (cond-> nargs
+                          rest-arg dec)
+                 _ (assert (nat-int? nfixed))
+                 fixed-args (if fixed-names
+                              (into [] (take nfixed) fixed-names)
+                              (mapv #(symbol (str "fixed" %)) (range nfixed)))
+                 _ (assert (= nfixed (count fixed-args)))]
+             [fixed-args rest-arg]))
+         arities)))
+
+(defn unrolled-fn-tail
   ":names          a list of pairs [fixed-args rest-arg] for each arity.
                    fixed-args is a list of symbols naming fixed arguments, and rest-arg
                    is a nilable symbol naming a possible rest-argument.
@@ -67,59 +104,6 @@
                  (= 1 (count arities)) first)
                {::names names})))
 
-(defn unrolled-fn-tail
-  ":arities        a list of the number of arguments for each arity (add 1 for rest arg).
-                   If empty, a single [& rest] arity will be generated. Idiom: (range 0),
-                   for (fn [& rest]), (range 1) for (fn ([]) ([& rest])).
-                   Incompatible with :names.
-   :rest-arity     the number of arguments (fixed + rest) that the rest arity will take.
-                   If :skip, no arity will have rest arguments.
-                   Default: (if (seq arities) (apply max arities) [1]).
-                   Incompatible with :names.
-   :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
-                   Default: nil
-   :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
-                    where this and rest-arg are nilable. Returns the body of the arity.
-   :fixed-names    a distinct list of variable names to use for fixed arguments
-                   Incompatible with :names.
-   :rest-name      a name to use for rest argument
-                   Incompatible with :names.
-   :names          a list of pairs [fixed-args rest-arg] for each arity.
-                   fixed-args is a list of symbols naming fixed arguments, and rest-arg
-                   is a nilable symbol naming a possible rest-argument.
-                   Not compatible with :arities, :rest-arity, :fixed-names, or :rest-name."
-  [{:keys [this
-           arities
-           rest-arity
-           unrolled-arity
-           fixed-names
-           rest-name
-           names] :as config}]
-  (when names
-    (assert (not (or arities rest-arity fixed-names rest-name))
-            ":names not compatible with :arities, :rest-arity, :fixed-names, or :rest-name"))
-  (let [names (or names
-                  (let [arities (or (not-empty (sort arities))
-                                    (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
-                                    [1])
-                        rest-arity (when (not= :skip rest-arity)
-                                     (or rest-arity (apply max arities)))]
-                    (map (fn [nargs]
-                           (let [rest-arg (when (= nargs rest-arity)
-                                            (or rest-name 'rest))
-                                 nfixed (cond-> nargs
-                                          rest-arg dec)
-                                 _ (assert (nat-int? nfixed))
-                                 fixed-args (if fixed-names
-                                              (into [] (take nfixed) fixed-names)
-                                              (mapv #(symbol (str "fixed" %)) (range nfixed)))
-                                 _ (assert (= nfixed (count fixed-args)))]
-                             [fixed-args rest-arg]))
-                         arities)))]
-    (unrolled-fn-tail*
-      (-> (select-keys config [:this :unrolled-arity])
-          (assoc :names names)))))
-
 ;TODO propagate :tag on argv
 (defn fn-tail->arglists [fn-tail]
   (map (fn [[fixed-args rest-arg]]
@@ -128,8 +112,14 @@
        (-> fn-tail meta ::names)))
 
 (defmacro defunrolled [nme doc attr config]
-  (let [fn-tail (unrolled-fn-tail (-> config requiring-resolve deref
-                                      (assoc :this (symbol (-> *ns* ns-name name) (name nme)))))]
+  (assert (symbol? config))
+  (let [config-var (or (resolve config)
+                       (requiring-resolve
+                         (if (simple-symbol? config)
+                           (symbol (-> *ns* ns-name str) (name config))
+                           config)))
+        _ (assert (var? config-var) config)
+        fn-tail (unrolled-fn-tail (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
        ~@fn-tail)))
 

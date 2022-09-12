@@ -719,7 +719,8 @@
   ([] (unrolled-naive-everyp-spec* {}))
   ([{:keys [outer-size inner-size smaller-final-arity?]
      :or {outer-size 4
-          inner-size 4}}]
+          inner-size 4
+          smaller-final-arity? false}}]
    (assert (nat-int? outer-size))
    (assert (nat-int? inner-size))
    {:argvs (uniformly-flowing-argvs
@@ -738,10 +739,11 @@
                                                         tp-gen (fn [p]
                                                                  (cond-> (mapv #(list p %) fixed-args)
                                                                    rest-arg (conj (maybe-every? p rest-arg))))
+                                                        tp-call (fn [p] (if tp [`(~tp ~p)] (tp-gen p)))
                                                         p (gensym-pretty 'p)
                                                         body (maybe-boolean
-                                                               (maybe-and (cond-> (into [] (mapcat tp-gen) fixed-preds)
-                                                                            rest-pred (conj (maybe-every? `(fn [~p] ~(if tp `(~tp ~p) (maybe-and (tp-gen p)))) rest-pred)))))]
+                                                               (maybe-and (cond-> (into [] (mapcat tp-call) fixed-preds)
+                                                                            rest-pred (conj (maybe-every? (or tp `(fn [~p] ~(maybe-and (tp-call p)))) rest-pred)))))]
                                                     (if tp
                                                       `(let [~tp (fn [~p] ~(maybe-and (tp-gen p)))] ~body)
                                                       body)))})))}))
@@ -770,6 +772,34 @@
            ([& ps] (cc/fn
                      ([] true)
                      ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+                                                {:outer-size 2
+                                                 :inner-size 4
+                                                 :smaller-final-arity? true})))
+
+         '(([] (cc/fn
+                 ([] true)
+                 ([x] true)
+                 ([x y] true)
+                 ([x y z] true)
+                 ([x y z & args] true)))
+           ([p1] (cc/fn 
+                   ([] true)
+                   ([x] (cc/boolean (p1 x)))
+                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
+                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
+                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+           ([p1 & ps] (cc/fn
+                        ([] (cc/let [tp (cc/fn [p] true)]
+                              (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
+                        ([x] (cc/let [tp (cc/fn [p] (p x))]
+                               (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
+                        ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
+                                 (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
+                        ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
+                                   (cc/boolean (cc/and (tp p1) (cc/every? tp ps)))))
+                        ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
+                                          (cc/boolean (cc/and (tp p1) (cc/every? tp ps))))))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
                  ([] true)

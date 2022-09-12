@@ -499,7 +499,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; everyp
+;; Naive everyp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -562,8 +562,7 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
-
-(def unrolled-everyp-spec
+(def unrolled-naive-everyp-spec
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
             (uniformly-flowing-argvs
@@ -577,56 +576,172 @@
                                          :fixed-names (single-char-syms-from \x)
                                          :rest-name 'args})
                                :unrolled-arity (fn [_ fixed-args rest-arg]
-                                                 (let [pred-tests (fn [p] (mapv #(list p %) fixed-args))]
+                                                 (let [tp (fn [p]
+                                                            (cond-> (mapv #(list p %) fixed-args)
+                                                              rest-arg (conj `(cc/every? ~p ~rest-arg))))]
                                                    `(boolean
                                                       (and ~@(-> []
-                                                                 (into (mapcat #(cond-> (pred-tests %)
-                                                                                  rest-arg (conj `(cc/every? ~% ~rest-arg)))
-                                                                               fixed-preds))
+                                                                 (into (mapcat tp fixed-preds))
                                                                  (cond->
                                                                    rest-pred (conj (let [p (gensym-pretty 'p)]
-                                                                                     `(cc/every? (fn [~p] (and ~@(pred-tests p))) ~rest-arg)))))))))})))})
+                                                                                     `(cc/every? (fn [~p] (and ~@(tp p))) ~rest-pred)))))))))})))})
 
-
-(deftest unrolled-everyp-spec
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-everyp-spec))
+(deftest unrolled-naive-everyp-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
                  ([] (cc/boolean (cc/and)))
                  ([x] (cc/boolean (cc/and)))
                  ([x y] (cc/boolean (cc/and)))
                  ([x y z] (cc/boolean (cc/and)))
                  ([x y z & args] (cc/boolean (cc/and)))))
-           ([p1] (cc/fn 
-                   ([] (cc/boolean (cc/and)))
-                   ([x] (cc/boolean (cc/and (p1 x))))
-                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
-                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
-                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
-           ([p1 p2] (cc/fn
-                      ([] (cc/boolean (cc/and)))
-                      ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
-                      ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y))))
-                      ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
-                      ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args))))))
-           ([p1 p2 p3] (cc/fn 
-                         ([] (cc/boolean (cc/and)))
-                         ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x))))
-                         ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
-                         ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
-                         ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args) (p2 x) (p2 y) (p2 z) (cc/every? p2 args) (p3 x) (p3 y) (p3 z) (cc/every? p3 args))))))
-           ([p1 p2 p3 & ps]
-            (cc/fn
-              ([] (cc/boolean (cc/and (cc/every? (cc/fn [p] (cc/and)) nil))))
-              ([x] (cc/boolean (cc/and (p1 x) (p2 x) (p3 x) (cc/every? (cc/fn [p] (cc/and (p x))) nil))))
-              ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
-                                         (p2 x) (p2 y)
-                                         (p3 x) (p3 y)
-                                         (cc/every? (cc/fn [p] (cc/and (p x) (p y))) nil))))
-              ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
-                                           (p2 x) (p2 y) (p2 z)
-                                           (p3 x) (p3 y) (p3 z)
-                                           (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) nil))))
-              ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
-                                                  (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
-                                                  (p3 x) (p3 y) (p3 z) (cc/every? p3 args)
-                                                  (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) args))))))))))
+          ([p1] (cc/fn ([] (cc/boolean (cc/and)))
+                  ([x] (cc/boolean (cc/and (p1 x))))
+                  ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
+                  ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
+                  ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+          ([p1 p2] (cc/fn
+                     ([] (cc/boolean (cc/and)))
+                     ([x] (cc/boolean (cc/and (p1 x)
+                                              (p2 x))))
+                     ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
+                                                (p2 x) (p2 y))))
+                     ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
+                                                  (p2 x) (p2 y) (p2 z))))
+                     ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
+                                                         (p2 x) (p2 y) (p2 z) (cc/every? p2 args))))))
+          ([p1 p2 p3] (cc/fn
+                        ([] (cc/boolean (cc/and)))
+                        ([x] (cc/boolean (cc/and (p1 x)
+                                                 (p2 x)
+                                                 (p3 x))))
+                        ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
+                                                   (p2 x) (p2 y)
+                                                   (p3 x) (p3 y))))
+                        ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
+                                                     (p2 x) (p2 y) (p2 z)
+                                                     (p3 x) (p3 y) (p3 z))))
+                        ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
+                                                            (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
+                                                            (p3 x) (p3 y) (p3 z) (cc/every? p3 args))))))
+          ([p1 p2 p3 & ps] (cc/fn
+                             ([] (cc/boolean (cc/and (cc/every? (cc/fn [p] (cc/and)) ps))))
+                             ([x] (cc/boolean (cc/and (p1 x)
+                                                      (p2 x)
+                                                      (p3 x)
+                                                      (cc/every? (cc/fn [p] (cc/and (p x))) ps))))
+                             ([x y] (cc/boolean (cc/and (p1 x) (p1 y)
+                                                        (p2 x) (p2 y)
+                                                        (p3 x) (p3 y)
+                                                        (cc/every? (cc/fn [p] (cc/and (p x) (p y))) ps))))
+                             ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)
+                                                          (p2 x) (p2 y) (p2 z)
+                                                          (p3 x) (p3 y) (p3 z)
+                                                          (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) ps))))
+                             ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args)
+                                                                 (p2 x) (p2 y) (p2 z) (cc/every? p2 args)
+                                                                 (p3 x) (p3 y) (p3 z) (cc/every? p3 args)
+                                                                 (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args))) ps))))))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Naive somef
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+#_
+(defn somef
+  "Combines functions into a variable-arity disjunction.
+  
+  Definitionally equivalent to:
+
+    (defn somef [& fs]
+      (fn [& args] (some #(some % args) fs)))"
+  {:arglists '([& fs])}
+  ([]
+     (fn
+       ([] (or nil))
+       ([x] (or nil))
+       ([x y] (or nil))
+       ([x y z] (or nil))
+       ([x y z & args] (or nil))))
+  ([f1]
+     (fn
+       ([] (or nil))
+       ([x] (or (f1 x) nil))
+       ([x y] (or (f1 x) (f1 y)
+                  nil))
+       ([x y z] (or (f1 x) (f1 y) (f1 z)
+                    nil))
+       ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
+                           nil))))
+  ([f1 f2]
+     (fn
+       ([] (or nil))
+       ([x] (or (f1 x) (f2 x)
+                nil))
+       ([x y] (or (f1 x) (f1 y)
+                  (f2 x) (f2 y)
+                  nil))
+       ([x y z] (or (f1 x) (f1 y) (f1 z)
+                    (f2 x) (f2 y) (f2 z)
+                    nil))
+       ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
+                           (f2 x) (f2 y) (f2 z) (some f2 args)
+                           nil))))
+  ([f1 f2 f3]
+     (fn
+       ([] (or nil))
+       ([x] (or (f1 x) (f2 x) (f3 x)
+                nil))
+       ([x y] (or (f1 x) (f1 y)
+                  (f2 x) (f2 y)
+                  (f3 x) (f3 y)
+                  nil))
+       ([x y z] (or (f1 x) (f1 y) (f1 z)
+                    (f2 x) (f2 y) (f2 z)
+                    (f3 x) (f3 y) (f3 z)
+                    nil))
+       ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
+                           (f2 x) (f2 y) (f2 z) (some f2 args)
+                           (f3 x) (f3 y) (f3 z) (some f3 args)
+                           nil))))
+  ([f1 f2 f3 & fs]
+   (fn
+     ([] (or nil))
+     ([x] (or (f1 x) (f2 x) (f3 x)
+              (some #(or (% x)) fs)))
+     ([x y] (or (f1 x) (f1 y)
+                (f2 x) (f2 y)
+                (f3 x) (f3 y)
+                (some #(or (% x)) fs)))
+     ([x y z] (or (f1 x) (f1 y) (f1 z)
+                  (f2 x) (f2 y) (f2 z)
+                  (f3 x) (f3 y) (f3 z)
+                  (some #(or (% x) (% y)) fs)))
+     ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
+                         (f2 x) (f2 y) (f2 z) (some f2 args)
+                         (f3 x) (f3 y) (f3 z) (some f3 args)
+                         (some #(or (% x) (% y) (% z)) fs))))))
+
+(def unrolled-naive-somef-spec
+  {:argvs (let [rest-arity 4]
+            (assert (<= 2 rest-arity))
+            (uniformly-flowing-argvs
+              {:arities (range 0 (inc rest-arity))
+               :fixed-names (map #(symbol (str "f" %)) (next (range)))
+               :rest-name 'fs}))
+   :unrolled-arity (fn [_ fixed-fs rest-f]
+                     `(fn ~@(unrolled-fn-tail
+                              {:argvs (uniformly-flowing-argvs
+                                        {:arities (range 5)
+                                         :fixed-names (single-char-syms-from \x)
+                                         :rest-name 'args})
+                               :unrolled-arity (fn [_ fixed-args rest-arg]
+                                                 (let [f-tests (fn [f] (mapv #(list f %) fixed-args))]
+                                                   `(or ~@(-> []
+                                                              (into (mapcat #(cond-> (f-tests %)
+                                                                               rest-arg (conj `(cc/some ~% ~rest-arg)))
+                                                                            fixed-fs))
+                                                              (conj (when rest-f
+                                                                      (let [f (gensym-pretty 'f)]
+                                                                        `(cc/some (fn [~f] (and ~@(f-tests f))) ~rest-arg))))))))})))})

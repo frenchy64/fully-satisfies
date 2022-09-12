@@ -179,25 +179,38 @@
   ([a b c d & more]
      (cons a (cons b (cons c (cons d (spread more)))))))
 
-(def unrolled-list*-spec
-  {:argvs (let [rest-arity 5]
-            (assert (pos? rest-arity))
-            (-> (mapv (fn [i]
-                        (-> (into [] (take (dec i))
-                                  (single-char-syms-from \a))
-                            (conj 'args)))
-                      (range 1 rest-arity))
-                (conj (-> (into [] (take (dec rest-arity))
-                                (single-char-syms-from \a))
-                          (conj '& 'more)))))
-   :unrolled-arity (fn [_ fixed-args rest-arg]
-                     (if (and (= 1 (count fixed-args)) (not rest-arg))
-                       `(seq ~(first fixed-args))
-                       (reduce (fn [acc x] `(cons ~x ~acc))
-                               (if rest-arg `(#'clojure.core/spread ~rest-arg) (peek fixed-args))
-                               (rseq (pop fixed-args)))))})
+(defn unrolled-list*-spec*
+  ([] (unrolled-list*-spec* {}))
+  ([{:keys [size] :or {size 4}}]
+   {:argvs (let [rest-arity (inc size)]
+             (assert (pos? rest-arity))
+             (-> (mapv (fn [i]
+                         (-> (into [] (take (dec i))
+                                   (single-char-syms-from \a))
+                             (conj 'args)))
+                       (range 1 rest-arity))
+                 (conj (-> (into [] (take (dec rest-arity))
+                                 (single-char-syms-from \a))
+                           (conj '& 'more)))))
+    :unrolled-arity (fn [_ fixed-args rest-arg]
+                      (if (and (= 1 (count fixed-args)) (not rest-arg))
+                        `(seq ~(first fixed-args))
+                        (reduce (fn [acc x] `(cons ~x ~acc))
+                                (if rest-arg `(#'clojure.core/spread ~rest-arg) (peek fixed-args))
+                                (some-> fixed-args not-empty pop rseq))))}))
+
+(def unrolled-list*-spec (unrolled-list*-spec*))
 
 (deftest unrolled-list*-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 0})))
+         '([& more] ((var cc/spread) more))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 1})))
+         '(([args] (cc/seq args)) 
+           ([a & more] ((var cc/spread) more)))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 2})))
+         '(([args] (cc/seq args)) 
+           ([a args] (cc/cons a args)) 
+           ([a b & more] (cc/cons a ((var cc/spread) more))))))
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-list*-spec))
          '(([args] (cc/seq args))
            ([a args] (cc/cons a args))

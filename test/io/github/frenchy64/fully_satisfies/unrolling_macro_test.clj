@@ -717,8 +717,9 @@
 
 (defn unrolled-naive-everyp-spec*
   ([] (unrolled-naive-everyp-spec* {}))
-  ([{:keys [outer-size inner-size] :or {outer-size 4
-                                                    inner-size 4}}]
+  ([{:keys [outer-size inner-size smaller-final-arity?]
+     :or {outer-size 4
+          inner-size 4}}]
    (assert (nat-int? outer-size))
    (assert (nat-int? inner-size))
    {:argvs (uniformly-flowing-argvs
@@ -732,15 +733,18 @@
                                           :fixed-names (single-char-syms-from \x)
                                           :rest-name 'args})
                                 :unrolled-arity (fn [_ fixed-args rest-arg]
-                                                  (let [tp (fn [p]
-                                                             (cond-> (mapv #(list p %) fixed-args)
-                                                               rest-arg (conj (maybe-every? p rest-arg))))]
-                                                    (maybe-boolean
-                                                      (maybe-and (-> []
-                                                                     (into (mapcat tp fixed-preds))
-                                                                     (cond->
-                                                                       rest-pred (conj (let [p (gensym-pretty 'p)]
-                                                                                         (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))}))
+                                                  (let [tp (when (and (seq fixed-preds) rest-pred smaller-final-arity?)
+                                                             (gensym-pretty 'tp))
+                                                        tp-gen (fn [p]
+                                                                 (cond-> (mapv #(list p %) fixed-args)
+                                                                   rest-arg (conj (maybe-every? p rest-arg))))
+                                                        p (gensym-pretty 'p)
+                                                        body (maybe-boolean
+                                                               (maybe-and (cond-> (into [] (mapcat tp-gen) fixed-preds)
+                                                                            rest-pred (conj (maybe-every? `(fn [~p] ~(if tp `(~tp ~p) (maybe-and (tp-gen p)))) rest-pred)))))]
+                                                    (if tp
+                                                      `(let [~tp (fn [~p] ~(maybe-and (tp-gen p)))] ~body)
+                                                      body)))})))}))
 
 (def unrolled-naive-everyp-spec (unrolled-naive-everyp-spec*))
 

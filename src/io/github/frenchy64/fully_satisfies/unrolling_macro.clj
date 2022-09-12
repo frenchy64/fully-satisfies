@@ -27,6 +27,7 @@
           (map #(symbol (str c %)) (range))))
 
 (defn gensym-pretty [sym]
+  (assert (not (-> sym meta ::original)) sym)
   (with-meta (gensym sym) {::original (symbol sym)}))
 
 (defn prettify-unrolled [v]
@@ -40,57 +41,87 @@
           v))
     v))
 
+(defn gensym-pretty-names [names]
+  (->> names
+       (map (fn [[fixed-args rest-arg]]
+              [(mapv gensym-pretty fixed-args) (some-> rest-arg gensym-pretty)]))
+       (sort-by (juxt (comp count first) (comp some? second)))))
+
+(defn unrolled-fn-tail*
+  ":names          a list of pairs [fixed-args rest-arg] for each arity.
+                   fixed-args is a list of symbols naming fixed arguments, and rest-arg
+                   is a nilable symbol naming a possible rest-argument.
+   :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
+                   Default: nil
+   :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
+                    where this and rest-arg are nilable. Returns the body of the arity."
+  [{:keys [names unrolled-arity this]}]
+  (let [arities (->> (gensym-pretty-names names)
+                     (map (fn [[fixed-args rest-arg]]
+                            (list (cond-> fixed-args
+                                    rest-arg (conj '& rest-arg))
+                                  (unrolled-arity this fixed-args rest-arg)))))]
+    (with-meta (cond-> arities
+                 (= 1 (count arities)) first)
+               {::names names})))
+
 (defn unrolled-fn-tail
   ":arities        a list of the number of arguments for each arity (add 1 for rest arg).
                    If empty, a single [& rest] arity will be generated. Idiom: (range 0),
                    for (fn [& rest]), (range 1) for (fn ([]) ([& rest])).
+                   Incompatible with :names.
    :rest-arity     the number of arguments (fixed + rest) that the rest arity will take.
                    If :skip, no arity will have rest arguments.
                    Default: (if (seq arities) (apply max arities) [1]).
+                   Incompatible with :names.
    :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
                    Default: nil
    :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
                     where this and rest-arg are nilable. Returns the body of the arity.
    :fixed-names    a distinct list of variable names to use for fixed arguments
-   :rest-name      a name to use for rest argument"
+                   Incompatible with :names.
+   :rest-name      a name to use for rest argument
+                   Incompatible with :names.
+   :names          a list of pairs [fixed-args rest-arg] for each arity.
+                   fixed-args is a list of symbols naming fixed arguments, and rest-arg
+                   is a nilable symbol naming a possible rest-argument.
+                   Not compatible with :arities, :rest-arity, :fixed-names, or :rest-name."
   [{:keys [this
            arities
            rest-arity
            unrolled-arity
            fixed-names
-           rest-name]}]
-  (let [arities (or (not-empty (sort arities))
-                    (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
-                    [1])
-        rest-arity (when (not= :skip rest-arity)
-                     (or rest-arity (apply max arities)))
-        names (map (fn [nargs]
-                     (let [rest-arg (when (= nargs rest-arity)
-                                      (gensym-pretty (or rest-name 'rest)))
-                           nfixed (cond-> nargs
-                                    rest-arg dec)
-                           _ (assert (nat-int? nfixed))
-                           fixed-args (if fixed-names
-                                        (into [] (comp (take nfixed)
-                                                       (map gensym-pretty))
-                                              fixed-names)
-                                        (mapv #(gensym-pretty (str "fixed" %)) (range nfixed)))
-                           _ (assert (= nfixed (count fixed-args)))]
-                       [fixed-args rest-arg]))
-                   arities)
-        arities (map (fn [[fixed-args rest-arg]]
-                       (list (cond-> fixed-args
-                               rest-arg (conj '& rest-arg))
-                             (unrolled-arity this fixed-args rest-arg)))
-                     names)]
-    (with-meta (cond-> arities
-                 (= 1 (count arities)) first)
-               {::names names})))
+           rest-name
+           names] :as config}]
+  (when names
+    (assert (not (or arities rest-arity fixed-names rest-name))
+            ":names not compatible with :arities, :rest-arity, :fixed-names, or :rest-name"))
+  (let [names (or names
+                  (let [arities (or (not-empty (sort arities))
+                                    (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
+                                    [1])
+                        rest-arity (when (not= :skip rest-arity)
+                                     (or rest-arity (apply max arities)))]
+                    (map (fn [nargs]
+                           (let [rest-arg (when (= nargs rest-arity)
+                                            (or rest-name 'rest))
+                                 nfixed (cond-> nargs
+                                          rest-arg dec)
+                                 _ (assert (nat-int? nfixed))
+                                 fixed-args (if fixed-names
+                                              (into [] (take nfixed) fixed-names)
+                                              (mapv #(symbol (str "fixed" %)) (range nfixed)))
+                                 _ (assert (= nfixed (count fixed-args)))]
+                             [fixed-args rest-arg]))
+                         arities)))]
+    (unrolled-fn-tail*
+      (-> (select-keys config [:this :unrolled-arity])
+          (assoc :names names)))))
 
 (defn fn-tail->arglists [fn-tail]
   (map (fn [[fixed-args rest-arg]]
-         (cond-> (mapv (comp ::original meta) fixed-args)
-           rest-arg (conj '& (-> rest-arg meta ::original))))
+         (cond-> fixed-args
+           rest-arg (conj '& rest-arg)))
        (-> fn-tail meta ::names)))
 
 (defmacro defunrolled [nme doc attr config]
@@ -101,75 +132,6 @@
 
 ;; all from clojure.core, for reference
 (comment
-(defn juxt 
-  "Takes a set of functions and returns a fn that is the juxtaposition
-  of those fns.  The returned fn takes a variable number of args, and
-  returns a vector containing the result of applying each fn to the
-  args (left-to-right).
-  ((juxt a b c) x) => [(a x) (b x) (c x)]"
-  {:added "1.1"
-   :static true}
-  ([f] 
-     (fn
-       ([] [(f)])
-       ([x] [(f x)])
-       ([x y] [(f x y)])
-       ([x y z] [(f x y z)])
-       ([x y z & args] [(apply f x y z args)])))
-  ([f g] 
-     (fn
-       ([] [(f) (g)])
-       ([x] [(f x) (g x)])
-       ([x y] [(f x y) (g x y)])
-       ([x y z] [(f x y z) (g x y z)])
-       ([x y z & args] [(apply f x y z args) (apply g x y z args)])))
-  ([f g h] 
-     (fn
-       ([] [(f) (g) (h)])
-       ([x] [(f x) (g x) (h x)])
-       ([x y] [(f x y) (g x y) (h x y)])
-       ([x y z] [(f x y z) (g x y z) (h x y z)])
-       ([x y z & args] [(apply f x y z args) (apply g x y z args) (apply h x y z args)])))
-  ([f g h & fs]
-     (let [fs (list* f g h fs)]
-       (fn
-         ([] (reduce1 #(conj %1 (%2)) [] fs))
-         ([x] (reduce1 #(conj %1 (%2 x)) [] fs))
-         ([x y] (reduce1 #(conj %1 (%2 x y)) [] fs))
-         ([x y z] (reduce1 #(conj %1 (%2 x y z)) [] fs))
-         ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
-
-(defn partial
-  "Takes a function f and fewer than the normal arguments to f, and
-  returns a fn that takes a variable number of additional args. When
-  called, the returned function calls f with args + additional args."
-  {:added "1.0"
-   :static true}
-  ([f] f)
-  ([f arg1]
-   (fn
-     ([] (f arg1))
-     ([x] (f arg1 x))
-     ([x y] (f arg1 x y))
-     ([x y z] (f arg1 x y z))
-     ([x y z & args] (apply f arg1 x y z args))))
-  ([f arg1 arg2]
-   (fn
-     ([] (f arg1 arg2))
-     ([x] (f arg1 arg2 x))
-     ([x y] (f arg1 arg2 x y))
-     ([x y z] (f arg1 arg2 x y z))
-     ([x y z & args] (apply f arg1 arg2 x y z args))))
-  ([f arg1 arg2 arg3]
-   (fn
-     ([] (f arg1 arg2 arg3))
-     ([x] (f arg1 arg2 arg3 x))
-     ([x y] (f arg1 arg2 arg3 x y))
-     ([x y z] (f arg1 arg2 arg3 x y z))
-     ([x y z & args] (apply f arg1 arg2 arg3 x y z args))))
-  ([f arg1 arg2 arg3 & more]
-   (fn [& args] (apply f arg1 arg2 arg3 (concat more args)))))
-
 (defn every-pred
   "Takes a set of predicates and returns a function f that returns true if all of its
   composing predicates return a logical true value against all of its arguments, else it returns
@@ -251,85 +213,6 @@
          ([x y z & args] (or (spn x y z)
                              (some #(some % args) ps)))))))
 
-(defn vector
-  "Creates a new vector containing the args."
-  {:added "1.0"
-   :static true}
-  ([] [])
-  ([a] [a])
-  ([a b] [a b])
-  ([a b c] [a b c])
-  ([a b c d] [a b c d])
-	([a b c d e] [a b c d e])
-	([a b c d e f] [a b c d e f])
-  ([a b c d e f & args]
-     (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d (cons e (cons f args))))))))))
-
-(def
- ^{:arglists '([] [coll] [coll x] [coll x & xs])
-   :doc "conj[oin]. Returns a new collection with the xs
-    'added'. (conj nil item) returns (item).
-    (conj coll) returns coll. (conj) returns [].
-    The 'addition' may happen at different 'places' depending
-    on the concrete type."
-   :added "1.0"
-   :static true}
- conj (fn ^:static conj
-        ([] [])
-        ([coll] coll)
-        ([coll x] (clojure.lang.RT/conj coll x))
-        ([coll x & xs]
-         (if xs
-           (recur (clojure.lang.RT/conj coll x) (first xs) (next xs))
-           (clojure.lang.RT/conj coll x)))))
-(def
- ^{:arglists '([map key val] [map key val & kvs])
-   :doc "assoc[iate]. When applied to a map, returns a new map of the
-    same (hashed/sorted) type, that contains the mapping of key(s) to
-    val(s). When applied to a vector, returns a new vector that
-    contains val at index. Note - index must be <= (count vector)."
-   :added "1.0"
-   :static true}
- assoc
- (fn ^:static assoc
-   ([map key val] (clojure.lang.RT/assoc map key val))
-   ([map key val & kvs]
-    (let [ret (clojure.lang.RT/assoc map key val)]
-      (if kvs
-        (if (next kvs)
-          (recur ret (first kvs) (second kvs) (nnext kvs))
-          (throw (IllegalArgumentException.
-                  "assoc expects even number of arguments after map/vector, found odd number")))
-        ret)))))
-
-(defn str
-  "With no args, returns the empty string. With one arg x, returns
-  x.toString().  (str nil) returns the empty string. With more than
-  one arg, returns the concatenation of the str values of the args."
-  {:tag String
-   :added "1.0"
-   :static true}
-  (^String [] "")
-  (^String [^Object x]
-   (if (nil? x) "" (. x (toString))))
-  (^String [x & ys]
-     ((fn [^StringBuilder sb more]
-          (if more
-            (recur (. sb  (append (str (first more)))) (next more))
-            (str sb)))
-      (new StringBuilder (str x)) ys)))
-
-(defn list*
-  "Creates a new seq containing the items prepended to the rest, the
-  last of which will be treated as a sequence."
-  {:added "1.0"
-   :static true}
-  ([args] (seq args))
-  ([a args] (cons a args))
-  ([a b args] (cons a (cons b args)))
-  ([a b c args] (cons a (cons b (cons c args))))
-  ([a b c d & more]
-     (cons a (cons b (cons c (cons d (spread more)))))))
 
 (defn apply
   "Applies fn f to the argument list formed by prepending intervening arguments to args."
@@ -345,75 +228,4 @@
      (. f (applyTo (list* x y z args))))
   ([^clojure.lang.IFn f a b c d & args]
      (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
-
-(defn concat
-  "Returns a lazy seq representing the concatenation of the elements in the supplied colls."
-  {:added "1.0"
-   :static true}
-  ([] (lazy-seq nil))
-  ([x] (lazy-seq x))
-  ([x y]
-    (lazy-seq
-      (let [s (seq x)]
-        (if s
-          (if (chunked-seq? s)
-            (chunk-cons (chunk-first s) (concat (chunk-rest s) y))
-            (cons (first s) (concat (rest s) y)))
-          y))))
-  ([x y & zs]
-     (let [cat (fn cat [xys zs]
-                 (lazy-seq
-                   (let [xys (seq xys)]
-                     (if xys
-                       (if (chunked-seq? xys)
-                         (chunk-cons (chunk-first xys)
-                                     (cat (chunk-rest xys) zs))
-                         (cons (first xys) (cat (rest xys) zs)))
-                       (when zs
-                         (cat (first zs) (next zs)))))))]
-       (cat (concat x y) zs))))
-
-(defn =
-  "Equality. Returns true if x equals y, false if not. Same as
-  Java x.equals(y) except it also works for nil, and compares
-  numbers and collections in a type-independent manner.  Clojure's immutable data
-  structures define equals() (and thus =) as a value, not an identity,
-  comparison."
-  {:inline (fn [x y] `(. clojure.lang.Util equiv ~x ~y))
-   :inline-arities #{2}
-   :added "1.0"}
-  ([x] true)
-  ([x y] (clojure.lang.Util/equiv x y))
-  ([x y & more]
-   (if (clojure.lang.Util/equiv x y)
-     (if (next more)
-       (recur y (first more) (next more))
-       (clojure.lang.Util/equiv y (first more)))
-     false)))
-
-(defn not=
-  "Same as (not (= obj1 obj2))"
-  {:tag Boolean
-   :added "1.0"
-   :static true}
-  ([x] false)
-  ([x y] (not (= x y)))
-  ([x y & more]
-   (not (apply = x y more))))
-
-(defn <
-  "Returns non-nil if nums are in monotonically increasing order,
-  otherwise false."
-  {:inline (fn [x y] `(. clojure.lang.Numbers (lt ~x ~y)))
-   :inline-arities #{2}
-   :added "1.0"}
-  ([x] true)
-  ([x y] (. clojure.lang.Numbers (lt x y)))
-  ([x y & more]
-   (if (< x y)
-     (if (next more)
-       (recur y (first more) (next more))
-       (< y (first more)))
-     false)))
-
 )

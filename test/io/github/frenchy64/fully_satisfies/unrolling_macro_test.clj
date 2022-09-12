@@ -36,8 +36,8 @@
    :rest-name 'args
    :unrolled-arity (fn [_ fixed-args rest-arg]
                      (if rest-arg
-                       `(. clojure.lang.LazilyPersistentVector
-                           (~'create ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args))))
+                       `(clojure.lang.LazilyPersistentVector/create
+                          ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args)))
                        fixed-args))})
 
 (deftest unrolled-vector-spec-test
@@ -49,7 +49,7 @@
            ([a b c d] [a b c d])
            ([a b c d e] [a b c d e])
            ([a b c d e f] [a b c d e f])
-           ([a b c d e f & args] (. clojure.lang.LazilyPersistentVector (create (cc/cons a (cc/cons b (cc/cons c (cc/cons d (cc/cons e (cc/cons f args)))))))))))))
+           ([a b c d e f & args] (clojure.lang.LazilyPersistentVector/create (cc/cons a (cc/cons b (cc/cons c (cc/cons d (cc/cons e (cc/cons f args))))))))))))
 
 (defunrolled unrolled-vector
   "Creates a new vector containing the args."
@@ -61,6 +61,62 @@
   (is (= (-> #'unrolled-vector meta :arglists)
          '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/list*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn list*
+  "Creates a new seq containing the items prepended to the rest, the
+  last of which will be treated as a sequence."
+  {:added "1.0"
+   :static true}
+  ([args] (seq args))
+  ([a args] (cons a args))
+  ([a b args] (cons a (cons b args)))
+  ([a b c args] (cons a (cons b (cons c args))))
+  ([a b c d & more]
+     (cons a (cons b (cons c (cons d (spread more)))))))
+
+(def unrolled-list*-spec
+  {:names (let [rest-arity 5]
+            (assert (pos? rest-arity))
+            (-> (mapv (fn [i]
+                        [(-> (into [] (take (dec i))
+                                   (single-char-syms-from \a))
+                             (conj 'args))
+                         nil])
+                      (range 1 rest-arity))
+                (conj [(into [] (take (dec rest-arity))
+                             (single-char-syms-from \a))
+                       'more])))
+   :unrolled-arity (fn [_ fixed-args rest-arg]
+                     (if (and (= 1 (count fixed-args)) (not rest-arg))
+                       `(seq ~(first fixed-args))
+                       (reduce (fn [acc x] `(cons ~x ~acc))
+                               (if rest-arg `(#'clojure.core/spread ~rest-arg) (peek fixed-args))
+                               (rseq (pop fixed-args)))))})
+
+(deftest unrolled-list*-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-list*-spec))
+         '(([args] (cc/seq args))
+           ([a args] (cc/cons a args))
+           ([a b args] (cc/cons a (cc/cons b args)))
+           ([a b c args] (cc/cons a (cc/cons b (cc/cons c args))))
+           ([a b c d & more] (cc/cons a (cc/cons b (cc/cons c ((var cc/spread) more)))))))))
+
+(defunrolled unrolled-list*
+  "Creates a new seq containing the items prepended to the rest, the
+  last of which will be treated as a sequence."
+  {:added "1.0"
+   :static true}
+  unrolled-list*-spec)
+
+(deftest unrolled-list*-test
+  (is (= (-> #'unrolled-list* meta :arglists)
+         '([args] [a args] [a b args] [a b c args] [a b c d & more]))))
 
 
 

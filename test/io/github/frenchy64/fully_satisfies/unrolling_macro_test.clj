@@ -472,27 +472,31 @@
          ([x y z] (reduce1 #(conj %1 (%2 x y z)) [] fs))
          ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
 
-(def unrolled-juxt-spec
-  {:argvs (uniformly-flowing-argvs
-            {:arities (range 1 5)
-             :fixed-names (single-char-syms-from \f)
-             :rest-name 'fs})
-   :unrolled-arity (fn [_ fixed-fs rest-fs]
-                     (let [fs (gensym-pretty 'fs)
-                           body `(fn ~@(unrolled-fn-tail
-                                         {:argvs (uniformly-flowing-argvs
-                                                   {:arities (range 5)
-                                                    :fixed-names (single-char-syms-from \x)
-                                                    :rest-name 'args})
-                                          :unrolled-arity (fn [_ fixed-args rest-args]
-                                                            (if rest-fs
-                                                              (let [v (gensym-pretty 'acc)
-                                                                    f (gensym-pretty 'f)]
-                                                                `(reduce (fn [~v ~f] (conj ~v ~(maybe-apply f fixed-args rest-args))) [] ~fs))
-                                                              (mapv #(maybe-apply % fixed-args rest-args) fixed-fs)))}))]
-                       (if rest-fs
-                         `(let [~fs ~(maybe-list* fixed-fs rest-fs)] ~body)
-                         body)))})
+(defn unrolled-juxt-spec*
+  ([] (unrolled-juxt-spec* {}))
+  ([{:keys [outer-size inner-size]}] ;;FIXME use params in body and set defaults
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range 1 4) ;;hmm we can't use the same trick as (range 0).
+              :fixed-names (single-char-syms-from \f)
+              :rest-name 'fs})
+    :unrolled-arity (fn [_ fixed-fs rest-fs]
+                      (let [fs (gensym-pretty 'fs)
+                            body `(fn ~@(unrolled-fn-tail
+                                          {:argvs (uniformly-flowing-argvs
+                                                    {:arities (range 4)
+                                                     :fixed-names (single-char-syms-from \x)
+                                                     :rest-name 'args})
+                                           :unrolled-arity (fn [_ fixed-args rest-args]
+                                                             (if rest-fs
+                                                               (let [v (gensym-pretty 'acc)
+                                                                     f (gensym-pretty 'f)]
+                                                                 `(reduce (fn [~v ~f] (conj ~v ~(maybe-apply f fixed-args rest-args))) [] ~fs))
+                                                               (mapv #(maybe-apply % fixed-args rest-args) fixed-fs)))}))]
+                        (if rest-fs
+                          `(let [~fs ~(maybe-list* fixed-fs rest-fs)] ~body)
+                          body)))}))
+
+(def unrolled-juxt-spec (unrolled-juxt-spec*))
 
 (deftest unrolled-juxt-spec-test
   (is (= (prettify-unrolled (unrolled-fn-tail unrolled-juxt-spec))
@@ -586,13 +590,13 @@
 
 (def unrolled-partial-spec
   {:argvs (uniformly-flowing-argvs
-            {:arities (range 1 6)
+            {:arities (range 1 5)
              :fixed-names (cons 'f (map #(symbol (str "arg" %)) (next (range))))
              :rest-name 'more})
    :unrolled-arity (fn [_ [f & fixed-args] rest-args]
                      `(fn ~@(unrolled-fn-tail
                               {:argvs (uniformly-flowing-argvs
-                                        {:arities (range (if rest-args 0 5))
+                                        {:arities (range (if rest-args 0 4))
                                          :fixed-names (single-char-syms-from \x)
                                          :rest-name 'args})
                                :unrolled-arity (fn [_ fixed-additional-args rest-additional-args]
@@ -711,25 +715,20 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
-(comment
-  (uniformly-flowing-argvs
-    {:arities (range 1)})
-)
-
-(defn unrolled-naive-everyp-spec
-  ([] (unrolled-naive-everyp-spec {}))
-  ([{:keys [outer-rest-arity inner-rest-arity] :or {outer-rest-arity 4
-                                                    inner-rest-arity 4}}]
-   (assert (nat-int? outer-rest-arity))
-   (assert (nat-int? inner-rest-arity))
+(defn unrolled-naive-everyp-spec*
+  ([] (unrolled-naive-everyp-spec* {}))
+  ([{:keys [outer-size inner-size] :or {outer-size 4
+                                                    inner-size 4}}]
+   (assert (nat-int? outer-size))
+   (assert (nat-int? inner-size))
    {:argvs (uniformly-flowing-argvs
-             {:arities (range outer-rest-arity)
+             {:arities (range outer-size)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
               :rest-name 'ps})
     :unrolled-arity (fn [_ fixed-preds rest-pred]
                       `(fn ~@(unrolled-fn-tail
                                {:argvs (uniformly-flowing-argvs
-                                         {:arities (range inner-rest-arity)
+                                         {:arities (range inner-size)
                                           :fixed-names (single-char-syms-from \x)
                                           :rest-name 'args})
                                 :unrolled-arity (fn [_ fixed-args rest-arg]
@@ -743,16 +742,31 @@
                                                                        rest-pred (conj (let [p (gensym-pretty 'p)]
                                                                                          (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))}))
 
+(def unrolled-naive-everyp-spec (unrolled-naive-everyp-spec*))
+
 (deftest unrolled-naive-everyp-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec
-                                                {:outer-rest-arity 0
-                                                 :inner-rest-arity 0})))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+                                                {:outer-size 0
+                                                 :inner-size 0})))
          '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec
-                                                {:outer-rest-arity 1
-                                                 :inner-rest-arity 0})))
-         '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec)))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+                                                {:outer-size 1
+                                                 :inner-size 0})))
+
+         '(([] (cc/fn [& args] true))
+           ([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+                                                {:outer-size 1
+                                                 :inner-size 1})))
+
+
+         '(([] (cc/fn
+                 ([] true)
+                 ([& args] true)))
+           ([& ps] (cc/fn
+                     ([] true)
+                     ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
          '(([] (cc/fn
                  ([] true)
                  ([x] true)

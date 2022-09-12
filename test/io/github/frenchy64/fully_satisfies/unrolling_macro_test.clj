@@ -617,32 +617,33 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
-(def unrolled-naive-everyp-spec
-  {:argvs (let [rest-arity 4]
-            (assert (<= 2 rest-arity))
-            (uniformly-flowing-argvs
-              {:arities (range 0 (inc rest-arity))
-               :fixed-names (map #(symbol (str "p" %)) (next (range)))
-               :rest-name 'ps}))
-   :unrolled-arity (fn [_ fixed-preds rest-pred]
-                     `(fn ~@(unrolled-fn-tail
-                              {:argvs (uniformly-flowing-argvs
-                                        {:arities (range 5)
-                                         :fixed-names (single-char-syms-from \x)
-                                         :rest-name 'args})
-                               :unrolled-arity (fn [_ fixed-args rest-arg]
-                                                 (let [tp (fn [p]
-                                                            (cond-> (mapv #(list p %) fixed-args)
-                                                              rest-arg (conj (maybe-every? p rest-arg))))]
-                                                   (maybe-boolean
-                                                     (maybe-and (-> []
-                                                                    (into (mapcat tp fixed-preds))
-                                                                    (cond->
-                                                                      rest-pred (conj (let [p (gensym-pretty 'p)]
-                                                                                        (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))})
+(defn unrolled-naive-everyp-spec
+  ([] (unrolled-naive-everyp-spec {}))
+  ([{:keys [rest-arity] :or {rest-arity 4}}]
+   (assert (pos? rest-arity))
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range 0 (inc rest-arity))
+              :fixed-names (map #(symbol (str "p" %)) (next (range)))
+              :rest-name 'ps})
+    :unrolled-arity (fn [_ fixed-preds rest-pred]
+                      `(fn ~@(unrolled-fn-tail
+                               {:argvs (uniformly-flowing-argvs
+                                         {:arities (range 5)
+                                          :fixed-names (single-char-syms-from \x)
+                                          :rest-name 'args})
+                                :unrolled-arity (fn [_ fixed-args rest-arg]
+                                                  (let [tp (fn [p]
+                                                             (cond-> (mapv #(list p %) fixed-args)
+                                                               rest-arg (conj (maybe-every? p rest-arg))))]
+                                                    (maybe-boolean
+                                                      (maybe-and (-> []
+                                                                     (into (mapcat tp fixed-preds))
+                                                                     (cond->
+                                                                       rest-pred (conj (let [p (gensym-pretty 'p)]
+                                                                                         (maybe-every? `(fn [~p] ~(maybe-and (tp p))) rest-pred)))))))))})))}))
 
 (deftest unrolled-naive-everyp-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
+  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec)))
          '(([] (cc/fn
                  ([] true)
                  ([x] true)

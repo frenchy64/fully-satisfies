@@ -59,6 +59,7 @@
 
 (deftest unrolled-vector-test
   (is (= (-> #'unrolled-vector meta :arglists)
+         (-> #'clojure.core/vector meta :arglists)
          '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
 
 
@@ -116,8 +117,69 @@
 
 (deftest unrolled-list*-test
   (is (= (-> #'unrolled-list* meta :arglists)
+         (-> #'clojure.core/list* meta :arglists)
          '([args] [a args] [a b args] [a b c args] [a b c d & more]))))
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/apply
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn apply
+  "Applies fn f to the argument list formed by prepending intervening arguments to args."
+  {:added "1.0"
+   :static true}
+  ([^clojure.lang.IFn f args]
+     (. f (applyTo (seq args))))
+  ([^clojure.lang.IFn f x args]
+     (. f (applyTo (list* x args))))
+  ([^clojure.lang.IFn f x y args]
+     (. f (applyTo (list* x y args))))
+  ([^clojure.lang.IFn f x y z args]
+     (. f (applyTo (list* x y z args))))
+  ([^clojure.lang.IFn f a b c d & args]
+     (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
+
+(def unrolled-apply-spec
+  {:names (let [rest-arity 5
+                f (with-meta 'f {:tag 'clojure.lang.IFn})
+                args 'args]
+            (-> (mapv (fn [i]
+                        (-> [f]
+                            (into (take i) (single-char-syms-from \x))
+                            (conj args)))
+                      (range rest-arity))
+                (conj (-> [f]
+                          (into (take (- rest-arity 2))
+                                (single-char-syms-from \a))
+                          (conj args)))))
+   :unrolled-arity (fn [_ [f & fixed-args] rest-arg]
+                     (let [[fixed-args last-fixed] (if (< 1 (count fixed-args))
+                                                     [fixed-args nil]
+                                                     [(butlast fixed-args) (last fixed-args)])]
+                       `(. ~f (applyTo
+                                ~(if rest-arg
+                                   (reduce (fn [acc x] `(cons ~x ~acc))
+                                           `(#'clojure.core/spread ~rest-arg)
+                                           (reverse fixed-args))
+                                   (if (empty? fixed-args)
+                                     `(seq ~last-fixed)
+                                     `(list* ~@fixed-args ~last-fixed)))))))})
+
+(deftest unrolled-apply-spec-test
+  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-apply-spec))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn 
+                    ([] (f (g)))
+                    ([x] (f (g x)))
+                    ([x y] (f (g x y)))
+                    ([x y z] (f (g x y z)))
+                    ([x y z & args] (f (cc/apply g x y z args)))))
+           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -193,6 +255,7 @@
 
 (deftest unrolled-comp-test
   (is (= (-> #'unrolled-comp meta :arglists)
+         (-> #'clojure.core/comp meta :arglists)
          '([] [f] [f g] [f g & fs]))))
 
 
@@ -307,6 +370,7 @@
 
 (deftest unrolled-juxt-test
   (is (= (-> #'unrolled-juxt meta :arglists)
+         (-> #'clojure.core/juxt meta :arglists)
          '([f] [f g] [f g h] [f g h & fs]))))
 
 
@@ -421,4 +485,5 @@
 
 (deftest unrolled-partial-test
   (is (= (-> #'unrolled-partial meta :arglists)
+         (-> #'clojure.core/partial meta :arglists)
          '([f] [f arg1] [f arg1 arg2] [f arg1 arg2 arg3] [f arg1 arg2 arg3 & more]))))

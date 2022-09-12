@@ -128,7 +128,7 @@
        (-> fn-tail meta ::names)))
 
 (defmacro defunrolled [nme doc attr config]
-  (let [fn-tail (unrolled-fn-tail (-> config resolve deref
+  (let [fn-tail (unrolled-fn-tail (-> config requiring-resolve deref
                                       (assoc :this (symbol (-> *ns* ns-name name) (name nme)))))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
        ~@fn-tail)))

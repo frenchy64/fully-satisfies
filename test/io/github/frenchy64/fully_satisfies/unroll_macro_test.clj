@@ -1747,16 +1747,16 @@
                            [v o] (map gensym-pretty '[v o])]
                        `(-> (reduce (fn [~v ~o] (conj! ~v (~f ~o))) (transient []) ~coll)
                             persistent!))
-                     `(into [] ~(maybe-apply `map (concat cxs [f]) colls))))})
+                     `(into [] ~(maybe-apply `map (cons f cxs) colls))))})
 
 (deftest unroll-mapv-spec-test
   (is (= (prettify-unroll (unroll-arities unroll-mapv-spec))
          '(([f] (cc/into [] (cc/map f)))
            ([f coll] (cc/-> (cc/reduce (cc/fn [v o] (cc/conj! v (f o))) (cc/transient []) coll)
                             cc/persistent!))
-           ([f c1 c2] (cc/into [] (cc/map c1 c2 f)))
-           ([f c1 c2 c3] (cc/into [] (cc/map c1 c2 c3 f)))
-           ([f c1 c2 c3 & colls] (cc/into [] (cc/apply cc/map c1 c2 c3 f colls)))))))
+           ([f c1 c2] (cc/into [] (cc/map f c1 c2)))
+           ([f c1 c2 c3] (cc/into [] (cc/map f c1 c2 c3)))
+           ([f c1 c2 c3 & colls] (cc/into [] (cc/apply cc/map f c1 c2 c3 colls)))))))
 
 (defunroll unroll-mapv
   "Returns a vector consisting of the result of applying f to the

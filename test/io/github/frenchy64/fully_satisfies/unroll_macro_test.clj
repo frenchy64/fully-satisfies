@@ -1089,3 +1089,70 @@
   (is (= (-> #'unroll-fnil meta :arglists)
          (-> #'clojure.core/fnil meta :arglists)
          '([f x] [f x y] [f x y z]))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/binding-conveyor-fn
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn binding-conveyor-fn
+  {:private true
+   :added "1.3"}
+  [f]
+  (let [frame (clojure.lang.Var/cloneThreadBindingFrame)]
+    (fn 
+      ([]
+         (clojure.lang.Var/resetThreadBindingFrame frame)
+         (f))
+      ([x]
+         (clojure.lang.Var/resetThreadBindingFrame frame)
+         (f x))
+      ([x y]
+         (clojure.lang.Var/resetThreadBindingFrame frame)
+         (f x y))
+      ([x y z]
+         (clojure.lang.Var/resetThreadBindingFrame frame)
+         (f x y z))
+      ([x y z & args] 
+         (clojure.lang.Var/resetThreadBindingFrame frame)
+         (apply f x y z args)))))
+
+(def unroll-binding-conveyor-fn-spec
+  {:argvs '[[f]]
+   :unroll-arity (fn [_ [f & xs] _]
+                   (let [frame (gensym-pretty 'frame)]
+                     `(let [~frame (clojure.lang.Var/cloneThreadBindingFrame)]
+                        (fn ~@(unroll-arities
+                                {:argvs (uniformly-flowing-argvs
+                                          {:arities (range 4)
+                                           :fixed-names (single-char-syms-from \x)
+                                           :rest-name 'args})
+                                 :unroll-arity (fn [_ xs args]
+                                                 `(do (clojure.lang.Var/resetThreadBindingFrame ~frame)
+                                                      ~(maybe-apply f xs args)))})))))})
+
+(deftest unroll-binding-conveyor-fn-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-binding-conveyor-fn-spec))
+         '([f] (cc/let [frame (clojure.lang.Var/cloneThreadBindingFrame)]
+                 (cc/fn
+                   ([] (do (clojure.lang.Var/resetThreadBindingFrame frame)
+                           (f)))
+                   ([x] (do (clojure.lang.Var/resetThreadBindingFrame frame)
+                            (f x)))
+                   ([x y] (do (clojure.lang.Var/resetThreadBindingFrame frame)
+                              (f x y)))
+                   ([x y z] (do (clojure.lang.Var/resetThreadBindingFrame frame)
+                                (f x y z)))
+                   ([x y z & args] (do (clojure.lang.Var/resetThreadBindingFrame frame) (cc/apply f x y z args)))))))))
+
+(defunroll unroll-binding-conveyor-fn
+  "doc"
+  {:private true
+   :added "1.3"}
+  unroll-binding-conveyor-fn-spec)
+
+(deftest unroll-binding-conveyor-fn-test
+  (is (= (-> #'unroll-binding-conveyor-fn meta :arglists)
+         (-> #'clojure.core/binding-conveyor-fn meta :arglists)
+         '([f]))))

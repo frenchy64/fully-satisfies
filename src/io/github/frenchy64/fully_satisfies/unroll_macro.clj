@@ -105,7 +105,7 @@
                rest-arg (conj '& rest-arg))))
          arities)))
 
-(defn unroll-fn-tail
+(defn unroll-arities
   ":argvs          a list of argvs of the form [fixed-args*] or [fixed-args* & rest-arg].
                    fixed-args is a list of symbols naming fixed arguments, and rest-arg
                    is a nilable symbol naming a possible rest-argument.
@@ -143,6 +143,6 @@
                            (symbol (-> *ns* ns-name name) (name config))
                            config)))
         _ (assert (var? config-var) config)
-        fn-tail (unroll-fn-tail (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
+        fn-tail (unroll-arities (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
        ~@fn-tail)))

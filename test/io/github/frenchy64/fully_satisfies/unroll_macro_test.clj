@@ -30,6 +30,11 @@
       1 (first exprs)
       `(and ~@exprs))))
 
+(defn maybe-conj [target colls]
+  (if (seq colls)
+    `(conj ~target ~@colls)
+    target))
+
 (defn true-expression? [coll]
   (true? coll))
 
@@ -1428,6 +1433,113 @@
                       (cons (map first ss) (step (map rest ss)))))))]
      (map #(apply f %) (step (conj colls c3 c2 c1))))))
 
+(def unroll-map-spec
+  {:argvs (list* '[f] '[f coll]
+                 (uniformly-flowing-argvs
+                   {:arities (range 3 5)
+                    :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
+                    :rest-name 'colls}))
+   :unroll-arity (fn [this [f & cxs] colls]
+                   (assert (and this f))
+                   (cond
+                     ;; transducer
+                     (and (not cxs) (not colls))
+                     (let [rf (gensym-pretty 'rf)]
+                       `(fn [~rf]
+                          (fn ~@(unroll-arities
+                                  {:argvs (uniformly-flowing-argvs
+                                            {:arities (range 3)
+                                             :fixed-names (cons 'result (map #(symbol (str 'input %)) (next (range))))
+                                             :rest-name 'inputs})
+                                   :unroll-arity (fn [_ [result & inputxs] inputs]
+                                                   `(~rf ~@(some-> result list)
+                                                         ~@(when (and result (or inputxs inputs))
+                                                             [(maybe-apply f inputxs inputs)])))}))))
+
+                     ;; chunked
+                     (and (= 1 (count cxs)) (not colls))
+                     (let [[coll] cxs
+                           [s c size b i] (map gensym-pretty '[s c size b i])]
+                       `(lazy-seq
+                          (when-let [~s (seq ~coll)]
+                            (if (chunked-seq? ~s)
+                              (let [~c (chunk-first ~s)
+                                    ~size (int (count ~c))
+                                    ~b (chunk-buffer ~size)]
+                                (dotimes [~i ~size]
+                                  (chunk-append ~b (~f (.nth ~c ~i))))
+                                (chunk-cons (chunk ~b) (~this ~f (chunk-rest ~s))))
+                              (cons (~f (first ~s)) (~this ~f (rest ~s)))))))
+
+                     ;; variable
+                     colls
+                     (let [[step cs ss xs] (map gensym-pretty '[step cs ss xs])]
+                       `(let [~step (fn ~step [~cs]
+                                      (lazy-seq
+                                        (let [~ss (~this seq ~cs)]
+                                          (when (every? identity ~ss)
+                                            (cons (~this first ~ss) (~step (~this rest ~ss)))))))]
+                          (~this (fn [~xs] (apply ~f ~xs)) (~step ~(maybe-conj colls (reverse cxs))))))
+
+                     ;; fixed
+                     :else
+                     (let [sxs (map-indexed (fn [i _] (gensym-pretty (str 's (inc i)))) cxs)]
+                       `(lazy-seq
+                          (let [~@(mapcat (fn [s c] [s `(seq ~c)]) sxs cxs)]
+                            (when ~(maybe-and sxs)
+                              (cons (~f ~@(map #(list `first %) sxs))
+                                    (~this ~f ~@(map #(list `rest %) sxs)))))))))})
+
+(deftest unroll-map-spec-test
+  (is (= (prettify-unroll (unroll-arities (assoc unroll-map-spec :this 'this/map)))
+         '(([f] (cc/fn [rf]
+                  (cc/fn
+                    ([] (rf))
+                    ([result] (rf result))
+                    ([result input1] (rf result (f input1)))
+                    ([result input1 & inputs] (rf result (cc/apply f input1 inputs))))))
+           ([f coll] (cc/lazy-seq
+                       (cc/when-let [s (cc/seq coll)]
+                         (if (cc/chunked-seq? s)
+                           (cc/let [c (cc/chunk-first s) size (cc/int (cc/count c)) b (cc/chunk-buffer size)]
+                             (cc/dotimes [i size] (cc/chunk-append b (f (.nth c i))))
+                             (cc/chunk-cons (cc/chunk b)
+                                            (this/map f (cc/chunk-rest s))))
+                           (cc/cons (f (cc/first s))
+                                    (this/map f (cc/rest s)))))))
+           ([f c1 c2] (cc/lazy-seq
+                        (cc/let [s1 (cc/seq c1) s2 (cc/seq c2)]
+                          (cc/when (cc/and s1 s2)
+                            (cc/cons (f (cc/first s1) (cc/first s2))
+                                     (this/map f (cc/rest s1) (cc/rest s2)))))))
+           ([f c1 c2 c3] (cc/lazy-seq
+                           (cc/let [s1 (cc/seq c1) s2 (cc/seq c2) s3 (cc/seq c3)]
+                             (cc/when (cc/and s1 s2 s3)
+                               (cc/cons (f (cc/first s1) (cc/first s2) (cc/first s3))
+                                        (this/map f (cc/rest s1) (cc/rest s2) (cc/rest s3)))))))
+           ([f c1 c2 c3 & colls] (cc/let [step (cc/fn step [cs]
+                                                 (cc/lazy-seq
+                                                   (cc/let [ss (this/map cc/seq cs)]
+                                                     (cc/when (cc/every? cc/identity ss)
+                                                       (cc/cons (this/map cc/first ss)
+                                                                (step (this/map cc/rest ss)))))))]
+                                   (this/map (cc/fn [xs] (cc/apply f xs)) (step (cc/conj colls c3 c2 c1)))))))))
+
+(defunroll unroll-map
+  "Returns a lazy sequence consisting of the result of applying f to
+  the set of first items of each coll, followed by applying f to the
+  set of second items in each coll, until any one of the colls is
+  exhausted.  Any remaining items in other colls are ignored. Function
+  f should accept number-of-colls arguments. Returns a transducer when
+  no collection is provided."
+  {:added "1.0"
+   :static true}
+  unroll-map-spec)
+
+(deftest unroll-map-test
+  (is (= (-> #'unroll-map meta :arglists)
+         (-> #'clojure.core/map meta :arglists)
+         '([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/interleave

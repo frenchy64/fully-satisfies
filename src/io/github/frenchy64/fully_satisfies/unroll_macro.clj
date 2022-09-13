@@ -11,11 +11,11 @@
           (map #(symbol (str c %)) (range))))
 
 (defn gensym-pretty [sym]
-  (assert (not (-> sym meta ::original)) sym)
-  (assert (symbol? sym) (pr-str sym))
-  (with-meta (gensym sym)
-             (into (select-keys (meta sym) [:tag])
-                   {::original (symbol sym)})))
+  (let [sym (symbol sym)]
+    (assert (not (-> sym meta ::original)) sym)
+    (with-meta (gensym sym)
+               (into (select-keys (meta sym) [:tag])
+                     {::original sym}))))
 
 (defn rest-argv? [argv]
   ;{:pre [(argv? argv)]}

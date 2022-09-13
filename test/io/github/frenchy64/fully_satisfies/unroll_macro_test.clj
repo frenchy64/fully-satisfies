@@ -8,7 +8,7 @@
                      uniformly-flowing-argvs]]))
 
 (defn maybe-apply [f fixed-args rest-args]
-  (if rest-args
+  (if (some? rest-args)
     `(apply ~f ~@fixed-args ~rest-args)
     (list* f fixed-args)))
 
@@ -987,15 +987,15 @@
      ([x y] (or (f1 x) (f1 y)
                 (f2 x) (f2 y)
                 (f3 x) (f3 y)
-                (some #(or (% x)) fs)))
+                (some #(or (% x) (% y)) fs)))
      ([x y z] (or (f1 x) (f1 y) (f1 z)
                   (f2 x) (f2 y) (f2 z)
                   (f3 x) (f3 y) (f3 z)
-                  (some #(or (% x) (% y)) fs)))
+                  (some #(or (% x) (% y) (% z)) fs)))
      ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
                          (f2 x) (f2 y) (f2 z) (some f2 args)
                          (f3 x) (f3 y) (f3 z) (some f3 args)
-                         (some #(or (% x) (% y) (% z)) fs))))))
+                         (some #(or (% x) (% y) (% z) (some % args)) fs))))))
 
 ;; TODO unit test
 (def unroll-naive-somef-spec

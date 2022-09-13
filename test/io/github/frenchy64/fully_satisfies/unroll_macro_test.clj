@@ -1808,24 +1808,57 @@
   (when (some identity maps)
     (reduce1 #(conj (or %1 {}) %2) maps)))
 
-(def unroll-merge-spec
-  {:argvs (uniformly-flowing-argvs
-            {:arities (range 5)
-             :fixed-names (map #(symbol (str 'm %)) (next (range)))
-             :rest-name 'maps})
-   :unroll-arity (fn [_ ms maps]
-                   (if (= 1 (count ms))
-                     (first ms)
-                     (maybe-when (maybe-or (cond-> ms maps (conj `(some identity ~maps))))
-                                 (maybe-reduce `conj
-                                               (maybe-> `(or ~(first ms) {})
-                                                        (map (fn [m] `(conj ~m)) (next ms)))
-                                               maps))))})
+(defn unroll-merge-spec*
+  ([] (unroll-merge-spec* {}))
+  ([{:keys [size] :or {size 5}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range size)
+              :fixed-names (map #(symbol (str 'm %)) (next (range)))
+              :rest-name 'maps})
+    :unroll-arity (fn [_ ms maps]
+                    (if (and (= 1 (count ms))
+                             (not maps))
+                      `(or ~(first ms) nil)
+                      (maybe-when (maybe-or (cond-> ms maps (conj `(some identity ~maps))))
+                                  (maybe-reduce `conj
+                                                (if (seq ms)
+                                                  (maybe-> `(or ~(first ms) {})
+                                                           (map (fn [m] `(conj ~m)) (next ms)))
+                                                  `(or (first ~maps) {}))
+                                                (when maps
+                                                  (if (seq ms)
+                                                    maps
+                                                    `(rest ~maps)))))))}))
+
+(def unroll-merge-spec (unroll-merge-spec*))
 
 (deftest unroll-merge-spec-test
+  (is (= (prettify-unroll (unroll-arities (unroll-merge-spec* {:size 0})))
+         '([& maps] (cc/when (cc/some cc/identity maps)
+                      (cc/reduce cc/conj (cc/or (cc/first maps) {}) (cc/rest maps))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-merge-spec* {:size 1})))
+         '(([] nil)
+           ([& maps] (cc/when (cc/some cc/identity maps)
+                       (cc/reduce cc/conj (cc/or (cc/first maps) {}) (cc/rest maps)))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-merge-spec* {:size 2})))
+         '(([] nil)
+           ([m1] (cc/or m1 nil))
+           ([m1 & maps] (cc/when (cc/or m1 (cc/some cc/identity maps))
+                          (cc/reduce cc/conj (cc/or m1 {}) maps))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-merge-spec* {:size 3})))
+
+         '(([] nil)
+           ([m1] (cc/or m1 nil))
+           ([m1 m2] (cc/when (cc/or m1 m2)
+                      (cc/-> (cc/or m1 {})
+                             (cc/conj m2))))
+           ([m1 m2 & maps] (cc/when (cc/or m1 m2 (cc/some cc/identity maps))
+                             (cc/reduce cc/conj
+                                        (cc/-> (cc/or m1 {}) (cc/conj m2))
+                                        maps))))))
   (is (= (prettify-unroll (unroll-arities unroll-merge-spec))
          '(([] nil)
-           ([m1] m1)
+           ([m1] (cc/or m1 nil))
            ([m1 m2] (cc/when (cc/or m1 m2)
                       (cc/-> (cc/or m1 {})
                              (cc/conj m2))))

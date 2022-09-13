@@ -1156,3 +1156,67 @@
   (is (= (-> #'unroll-binding-conveyor-fn meta :arglists)
          (-> #'clojure.core/binding-conveyor-fn meta :arglists)
          '([f]))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/swap!
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn swap!
+  "Atomically swaps the value of atom to be:
+  (apply f current-value-of-atom args). Note that f may be called
+  multiple times, and thus should be free of side effects.  Returns
+  the value that was swapped in."
+  {:added "1.0"
+   :static true}
+  ([^clojure.lang.IAtom atom f] (.swap atom f))
+  ([^clojure.lang.IAtom atom f x] (.swap atom f x))
+  ([^clojure.lang.IAtom atom f x y] (.swap atom f x y))
+  ([^clojure.lang.IAtom atom f x y & args] (.swap atom f x y args)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/swap-vals!
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO argv :tag
+
+#_
+(defn swap-vals!
+  "Atomically swaps the value of atom to be:
+  (apply f current-value-of-atom args). Note that f may be called
+  multiple times, and thus should be free of side effects.
+  Returns [old new], the value of the atom before and after the swap."
+  {:added "1.9"}
+  (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f] (.swapVals atom f))
+  (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x] (.swapVals atom f x))
+  (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x y] (.swapVals atom f x y))
+  (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x y & args] (.swapVals atom f x y args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/update
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn update
+  "'Updates' a value in an associative structure, where k is a
+  key and f is a function that will take the old value
+  and any supplied args and return the new value, and returns a new
+  structure.  If the key does not exist, nil is passed as the old value."
+  {:added "1.7"
+   :static true}
+  ([m k f]
+   (assoc m k (f (get m k))))
+  ([m k f x]
+   (assoc m k (f (get m k) x)))
+  ([m k f x y]
+   (assoc m k (f (get m k) x y)))
+  ([m k f x y z]
+   (assoc m k (f (get m k) x y z)))
+  ([m k f x y z & more]
+   (assoc m k (apply f (get m k) x y z more))))
+

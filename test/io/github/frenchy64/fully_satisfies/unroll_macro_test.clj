@@ -1297,6 +1297,36 @@
   ([m k f x y z & more]
    (assoc m k (apply f (get m k) x y z more))))
 
+(def unroll-update-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 3 7)
+             :fixed-names (list* 'm 'k 'f (single-char-syms-from \x))
+             :rest-name 'more})
+   :unroll-arity (fn [_ [m k f & xs] args]
+                   `(assoc ~m ~k ~(maybe-apply f (list* `(get ~m ~k) xs) args)))})
+
+(deftest unroll-update-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-update-spec))
+         '(([m k f] (cc/assoc m k (f (cc/get m k))))
+           ([m k f x] (cc/assoc m k (f (cc/get m k) x)))
+           ([m k f x y] (cc/assoc m k (f (cc/get m k) x y)))
+           ([m k f x y z] (cc/assoc m k (f (cc/get m k) x y z)))
+           ([m k f x y z & more] (cc/assoc m k (cc/apply f (cc/get m k) x y z more)))))))
+
+(defunroll unroll-update
+  "'Updates' a value in an associative structure, where k is a
+  key and f is a function that will take the old value
+  and any supplied args and return the new value, and returns a new
+  structure.  If the key does not exist, nil is passed as the old value."
+  {:added "1.7"
+   :static true}
+  unroll-update-spec)
+
+(deftest unroll-update-test
+  (is (= (-> #'unroll-update meta :arglists)
+         (-> #'clojure.core/update meta :arglists)
+         '([m k f] [m k f x] [m k f x y] [m k f x y z] [m k f x y z & more]))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/complement
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

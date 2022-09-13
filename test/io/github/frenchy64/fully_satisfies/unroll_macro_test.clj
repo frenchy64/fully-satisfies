@@ -30,9 +30,9 @@
       1 (first exprs)
       `(and ~@exprs))))
 
-(defn maybe-conj [target colls]
-  (if (seq colls)
-    `(conj ~target ~@colls)
+(defn maybe-conj [target xs]
+  (if (seq xs)
+    `(conj ~target ~@xs)
     target))
 
 (defn true-expression? [coll]
@@ -1332,7 +1332,6 @@
 ;; clojure.core/complement
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn complement
   "Takes a fn f and returns a fn that takes the same arguments as f,
@@ -1382,7 +1381,6 @@
 ;; clojure.core/map
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn map
   "Returns a lazy sequence consisting of the result of applying f to
@@ -1541,11 +1539,12 @@
          (-> #'clojure.core/map meta :arglists)
          '([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
 
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/interleave
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn interleave
   "Returns a lazy seq of the first item in each coll, then the second etc."
@@ -1565,6 +1564,57 @@
         (when (every? identity ss)
           (concat (map first ss) (apply interleave (map rest ss))))))))
 
+(def unroll-interleave-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 3)
+             :fixed-names (map #(symbol (str 'c %)) (next (range)))
+             :rest-name 'colls})
+   :unroll-arity (fn [this cxs colls]
+                   (case (count cxs)
+                     0 ()
+                     1 `(lazy-seq ~(first cxs))
+                     (if colls
+                       (let [ss (gensym-pretty 'ss)]
+                         `(lazy-seq 
+                            (let [~ss (map seq ~(maybe-conj colls (reverse cxs)))]
+                              (when (every? identity ~ss)
+                                (concat (map first ~ss) (apply ~this (map rest ~ss)))))))
+                       (let [sxs (map-indexed (fn [i _] (gensym-pretty (str 's (inc i)))) cxs)]
+                         `(lazy-seq
+                            (let [~@(mapcat (fn [s c] [s `(seq ~c)]) sxs cxs)]
+                              (when ~(maybe-and sxs)
+                                ~(reduce (fn [acc s]
+                                           `(cons (first ~s) ~acc))
+                                         `(~this ~@(map #(list `rest %) sxs))
+                                         (reverse sxs)))))))))})
+
+(deftest unroll-interleave-spec-test
+  (is (= (prettify-unroll (unroll-arities (assoc unroll-interleave-spec :this 'this/interleave)))
+
+         '(([] ())
+           ([c1] (cc/lazy-seq c1))
+           ([c1 c2] (cc/lazy-seq
+                      (cc/let [s1 (cc/seq c1) s2 (cc/seq c2)]
+                        (cc/when (cc/and s1 s2)
+                          (cc/cons (cc/first s1)
+                                   (cc/cons (cc/first s2)
+                                            (this/interleave (cc/rest s1) (cc/rest s2))))))))
+           ([c1 c2 & colls] (cc/lazy-seq
+                              (cc/let [ss (cc/map cc/seq (cc/conj colls c2 c1))]
+                                (cc/when (cc/every? cc/identity ss)
+                                  (cc/concat (cc/map cc/first ss)
+                                             (cc/apply this/interleave (cc/map cc/rest ss)))))))))))
+
+(defunroll unroll-interleave
+  "Returns a lazy seq of the first item in each coll, then the second etc."
+  {:added "1.0"
+   :static true}
+  unroll-interleave-spec)
+
+(deftest unroll-interleave-test
+  (is (= (-> #'unroll-interleave meta :arglists)
+         (-> #'clojure.core/interleave meta :arglists)
+         '([] [c1] [c1 c2] [c1 c2 & colls]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/memoize

@@ -963,6 +963,7 @@
                          (f3 x) (f3 y) (f3 z) (some f3 args)
                          (some #(or (% x) (% y) (% z)) fs))))))
 
+;; TODO unit test
 (def unroll-naive-somef-spec
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
@@ -985,3 +986,106 @@
                                                               (conj (when rest-f
                                                                       (let [f (gensym-pretty 'f)]
                                                                         `(cc/some (fn [~f] (and ~@(f-tests f))) ~rest-arg))))))))})))})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/fnil
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn fnil
+  "Takes a function f, and returns a function that calls f, replacing
+  a nil first argument to f with the supplied value x. Higher arity
+  versions can replace arguments in the second and third
+  positions (y, z). Note that the function f can take any number of
+  arguments, not just the one(s) being nil-patched."
+  {:added "1.2"
+   :static true}
+  ([f x]
+   (fn
+     ([a] (f (if (nil? a) x a)))
+     ([a b] (f (if (nil? a) x a) b))
+     ([a b c] (f (if (nil? a) x a) b c))
+     ([a b c & ds] (apply f (if (nil? a) x a) b c ds))))
+  ([f x y]
+   (fn
+     ([a b] (f (if (nil? a) x a) (if (nil? b) y b)))
+     ([a b c] (f (if (nil? a) x a) (if (nil? b) y b) c))
+     ([a b c & ds] (apply f (if (nil? a) x a) (if (nil? b) y b) c ds))))
+  ([f x y z]
+   (fn
+     ([a b] (f (if (nil? a) x a) (if (nil? b) y b)))
+     ([a b c] (f (if (nil? a) x a) (if (nil? b) y b) (if (nil? c) z c)))
+     ([a b c & ds] (apply f (if (nil? a) x a) (if (nil? b) y b) (if (nil? c) z c) ds)))))
+
+(def unroll-fnil-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 2 5)
+             :fixed-names (cons 'f (single-char-syms-from \x))
+             :rest-arity :skip})
+   :unroll-arity (fn [_ [f & xs] _]
+                   `(fn ~@(unroll-arities
+                            {:argvs (uniformly-flowing-argvs
+                                      {:arities (range (if (= 1 (count xs)) 1 2)
+                                                       4)
+                                       :fixed-names (single-char-syms-from \a)
+                                       :rest-name 'ds})
+                             :unroll-arity (fn [_ as ds]
+                                             (maybe-apply f
+                                                          (map (fn [a x]
+                                                                 (if x
+                                                                   `(if (nil? ~a) ~x ~a)
+                                                                   a))
+                                                               as (concat xs (repeat nil)))
+                                                          ds))})))})
+
+(deftest unroll-fnil-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-fnil-spec))
+         '(([f x] (cc/fn
+                    ([a] (f (if (cc/nil? a) x a)))
+                    ([a b] (f (if (cc/nil? a) x a)
+                              b))
+                    ([a b c] (f (if (cc/nil? a) x a)
+                                b
+                                c))
+                    ([a b c & ds] (cc/apply f
+                                            (if (cc/nil? a) x a)
+                                            b
+                                            c
+                                            ds))))
+           ([f x y] (cc/fn
+                      ([a b] (f (if (cc/nil? a) x a)
+                                (if (cc/nil? b) y b)))
+                      ([a b c] (f (if (cc/nil? a) x a)
+                                  (if (cc/nil? b) y b)
+                                  c))
+                      ([a b c & ds] (cc/apply f
+                                              (if (cc/nil? a) x a)
+                                              (if (cc/nil? b) y b)
+                                              c
+                                              ds))))
+           ([f x y z] (cc/fn
+                        ([a b] (f (if (cc/nil? a) x a)
+                                  (if (cc/nil? b) y b)))
+                        ([a b c] (f (if (cc/nil? a) x a)
+                                    (if (cc/nil? b) y b)
+                                    (if (cc/nil? c) z c)))
+                        ([a b c & ds] (cc/apply f
+                                                (if (cc/nil? a) x a)
+                                                (if (cc/nil? b) y b)
+                                                (if (cc/nil? c) z c)
+                                                ds))))))))
+
+(defunroll unroll-fnil
+  "Takes a function f, and returns a function that calls f, replacing
+  a nil first argument to f with the supplied value x. Higher arity
+  versions can replace arguments in the second and third
+  positions (y, z). Note that the function f can take any number of
+  arguments, not just the one(s) being nil-patched."
+  {:added "1.2"
+   :static true}
+  unroll-fnil-spec)
+
+(deftest unroll-fnil-test
+  (is (= (-> #'unroll-fnil meta :arglists)
+         (-> #'clojure.core/fnil meta :arglists)
+         '([f x] [f x y] [f x y z]))))

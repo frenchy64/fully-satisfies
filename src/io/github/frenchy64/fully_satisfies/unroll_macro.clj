@@ -61,7 +61,7 @@
              argvs)))
 
 (defn uniformly-flowing-argvs
-  "Generates a list argument vectors.
+  "Generates a list of argument vectors.
 
   Use this function if you have a uniform pattern of arities like [], [x], [x y], [x y & args].
   
@@ -106,7 +106,9 @@
          arities)))
 
 (defn unroll-arities
-  ":argvs          a list of argvs of the form [fixed-args*] or [fixed-args* & rest-arg].
+  "Returns a sequence of arities as allowed by fn or defn.
+
+   :argvs          a list of argvs of the form [fixed-args*] or [fixed-args* & rest-arg].
                    fixed-args is a list of symbols naming fixed arguments, and rest-arg
                    is a nilable symbol naming a possible rest-argument.
    :this           A symbol to reference the current function. Propagated to first argument of :unroll-arity.
@@ -146,3 +148,6 @@
         fn-tail (unroll-arities (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
        ~@fn-tail)))
+
+(comment
+  )

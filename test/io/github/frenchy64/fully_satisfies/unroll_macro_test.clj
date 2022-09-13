@@ -1716,7 +1716,6 @@
 ;; clojure.core/mapv
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn mapv
   "Returns a vector consisting of the result of applying f to the
@@ -1735,6 +1734,44 @@
      (into [] (map f c1 c2 c3)))
   ([f c1 c2 c3 & colls]
      (into [] (apply map f c1 c2 c3 colls))))
+
+(def unroll-mapv-spec
+  {:argvs (list* '[f] '[f coll]
+                 (uniformly-flowing-argvs
+                   {:arities (range 3 5)
+                    :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
+                    :rest-name 'colls}))
+   :unroll-arity (fn [_ [f & cxs] colls]
+                   (if (and (= 1 (count cxs)) (not colls))
+                     (let [[coll] cxs
+                           [v o] (map gensym-pretty '[v o])]
+                       `(-> (reduce (fn [~v ~o] (conj! ~v (~f ~o))) (transient []) ~coll)
+                            persistent!))
+                     `(into [] ~(maybe-apply `map (concat cxs [f]) colls))))})
+
+(deftest unroll-mapv-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-mapv-spec))
+         '(([f] (cc/into [] (cc/map f)))
+           ([f coll] (cc/-> (cc/reduce (cc/fn [v o] (cc/conj! v (f o))) (cc/transient []) coll)
+                            cc/persistent!))
+           ([f c1 c2] (cc/into [] (cc/map c1 c2 f)))
+           ([f c1 c2 c3] (cc/into [] (cc/map c1 c2 c3 f)))
+           ([f c1 c2 c3 & colls] (cc/into [] (cc/apply cc/map c1 c2 c3 f colls)))))))
+
+(defunroll unroll-mapv
+  "Returns a vector consisting of the result of applying f to the
+  set of first items of each coll, followed by applying f to the set
+  of second items in each coll, until any one of the colls is
+  exhausted.  Any remaining items in other colls are ignored. Function
+  f should accept number-of-colls arguments."
+  {:added "1.4"
+   :static true}
+  unroll-mapv-spec)
+
+(deftest unroll-mapv-test
+  (is (= (-> #'unroll-mapv meta :arglists)
+         (-> #'clojure.core/mapv meta :arglists)
+         '([f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/merge

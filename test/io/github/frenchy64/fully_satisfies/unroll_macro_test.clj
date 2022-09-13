@@ -1736,11 +1736,11 @@
      (into [] (apply map f c1 c2 c3 colls))))
 
 (def unroll-mapv-spec
-  {:argvs (list* '[f] '[f coll]
-                 (uniformly-flowing-argvs
-                   {:arities (range 3 5)
-                    :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
-                    :rest-name 'colls}))
+  {:argvs (cons '[f coll]
+                (uniformly-flowing-argvs
+                  {:arities (range 3 5)
+                   :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
+                   :rest-name 'colls}))
    :unroll-arity (fn [_ [f & cxs] colls]
                    (if (and (= 1 (count cxs)) (not colls))
                      (let [[coll] cxs
@@ -1751,8 +1751,7 @@
 
 (deftest unroll-mapv-spec-test
   (is (= (prettify-unroll (unroll-arities unroll-mapv-spec))
-         '(([f] (cc/into [] (cc/map f)))
-           ([f coll] (cc/-> (cc/reduce (cc/fn [v o] (cc/conj! v (f o))) (cc/transient []) coll)
+         '(([f coll] (cc/-> (cc/reduce (cc/fn [v o] (cc/conj! v (f o))) (cc/transient []) coll)
                             cc/persistent!))
            ([f c1 c2] (cc/into [] (cc/map f c1 c2)))
            ([f c1 c2 c3] (cc/into [] (cc/map f c1 c2 c3)))
@@ -1805,12 +1804,12 @@
   [f & maps]
   (when (some identity maps)
     (let [merge-entry (fn [m e]
-			(let [k (key e) v (val e)]
-			  (if (contains? m k)
-			    (assoc m k (f (get m k) v))
-			    (assoc m k v))))
+                        (let [k (key e) v (val e)]
+                          (if (contains? m k)
+                            (assoc m k (f (get m k) v))
+                            (assoc m k v))))
           merge2 (fn [m1 m2]
-		   (reduce1 merge-entry (or m1 {}) (seq m2)))]
+                   (reduce1 merge-entry (or m1 {}) (seq m2)))]
       (reduce1 merge2 maps))))
 
 

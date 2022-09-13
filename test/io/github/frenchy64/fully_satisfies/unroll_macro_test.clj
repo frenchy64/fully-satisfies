@@ -1772,6 +1772,7 @@
          (-> #'clojure.core/mapv meta :arglists)
          '([f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/merge
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1787,6 +1788,60 @@
   [& maps]
   (when (some identity maps)
     (reduce1 #(conj (or %1 {}) %2) maps)))
+
+(def unroll-merge-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 5)
+             :fixed-names (map #(symbol (str 'm %)) (next (range)))
+             :rest-name 'maps})
+   :unroll-arity (fn [_ ms maps]
+                   (if maps
+                     (let [[acc m] (map gensym-pretty '[acc m])]
+                       `(let [~maps ~(maybe-list* ms maps)]
+                          (when (some identity ~maps)
+                            (reduce (fn [~acc ~m] (conj (or ~acc {}) ~m)) ~maps))))
+                     (case (count ms)
+                       0 nil
+                       1 (first ms)
+                       `(when (or ~@ms)
+                          (-> (or ~(first ms) {})
+                              ~@(map (fn [m] `(conj ~m)) (next ms)))))))})
+
+(deftest unroll-merge-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-merge-spec))
+         '(([] nil)
+           ([m1] m1)
+           ([m1 m2] (cc/when (cc/or m1 m2)
+                      (cc/-> (cc/or m1 {})
+                             (cc/conj m2))))
+           ([m1 m2 m3] (cc/when (cc/or m1 m2 m3)
+                         (cc/-> (cc/or m1 {})
+                                (cc/conj m2)
+                                (cc/conj m3))))
+           ([m1 m2 m3 m4] (cc/when (cc/or m1 m2 m3 m4)
+                            (cc/-> (cc/or m1 {})
+                                   (cc/conj m2)
+                                   (cc/conj m3)
+                                   (cc/conj m4))))
+           ([m1 m2 m3 m4 & maps] (cc/let [maps (cc/list* m1 m2 m3 m4 maps)]
+                                   (cc/when (cc/some cc/identity maps)
+                                     (cc/reduce (cc/fn [acc m] (cc/conj (cc/or acc {}) m))
+                                                maps))))))))
+
+(defunroll unroll-merge
+  "Returns a map that consists of the rest of the maps conj-ed onto
+  the first.  If a key occurs in more than one map, the mapping from
+  the latter (left-to-right) will be the mapping in the result."
+  {:added "1.0"
+   :static true}
+  unroll-merge-spec)
+
+(deftest unroll-merge-test
+  (is (= (-> #'unroll-merge meta :arglists)
+         '([] [m1] [m1 m2] [m1 m2 m3] [m1 m2 m3 m4] [m1 m2 m3 m4 & maps]))))
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/merge-with

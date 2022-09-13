@@ -13,9 +13,18 @@
     (list* f fixed-args)))
 
 (defn maybe-list* [fixed-args rest-args]
+  (assert ((some-fn nil? symbol?) rest-args))
   (if (seq fixed-args)
-    `(list* ~@fixed-args ~rest-args)
-    rest-args))
+    (if rest-args
+      `(list* ~@fixed-args ~rest-args)
+      `(list ~@fixed-args))
+    (or rest-args ())))
+
+(deftest maybe-list*-test
+  (is (= 'a (maybe-list* nil 'a)))
+  (is (= `(list* ~'b ~'a) (maybe-list* ['b] 'a)))
+  (is (= `(list ~'b) (maybe-list* ['b] nil)))
+  (is (= () (maybe-list* nil nil))))
 
 (defn maybe-concat [& colls]
   (when-some [rests (not-empty (remove nil? colls))]
@@ -1620,7 +1629,6 @@
 ;; clojure.core/memoize
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn memoize
   "Returns a memoized version of a referentially transparent function. The
@@ -1637,6 +1645,72 @@
         (let [ret (apply f args)]
           (swap! mem assoc args ret)
           ret)))))
+
+(def unroll-memoize-spec
+  {:argvs '[[f]]
+   :unroll-arity (fn [_ [f] _]
+                   (let [[mem e ret k] (map gensym-pretty '[mem e ret k])]
+                     `(let [~mem (atom {})]
+                        (fn ~@(unroll-arities
+                                {:argvs (uniformly-flowing-argvs
+                                          {:arities (range 4)
+                                           :fixed-names (single-char-syms-from \x)
+                                           :rest-name 'args})
+                                 :unroll-arity (fn [_ xs args]
+                                                 `(let [~k ~(maybe-list* xs args)]
+                                                    (if-let [~e (find @~mem ~k)]
+                                                      (val ~e)
+                                                      (let [~ret ~(maybe-apply f xs args)]
+                                                        (swap! ~mem assoc ~k ~ret)
+                                                        ~ret))))})))))})
+
+(deftest unroll-memoize-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-memoize-spec))
+         '([f] (cc/let [mem (cc/atom {})]
+                 (cc/fn
+                   ([] (cc/let [k ()]
+                         (cc/if-let [e (cc/find (cc/deref mem) k)]
+                           (cc/val e)
+                           (cc/let [ret (f)]
+                             (cc/swap! mem cc/assoc k ret)
+                             ret))))
+                   ([x] (cc/let [k (cc/list x)]
+                          (cc/if-let [e (cc/find (cc/deref mem) k)]
+                            (cc/val e)
+                            (cc/let [ret (f x)]
+                              (cc/swap! mem cc/assoc k ret)
+                              ret))))
+                   ([x y] (cc/let [k (cc/list x y)]
+                            (cc/if-let [e (cc/find (cc/deref mem) k)]
+                              (cc/val e)
+                              (cc/let [ret (f x y)]
+                                (cc/swap! mem cc/assoc k ret)
+                                ret))))
+                   ([x y z] (cc/let [k (cc/list x y z)]
+                              (cc/if-let [e (cc/find (cc/deref mem) k)]
+                                (cc/val e)
+                                (cc/let [ret (f x y z)]
+                                  (cc/swap! mem cc/assoc k ret)
+                                  ret))))
+                   ([x y z & args] (cc/let [k (cc/list* x y z args)]
+                                     (cc/if-let [e (cc/find (cc/deref mem) k)]
+                                       (cc/val e)
+                                       (cc/let [ret (cc/apply f x y z args)]
+                                         (cc/swap! mem cc/assoc k ret)
+                                         ret))))))))))
+
+(defunroll unroll-memoize
+  "Returns a memoized version of a referentially transparent function. The
+  memoized version of the function keeps a cache of the mapping from arguments
+  to results and, when calls with the same arguments are repeated often, has
+  higher performance at the expense of higher memory use."
+  {:added "1.0"
+   :static true}
+  unroll-memoize-spec)
+
+(deftest unroll-memoize-test
+  (is (= (-> #'unroll-memoize meta :arglists)
+         '([f]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/mapv

@@ -1,9 +1,9 @@
-(ns io.github.frenchy64.fully-satisfies.unrolling-macro-test
+(ns io.github.frenchy64.fully-satisfies.unroll-macro-test
   (:require [clojure.core :as cc]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [clojure.test :refer [is]]
-            [io.github.frenchy64.fully-satisfies.unrolling-macro
-             :refer [defunrolled unrolled-fn-tail gensym-pretty prettify-unrolled
+            [io.github.frenchy64.fully-satisfies.unroll-macro
+             :refer [defunroll unroll-fn-tail gensym-pretty prettify-unroll
                      single-char-syms-from
                      uniformly-flowing-argvs]]))
 
@@ -114,32 +114,32 @@
   ([a b c d e f & args]
      (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d (cons e (cons f args))))))))))
 
-(defn unrolled-vector-spec*
-  ([] (unrolled-vector-spec* {}))
+(defn unroll-vector-spec*
+  ([] (unroll-vector-spec* {}))
   ([{:keys [size] :or {size 7}}]
    {:argvs (uniformly-flowing-argvs
              {:arities (range size)
               :fixed-names (single-char-syms-from \a)
               :rest-name 'args})
-    :unrolled-arity (fn [_ fixed-args rest-arg]
+    :unroll-arity (fn [_ fixed-args rest-arg]
                       (if rest-arg
                         `(clojure.lang.LazilyPersistentVector/create
                            ~(reduce (fn [acc x] `(cons ~x ~acc)) rest-arg (rseq fixed-args)))
                         fixed-args))}))
 
-(def unrolled-vector-spec (unrolled-vector-spec*))
+(def unroll-vector-spec (unroll-vector-spec*))
 
-(deftest unrolled-vector-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 0})))
+(deftest unroll-vector-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-vector-spec* {:size 0})))
          '([& args] (clojure.lang.LazilyPersistentVector/create args))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 1})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-vector-spec* {:size 1})))
          '(([] [])
            ([& args] (clojure.lang.LazilyPersistentVector/create args)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-vector-spec* {:size 2})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-vector-spec* {:size 2})))
          '(([] [])
            ([a] [a])
            ([a & args] (clojure.lang.LazilyPersistentVector/create (cc/cons a args))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-vector-spec))
+  (is (= (prettify-unroll (unroll-fn-tail unroll-vector-spec))
          '(([] [])
            ([a] [a])
            ([a b] [a b])
@@ -149,14 +149,14 @@
            ([a b c d e f] [a b c d e f])
            ([a b c d e f & args] (clojure.lang.LazilyPersistentVector/create (cc/cons a (cc/cons b (cc/cons c (cc/cons d (cc/cons e (cc/cons f args))))))))))))
 
-(defunrolled unrolled-vector
+(defunroll unroll-vector
   "Creates a new vector containing the args."
   {:added "1.0"
    :static true}
-  unrolled-vector-spec)
+  unroll-vector-spec)
 
-(deftest unrolled-vector-test
-  (is (= (-> #'unrolled-vector meta :arglists)
+(deftest unroll-vector-test
+  (is (= (-> #'unroll-vector meta :arglists)
          (-> #'clojure.core/vector meta :arglists)
          '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
 
@@ -179,8 +179,8 @@
   ([a b c d & more]
      (cons a (cons b (cons c (cons d (spread more)))))))
 
-(defn unrolled-list*-spec*
-  ([] (unrolled-list*-spec* {}))
+(defn unroll-list*-spec*
+  ([] (unroll-list*-spec* {}))
   ([{:keys [size] :or {size 4}}]
    {:argvs (let [rest-arity (inc size)]
              (assert (pos? rest-arity))
@@ -192,41 +192,41 @@
                  (conj (-> (into [] (take (dec rest-arity))
                                  (single-char-syms-from \a))
                            (conj '& 'more)))))
-    :unrolled-arity (fn [_ fixed-args rest-arg]
+    :unroll-arity (fn [_ fixed-args rest-arg]
                       (if (and (= 1 (count fixed-args)) (not rest-arg))
                         `(seq ~(first fixed-args))
                         (reduce (fn [acc x] `(cons ~x ~acc))
                                 (if rest-arg `(#'clojure.core/spread ~rest-arg) (peek fixed-args))
                                 (some-> fixed-args not-empty pop rseq))))}))
 
-(def unrolled-list*-spec (unrolled-list*-spec*))
+(def unroll-list*-spec (unroll-list*-spec*))
 
-(deftest unrolled-list*-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 0})))
+(deftest unroll-list*-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-list*-spec* {:size 0})))
          '([& more] ((var cc/spread) more))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 1})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-list*-spec* {:size 1})))
          '(([args] (cc/seq args)) 
            ([a & more] ((var cc/spread) more)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-list*-spec* {:size 2})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-list*-spec* {:size 2})))
          '(([args] (cc/seq args)) 
            ([a args] (cc/cons a args)) 
            ([a b & more] (cc/cons a ((var cc/spread) more))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-list*-spec))
+  (is (= (prettify-unroll (unroll-fn-tail unroll-list*-spec))
          '(([args] (cc/seq args))
            ([a args] (cc/cons a args))
            ([a b args] (cc/cons a (cc/cons b args)))
            ([a b c args] (cc/cons a (cc/cons b (cc/cons c args))))
            ([a b c d & more] (cc/cons a (cc/cons b (cc/cons c ((var cc/spread) more)))))))))
 
-(defunrolled unrolled-list*
+(defunroll unroll-list*
   "Creates a new seq containing the items prepended to the rest, the
   last of which will be treated as a sequence."
   {:added "1.0"
    :static true}
-  unrolled-list*-spec)
+  unroll-list*-spec)
 
-(deftest unrolled-list*-test
-  (is (= (-> #'unrolled-list* meta :arglists)
+(deftest unroll-list*-test
+  (is (= (-> #'unroll-list* meta :arglists)
          (-> #'clojure.core/list* meta :arglists)
          '([args] [a args] [a b args] [a b c args] [a b c d & more]))))
 
@@ -253,8 +253,8 @@
   ([^clojure.lang.IFn f a b c d & args]
      (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
 
-(defn unrolled-apply-spec*
-  ([] (unrolled-apply-spec* {}))
+(defn unroll-apply-spec*
+  ([] (unroll-apply-spec* {}))
   ([{:keys [size] :or {size 4}}]
    {:argvs (let [rest-arity (+ 2 size)
                  f (with-meta 'f {:tag 'clojure.lang.IFn})
@@ -268,7 +268,7 @@
                            (into (take (- rest-arity 2))
                                  (single-char-syms-from \a))
                            (conj '& args)))))
-    :unrolled-arity (fn [_ [f & fixed-args] rest-arg]
+    :unroll-arity (fn [_ [f & fixed-args] rest-arg]
                       (let [[fixed-args last-fixed] (if rest-arg
                                                       [fixed-args nil]
                                                       [(butlast fixed-args) (last fixed-args)])]
@@ -281,33 +281,33 @@
                                       `(seq ~last-fixed)
                                       `(list* ~@fixed-args ~last-fixed)))))))}))
 
-(def unrolled-apply-spec (unrolled-apply-spec*))
+(def unroll-apply-spec (unroll-apply-spec*))
 
-(deftest unrolled-apply-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 0})))
+(deftest unroll-apply-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-apply-spec* {:size 0})))
          '([f & args] (. f (applyTo ((var cc/spread) args))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 1})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-apply-spec* {:size 1})))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f a & args] (. f (applyTo (cc/cons a ((var cc/spread) args))))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-apply-spec* {:size 2})))
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-apply-spec* {:size 2})))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))
            ([f a b & args] (. f (applyTo (cc/cons a (cc/cons b ((var cc/spread) args)))))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-apply-spec))
+  (is (= (prettify-unroll (unroll-fn-tail unroll-apply-spec))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))
            ([f x y args] (. f (applyTo (cc/list* x y args))))
            ([f x y z args] (. f (applyTo (cc/list* x y z args))))
            ([f a b c d & args] (. f (applyTo (cc/cons a (cc/cons b (cc/cons c (cc/cons d ((var cc/spread) args))))))))))))
 
-(defunrolled unrolled-apply
+(defunroll unroll-apply
   "Applies fn f to the argument list formed by prepending intervening arguments to args."
   {:added "1.0"
    :static true}
-  unrolled-apply-spec)
+  unroll-apply-spec)
 
-(deftest unrolled-apply-test
-  (is (= (-> #'unrolled-apply meta :arglists)
+(deftest unroll-apply-test
+  (is (= (-> #'unroll-apply meta :arglists)
          (-> #'clojure.core/apply meta :arglists)
          '([f args] [f x args] [f x y args] [f x y z args] [f a b c d & args]))))
 
@@ -336,70 +336,70 @@
   ([f g & fs]
      (reduce1 comp (list* f g fs))))
 
-(defn unrolled-comp-spec*
-  ([] (unrolled-comp-spec* {}))
+(defn unroll-comp-spec*
+  ([] (unroll-comp-spec* {}))
   ([{:keys [outer-size inner-size] :or {outer-size 3 inner-size 4}}]
    {:argvs (uniformly-flowing-argvs
              {:arities (range outer-size)
               :fixed-names (single-char-syms-from \f)
               :rest-name 'fs})
-    :unrolled-arity (fn [this fixed-fs rest-fs]
+    :unroll-arity (fn [this fixed-fs rest-fs]
                       (assert this)
                       (if rest-fs
                         `(reduce ~this ~(maybe-list* fixed-fs rest-fs))
                         (case (count fixed-fs)
                           0 `identity
                           1 (first fixed-fs)
-                          `(fn ~@(unrolled-fn-tail
+                          `(fn ~@(unroll-fn-tail
                                    {:argvs (uniformly-flowing-argvs
                                              {:arities (range inner-size)
                                               :fixed-names (single-char-syms-from \x)
                                               :rest-name 'args})
-                                    :unrolled-arity (fn [_ fixed-args rest-args]
+                                    :unroll-arity (fn [_ fixed-args rest-args]
                                                       (reduce (fn [acc outer-f]
                                                                 (list outer-f acc))
                                                               (maybe-apply (peek fixed-fs) fixed-args rest-args)
                                                               (pop fixed-fs)))})))))}))
 
-(def unrolled-comp-spec (unrolled-comp-spec*))
+(def unroll-comp-spec (unroll-comp-spec*))
 
-(deftest unrolled-comp-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 0 :inner-size 0}) :this 'unrolled-comp)))
-         '([& fs] (cc/reduce unrolled-comp fs))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 1 :inner-size 0}) :this 'unrolled-comp)))
+(deftest unroll-comp-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 0 :inner-size 0}) :this 'unroll-comp)))
+         '([& fs] (cc/reduce unroll-comp fs))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'unroll-comp)))
          '(([] cc/identity)
-           ([& fs] (cc/reduce unrolled-comp fs)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 2 :inner-size 0}) :this 'unrolled-comp)))
+           ([& fs] (cc/reduce unroll-comp fs)))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'unroll-comp)))
          '(([] cc/identity) 
            ([f] f)
-           ([f & fs] (cc/reduce unrolled-comp (cc/list* f fs))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 0}) :this 'unrolled-comp)))
+           ([f & fs] (cc/reduce unroll-comp (cc/list* f fs))))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 0}) :this 'unroll-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn [& args] (f (cc/apply g args))))
-           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 1}) :this 'unrolled-comp)))
+           ([f g & fs] (cc/reduce unroll-comp (cc/list* f g fs))))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 1}) :this 'unroll-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn
                     ([] (f (g)))
                     ([& args] (f (cc/apply g args)))))
-           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 3 :inner-size 2}) :this 'unrolled-comp)))
+           ([f g & fs] (cc/reduce unroll-comp (cc/list* f g fs))))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 2}) :this 'unroll-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn
                     ([] (f (g)))
                     ([x] (f (g x)))
                     ([x & args] (f (cc/apply g x args)))))
-           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc (unrolled-comp-spec* {:outer-size 4 :inner-size 0}) :this 'unrolled-comp)))
+           ([f g & fs] (cc/reduce unroll-comp (cc/list* f g fs))))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc (unroll-comp-spec* {:outer-size 4 :inner-size 0}) :this 'unroll-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn [& args] (f (cc/apply g args))))
            ([f g h] (cc/fn [& args] (g (f (cc/apply h args)))))
-           ([f g h & fs] (cc/reduce unrolled-comp (cc/list* f g h fs))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (assoc unrolled-comp-spec :this 'unrolled-comp)))
+           ([f g h & fs] (cc/reduce unroll-comp (cc/list* f g h fs))))))
+  (is (= (prettify-unroll (unroll-fn-tail (assoc unroll-comp-spec :this 'unroll-comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn 
@@ -408,19 +408,19 @@
                     ([x y] (f (g x y)))
                     ([x y z] (f (g x y z)))
                     ([x y z & args] (f (cc/apply g x y z args)))))
-           ([f g & fs] (cc/reduce unrolled-comp (cc/list* f g fs)))))))
+           ([f g & fs] (cc/reduce unroll-comp (cc/list* f g fs)))))))
 
-(defunrolled unrolled-comp
+(defunroll unroll-comp
   "Takes a set of functions and returns a fn that is the composition
   of those fns.  The returned fn takes a variable number of args,
   applies the rightmost of fns to the args, the next
   fn (right-to-left) to the result, etc."
   {:added "1.0"
    :static true}
-  unrolled-comp-spec)
+  unroll-comp-spec)
 
-(deftest unrolled-comp-test
-  (is (= (-> #'unrolled-comp meta :arglists)
+(deftest unroll-comp-test
+  (is (= (-> #'unroll-comp meta :arglists)
          (-> #'clojure.core/comp meta :arglists)
          '([] [f] [f g] [f g & fs]))))
 
@@ -472,21 +472,21 @@
          ([x y z] (reduce1 #(conj %1 (%2 x y z)) [] fs))
          ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
 
-(defn unrolled-juxt-spec*
-  ([] (unrolled-juxt-spec* {}))
+(defn unroll-juxt-spec*
+  ([] (unroll-juxt-spec* {}))
   ([{:keys [outer-size inner-size]}] ;;FIXME use params in body and set defaults
    {:argvs (uniformly-flowing-argvs
              {:arities (range 1 4) ;;hmm we can't use the same trick as (range 0).
               :fixed-names (single-char-syms-from \f)
               :rest-name 'fs})
-    :unrolled-arity (fn [_ fixed-fs rest-fs]
+    :unroll-arity (fn [_ fixed-fs rest-fs]
                       (let [fs (gensym-pretty 'fs)
-                            body `(fn ~@(unrolled-fn-tail
+                            body `(fn ~@(unroll-fn-tail
                                           {:argvs (uniformly-flowing-argvs
                                                     {:arities (range 4)
                                                      :fixed-names (single-char-syms-from \x)
                                                      :rest-name 'args})
-                                           :unrolled-arity (fn [_ fixed-args rest-args]
+                                           :unroll-arity (fn [_ fixed-args rest-args]
                                                              (if rest-fs
                                                                (let [v (gensym-pretty 'acc)
                                                                      f (gensym-pretty 'f)]
@@ -496,10 +496,10 @@
                           `(let [~fs ~(maybe-list* fixed-fs rest-fs)] ~body)
                           body)))}))
 
-(def unrolled-juxt-spec (unrolled-juxt-spec*))
+(def unroll-juxt-spec (unroll-juxt-spec*))
 
-(deftest unrolled-juxt-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-juxt-spec))
+(deftest unroll-juxt-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail unroll-juxt-spec))
          '(([f]
             (cc/fn
               ([] [(f)])
@@ -530,7 +530,7 @@
                 ([x y z] (cc/reduce (cc/fn [acc f] (cc/conj acc (f x y z))) [] fs))
                 ([x y z & args] (cc/reduce (cc/fn [acc f] (cc/conj acc (cc/apply f x y z args))) [] fs)))))))))
 
-(defunrolled unrolled-juxt 
+(defunroll unroll-juxt 
   "Takes a set of functions and returns a fn that is the juxtaposition
   of those fns.  The returned fn takes a variable number of args, and
   returns a vector containing the result of applying each fn to the
@@ -538,10 +538,10 @@
   ((juxt a b c) x) => [(a x) (b x) (c x)]"
   {:added "1.1"
    :static true}
-  unrolled-juxt-spec)
+  unroll-juxt-spec)
 
-(deftest unrolled-juxt-test
-  (is (= (-> #'unrolled-juxt meta :arglists)
+(deftest unroll-juxt-test
+  (is (= (-> #'unroll-juxt meta :arglists)
          (-> #'clojure.core/juxt meta :arglists)
          '([f] [f g] [f g h] [f g h & fs]))))
 
@@ -588,24 +588,24 @@
   ([f arg1 arg2 arg3 & more]
    (fn [& args] (apply f arg1 arg2 arg3 (concat more args)))))
 
-(def unrolled-partial-spec
+(def unroll-partial-spec
   {:argvs (uniformly-flowing-argvs
             {:arities (range 1 5)
              :fixed-names (cons 'f (map #(symbol (str "arg" %)) (next (range))))
              :rest-name 'more})
-   :unrolled-arity (fn [_ [f & fixed-args] rest-args]
-                     `(fn ~@(unrolled-fn-tail
+   :unroll-arity (fn [_ [f & fixed-args] rest-args]
+                     `(fn ~@(unroll-fn-tail
                               {:argvs (uniformly-flowing-argvs
                                         {:arities (range (if rest-args 0 4))
                                          :fixed-names (single-char-syms-from \x)
                                          :rest-name 'args})
-                               :unrolled-arity (fn [_ fixed-additional-args rest-additional-args]
+                               :unroll-arity (fn [_ fixed-additional-args rest-additional-args]
                                                  (maybe-apply f
                                                               (concat fixed-args fixed-additional-args)
                                                               (maybe-concat rest-additional-args rest-args)))})))})
 
-(deftest unrolled-partial-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-partial-spec))
+(deftest unroll-partial-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail unroll-partial-spec))
          '(([f]
             (cc/fn
               ([] (f))
@@ -636,16 +636,16 @@
            ([f arg1 arg2 arg3 & more]
             (cc/fn [& args] (cc/apply f arg1 arg2 arg3 (cc/concat args more))))))))
 
-(defunrolled unrolled-partial
+(defunroll unroll-partial
   "Takes a function f and fewer than the normal arguments to f, and
   returns a fn that takes a variable number of additional args. When
   called, the returned function calls f with args + additional args."
   {:added "1.0"
    :static true}
-  unrolled-partial-spec)
+  unroll-partial-spec)
 
-(deftest unrolled-partial-test
-  (is (= (-> #'unrolled-partial meta :arglists)
+(deftest unroll-partial-test
+  (is (= (-> #'unroll-partial meta :arglists)
          (-> #'clojure.core/partial meta :arglists)
          '([f] [f arg1] [f arg1 arg2] [f arg1 arg2 arg3] [f arg1 arg2 arg3 & more]))))
 
@@ -716,8 +716,8 @@
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
 ;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
-(defn unrolled-naive-everyp-spec*
-  ([] (unrolled-naive-everyp-spec* {}))
+(defn unroll-naive-everyp-spec*
+  ([] (unroll-naive-everyp-spec* {}))
   ([{:keys [outer-size inner-size smaller-arities?]
      :or {outer-size 4
           inner-size 4}}]
@@ -727,13 +727,13 @@
              {:arities (range outer-size)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
               :rest-name 'ps})
-    :unrolled-arity (fn [_ fixed-preds rest-pred]
-                      `(fn ~@(unrolled-fn-tail
+    :unroll-arity (fn [_ fixed-preds rest-pred]
+                      `(fn ~@(unroll-fn-tail
                                {:argvs (uniformly-flowing-argvs
                                          {:arities (range inner-size)
                                           :fixed-names (single-char-syms-from \x)
                                           :rest-name 'args})
-                                :unrolled-arity (fn [_ fixed-args rest-arg]
+                                :unroll-arity (fn [_ fixed-args rest-arg]
                                                   (let [tp (when (and smaller-arities?
                                                                       (< 1 (cond-> (count fixed-preds) rest-pred inc))
                                                                       (< 1 (cond-> (count fixed-args) rest-arg inc)))
@@ -750,20 +750,20 @@
                                                       `(let [~tp (fn [~p] ~(maybe-and (tp-gen p)))] ~body)
                                                       body)))})))}))
 
-(def unrolled-naive-everyp-spec (unrolled-naive-everyp-spec*))
+(def unroll-naive-everyp-spec (unroll-naive-everyp-spec*))
 
-(deftest unrolled-naive-everyp-spec-test
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+(deftest unroll-naive-everyp-spec-test
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-naive-everyp-spec*
                                                 {:outer-size 0
                                                  :inner-size 0})))
          '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-naive-everyp-spec*
                                                 {:outer-size 1
                                                  :inner-size 0})))
 
          '(([] (cc/fn [& args] true))
            ([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-naive-everyp-spec*
                                                 {:outer-size 1
                                                  :inner-size 1})))
 
@@ -774,7 +774,7 @@
            ([& ps] (cc/fn
                      ([] true)
                      ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-naive-everyp-spec*
                                                 {:outer-size 3
                                                  :inner-size 4
                                                  :smaller-arities? true})))
@@ -814,7 +814,7 @@
                                                                  (tp p2)
                                                                  (cc/every? tp ps))))))))))
   ;; potentially useful implementation. maybe the non-rest arities should fully unroll.
-  (is (= (prettify-unrolled (unrolled-fn-tail (unrolled-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-fn-tail (unroll-naive-everyp-spec*
                                               {:smaller-arities? true}))
                             {:unqualify-core true})
          '(([] (fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
@@ -847,7 +847,7 @@
                                          (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
                               ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                                 (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps))))))))))
-  (is (= (prettify-unrolled (unrolled-fn-tail unrolled-naive-everyp-spec))
+  (is (= (prettify-unroll (unroll-fn-tail unroll-naive-everyp-spec))
          '(([] (cc/fn
                  ([] true)
                  ([x] true)
@@ -963,20 +963,20 @@
                          (f3 x) (f3 y) (f3 z) (some f3 args)
                          (some #(or (% x) (% y) (% z)) fs))))))
 
-(def unrolled-naive-somef-spec
+(def unroll-naive-somef-spec
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
             (uniformly-flowing-argvs
               {:arities (range 0 (inc rest-arity))
                :fixed-names (map #(symbol (str "f" %)) (next (range)))
                :rest-name 'fs}))
-   :unrolled-arity (fn [_ fixed-fs rest-f]
-                     `(fn ~@(unrolled-fn-tail
+   :unroll-arity (fn [_ fixed-fs rest-f]
+                     `(fn ~@(unroll-fn-tail
                               {:argvs (uniformly-flowing-argvs
                                         {:arities (range 5)
                                          :fixed-names (single-char-syms-from \x)
                                          :rest-name 'args})
-                               :unrolled-arity (fn [_ fixed-args rest-arg]
+                               :unroll-arity (fn [_ fixed-args rest-arg]
                                                  (let [f-tests (fn [f] (mapv #(list f %) fixed-args))]
                                                    `(or ~@(-> []
                                                               (into (mapcat #(cond-> (f-tests %)

@@ -1,5 +1,5 @@
-(ns io.github.frenchy64.fully-satisfies.unrolling-macro
-  "Utilities for unrolling functions."
+(ns io.github.frenchy64.fully-satisfies.unroll-macro
+  "Utilities to unroll functions."
   (:require [clojure.walk :as walk]))
 
 (defn single-char-syms-from [c]
@@ -38,8 +38,8 @@
   (when (rest-argv? argv)
     (peek argv)))
 
-(defn prettify-unrolled
-  ([v] (prettify-unrolled v {}))
+(defn prettify-unroll
+  ([v] (prettify-unroll v {}))
   ([v {:keys [unqualify-core] :as _opts}]
    (walk/prewalk
      (fn [v]
@@ -105,15 +105,15 @@
                rest-arg (conj '& rest-arg))))
          arities)))
 
-(defn unrolled-fn-tail
+(defn unroll-fn-tail
   ":argvs          a list of argvs of the form [fixed-args*] or [fixed-args* & rest-arg].
                    fixed-args is a list of symbols naming fixed arguments, and rest-arg
                    is a nilable symbol naming a possible rest-argument.
-   :this           A symbol to reference the current function. Propagated to first argument of :unrolled-arity.
+   :this           A symbol to reference the current function. Propagated to first argument of :unroll-arity.
                    Default: nil
-   :unrolled-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
+   :unroll-arity  A 3 argument function taking symbols this, fixed-args, rest-arg,
                     where this and rest-arg are nilable. Returns the body of the arity."
-  [{:keys [argvs unrolled-arity this]}]
+  [{:keys [argvs unroll-arity this]}]
   (assert (every? argv? argvs) (pr-str argvs this))
   (let [arities (->> (gensym-pretty-argvs argvs)
                      (map (fn [argv]
@@ -122,7 +122,7 @@
                                   rest-arg (argv->rest-arg argv)]
                               (list (cond-> fixed-args
                                       rest-arg (conj '& rest-arg))
-                                    (unrolled-arity this fixed-args rest-arg))))))]
+                                    (unroll-arity this fixed-args rest-arg))))))]
     (with-meta (cond-> arities
                  (= 1 (count arities)) first)
                {::argvs argvs})))
@@ -135,7 +135,7 @@
              rest-arg (conj '& rest-arg))))
        (-> fn-tail meta ::argvs)))
 
-(defmacro defunrolled [nme doc attr config]
+(defmacro defunroll [nme doc attr config]
   (assert (symbol? config))
   (let [config-var (or (resolve config)
                        (requiring-resolve
@@ -143,49 +143,6 @@
                            (symbol (-> *ns* ns-name name) (name config))
                            config)))
         _ (assert (var? config-var) config)
-        fn-tail (unrolled-fn-tail (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
+        fn-tail (unroll-fn-tail (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
        ~@fn-tail)))
-
-;; all from clojure.core, for reference
-(comment
-(defn some-fn
-  "Takes a set of predicates and returns a function f that returns the first logical true value
-  returned by one of its composing predicates against any of its arguments, else it returns
-  logical false. Note that f is short-circuiting in that it will stop execution on the first
-  argument that triggers a logical true result against the original predicates."
-  {:added "1.3"}
-  ([p]
-     (fn sp1
-       ([] nil)
-       ([x] (p x))
-       ([x y] (or (p x) (p y)))
-       ([x y z] (or (p x) (p y) (p z)))
-       ([x y z & args] (or (sp1 x y z)
-                           (some p args)))))
-  ([p1 p2]
-     (fn sp2
-       ([] nil)
-       ([x] (or (p1 x) (p2 x)))
-       ([x y] (or (p1 x) (p1 y) (p2 x) (p2 y)))
-       ([x y z] (or (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z)))
-       ([x y z & args] (or (sp2 x y z)
-                           (some #(or (p1 %) (p2 %)) args)))))
-  ([p1 p2 p3]
-     (fn sp3
-       ([] nil)
-       ([x] (or (p1 x) (p2 x) (p3 x)))
-       ([x y] (or (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y)))
-       ([x y z] (or (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z)))
-       ([x y z & args] (or (sp3 x y z)
-                           (some #(or (p1 %) (p2 %) (p3 %)) args)))))
-  ([p1 p2 p3 & ps]
-     (let [ps (list* p1 p2 p3 ps)]
-       (fn spn
-         ([] nil)
-         ([x] (some #(% x) ps))
-         ([x y] (some #(or (% x) (% y)) ps))
-         ([x y z] (some #(or (% x) (% y) (% z)) ps))
-         ([x y z & args] (or (spn x y z)
-                             (some #(some % args) ps)))))))
-)

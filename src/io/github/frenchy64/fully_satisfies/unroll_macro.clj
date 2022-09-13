@@ -129,12 +129,13 @@
                  (= 1 (count arities)) first)
                {::argvs argvs})))
 
-;TODO propagate :tag on argv
 (defn fn-tail->arglists [fn-tail]
   (map (fn [argv]
          (let [rest-arg (argv->rest-arg argv)]
-           (cond-> (argv->fixed-args argv)
-             rest-arg (conj '& rest-arg))))
+           (with-meta
+             (cond-> (argv->fixed-args argv)
+               rest-arg (conj '& rest-arg))
+             (meta argv))))
        (-> fn-tail meta ::argvs)))
 
 (defmacro defunroll [nme doc attr config]

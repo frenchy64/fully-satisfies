@@ -1177,6 +1177,42 @@
   ([^clojure.lang.IAtom atom f x y] (.swap atom f x y))
   ([^clojure.lang.IAtom atom f x y & args] (.swap atom f x y args)))
 
+(def unroll-swap!-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 2 5)
+             :fixed-names (list* (with-meta 'atom {:tag 'clojure.lang.IAtom})
+                                 'f
+                                 (single-char-syms-from \x))
+             :rest-name 'args})
+   :unroll-arity (fn [_ [atm f & xs] args]
+                   `(.swap ~atm ~f ~@xs ~@(some-> args list)))})
+
+(deftest unroll-swap!-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-swap!-spec))
+         '(([atom f] (.swap atom f))
+           ([atom f x] (.swap atom f x))
+           ([atom f x y] (.swap atom f x y))
+           ([atom f x y & args] (.swap atom f x y args))))))
+
+(defunroll unroll-swap!
+  "Atomically swaps the value of atom to be:
+  (apply f current-value-of-atom args). Note that f may be called
+  multiple times, and thus should be free of side effects.  Returns
+  the value that was swapped in."
+  {:added "1.0"
+   :static true}
+  unroll-swap!-spec)
+
+(deftest unroll-swap!-test
+  (is (= (-> #'unroll-swap! meta :arglists)
+         (-> #'clojure.core/swap! meta :arglists)
+         '([atom f]
+           [atom f x]
+           [atom f x y]
+           [atom f x y & args])))
+  (is (= (->> #'unroll-swap! meta :arglists (mapv (comp :tag meta first)))
+         (->> #'clojure.core/swap! meta :arglists (mapv (comp :tag meta first)))
+         (repeat 4 'clojure.lang.IAtom))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/swap-vals!
@@ -1195,6 +1231,47 @@
   (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x] (.swapVals atom f x))
   (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x y] (.swapVals atom f x y))
   (^clojure.lang.IPersistentVector [^clojure.lang.IAtom2 atom f x y & args] (.swapVals atom f x y args)))
+
+(def unroll-swap-vals!-spec
+  {:argvs (mapv
+            #(with-meta % {:tag 'clojure.lang.IPersistentVector})
+            (uniformly-flowing-argvs
+              {:arities (range 2 5)
+               :fixed-names (list* (with-meta 'atom {:tag 'clojure.lang.IAtom2})
+                                   'f
+                                   (single-char-syms-from \x))
+               :rest-name 'args}))
+   :unroll-arity (fn [_ [atm f & xs] args]
+                   `(.swapVals ~atm ~f ~@xs ~@(some-> args list)))})
+
+(deftest unroll-swap-vals!-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-swap-vals!-spec))
+         '(([atom f] (.swapVals atom f))
+           ([atom f x] (.swapVals atom f x))
+           ([atom f x y] (.swapVals atom f x y))
+           ([atom f x y & args] (.swapVals atom f x y args))))))
+ 
+(defunroll unroll-swap-vals!
+  "Atomically swaps the value of atom to be:
+  (apply f current-value-of-atom args). Note that f may be called
+  multiple times, and thus should be free of side effects.
+  Returns [old new], the value of the atom before and after the swap."
+  {:added "1.9"}
+  unroll-swap-vals!-spec)
+
+(deftest unroll-swap-vals!-test
+  (is (= (-> #'unroll-swap-vals! meta :arglists)
+         (-> #'clojure.core/swap-vals! meta :arglists)
+         '([atom f]
+           [atom f x]
+           [atom f x y]
+           [atom f x y & args])))
+  (is (= (->> #'unroll-swap-vals! meta :arglists (mapv (comp :tag meta first)))
+         (->> #'clojure.core/swap-vals! meta :arglists (mapv (comp :tag meta first)))
+         (repeat 4 'clojure.lang.IAtom2)))
+  (is (= (->> #'unroll-swap-vals! meta :arglists (mapv (comp :tag meta)))
+         (->> #'clojure.core/swap-vals! meta :arglists (mapv (comp :tag meta)))
+         (repeat 4 'clojure.lang.IPersistentVector))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/update

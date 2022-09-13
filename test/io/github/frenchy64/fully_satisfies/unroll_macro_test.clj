@@ -1163,7 +1163,6 @@
 ;; clojure.core/swap!
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn swap!
   "Atomically swaps the value of atom to be:
@@ -1217,8 +1216,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/swap-vals!
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;TODO argv :tag
 
 #_
 (defn swap-vals!
@@ -1277,7 +1274,6 @@
 ;; clojure.core/update
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn update
   "'Updates' a value in an associative structure, where k is a
@@ -1344,6 +1340,38 @@
     ([x] (not (f x)))
     ([x y] (not (f x y)))
     ([x y & zs] (not (apply f x y zs)))))
+
+(def unroll-complement-spec
+  {:argvs '[[f]]
+   :unroll-arity (fn [_ [f] _]
+                   `(fn ~@(unroll-arities
+                            {:argvs (uniformly-flowing-argvs
+                                      {:arities (range 4)
+                                       :fixed-names (single-char-syms-from \x)
+                                       :rest-name 'zs})
+                             :unroll-arity (fn [_ xs zs]
+                                             `(not ~(maybe-apply f xs zs)))})))})
+
+(deftest unroll-complement-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-complement-spec))
+         '([f] (cc/fn
+                 ([] (cc/not (f)))
+                 ([x] (cc/not (f x)))
+                 ([x y] (cc/not (f x y)))
+                 ([x y z] (cc/not (f x y z)))
+                 ([x y z & zs] (cc/not (cc/apply f x y z zs))))))))
+
+(defunroll unroll-complement
+  "Takes a fn f and returns a fn that takes the same arguments as f,
+  has the same effects, if any, and returns the opposite truth value."
+  {:added "1.0"
+   :static true}
+  unroll-complement-spec)
+
+(deftest unroll-complement-test
+  (is (= (-> #'unroll-complement meta :arglists)
+         (-> #'clojure.core/complement meta :arglists)
+         '([f]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/map

@@ -105,6 +105,11 @@
                rest-arg (conj '& rest-arg))))
          arities)))
 
+(defn flatten-arities [arities]
+  (cond-> arities
+    (= 1 (count arities)) (-> first
+                              (with-meta (meta arities)))))
+
 (defn unroll-arities
   "Returns a sequence of arities as allowed by fn or defn.
 
@@ -125,9 +130,8 @@
                               (list (cond-> fixed-args
                                       rest-arg (conj '& rest-arg))
                                     (unroll-arity this fixed-args rest-arg))))))]
-    (with-meta (cond-> arities
-                 (= 1 (count arities)) first)
-               {::argvs argvs})))
+    (flatten-arities
+      (with-meta arities {::argvs argvs}))))
 
 (defn fn-tail->arglists [fn-tail]
   (map (fn [argv]

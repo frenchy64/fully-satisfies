@@ -4,8 +4,7 @@
             [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.unroll-macro
              :refer [defunroll unroll-arities gensym-pretty prettify-unroll
-                     single-char-syms-from
-                     uniformly-flowing-argvs]]))
+                     single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
 
 (defn maybe-apply [f fixed-args rest-args]
   (if (some? rest-args)
@@ -411,8 +410,10 @@
                       (if rest-fs
                         `(~reduce-fn ~(or (when (<= 2 (count fixed-fs)) this)
                                           (let [[f g args] (map gensym-pretty '[f g args])]
-                                            `(fn [~f ~g] (fn [& ~args] (~f (apply ~g ~args))))))
-                                     ~(or (first fixed-fs) `identity)
+                                            `(fn ~@(flatten-arities
+                                                     (cond->> [`([~f ~g] (fn [& ~args] (~f (apply ~g ~args))))]
+                                                       (empty? fixed-fs) (cons `([] identity)))))))
+                                     ~@(some-> (first fixed-fs) list)
                                      ~(maybe-list* (next fixed-fs) rest-fs))
                         (case (count fixed-fs)
                           0 `identity
@@ -430,15 +431,17 @@
 (deftest unroll-comp-spec-test
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 0 :inner-size 0}) :this 'this/comp)))
          (prettify-unroll (unroll-arities (unroll-comp-spec* {:outer-size 0 :inner-size 0})))
-         '([& fs] (cc/reduce (cc/fn [f g]
-                               (cc/fn [& args] (f (cc/apply g args))))
-                             cc/identity
+         '([& fs] (cc/reduce (cc/fn
+                               ([] cc/identity)
+                               ([f g]
+                                (cc/fn [& args] (f (cc/apply g args)))))
                              fs))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
-           ([& fs] (cc/reduce (cc/fn [f g]
-                                (cc/fn [& args] (f (cc/apply g args))))
-                              cc/identity
+           ([& fs] (cc/reduce (cc/fn
+                                ([] cc/identity)
+                                ([f g]
+                                 (cc/fn [& args] (f (cc/apply g args)))))
                               fs)))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)

@@ -288,28 +288,44 @@
      (. f (applyTo (cons a (cons b (cons c (cons d (spread args)))))))))
 
 (defn unroll-apply-spec*
+  "Generate a spec for an unrolling of clojure.core/apply.
+  
+   :fixed-arities  Number of fixed arities to generate. Default: 4
+   :spread         Form to use for `spread`. Default: `#'clojure.core/spread
+   :rest-arg-name  Name of rest argument. Default: 'args
+   :f-arg-name     Name of first argument. Default: 'f
+   :fixed-arg-names     Infinite sequence of parameter names for fixed arities.
+                        Used between first and last parameter. Default: (single-char-syms-from \\x)
+   :rest-arity-fixed-arg-names     Infinite sequence of parameter names for fixed params in rest arity.
+                        Used after first fixed parameter. Default: (single-char-syms-from \\a)"
   ([] (unroll-apply-spec* {}))
-  ([{:keys [size] :or {size 4}}]
-   {:argvs (let [rest-arity (+ 2 size)
-                 f (with-meta 'f {:tag 'clojure.lang.IFn})
-                 args 'args]
+  ([{:keys [fixed-arities spread rest-arg-name f-arg-name fixed-arg-names rest-arity-fixed-arg-names]
+     :or {fixed-arities 4
+          f-arg-name 'f
+          rest-arg-name 'args
+          fixed-arg-names (single-char-syms-from \x)
+          rest-arity-fixed-arg-names (single-char-syms-from \a)
+          spread `#'clojure.core/spread}}]
+   {:argvs (let [rest-arity (+ 2 fixed-arities)
+                 f (with-meta f-arg-name {:tag 'clojure.lang.IFn})
+                 args rest-arg-name]
              (-> (mapv (fn [i]
                          (-> [f]
-                             (into (take i) (single-char-syms-from \x))
+                             (into (take i) fixed-arg-names)
                              (conj args)))
                        (range (- rest-arity 2)))
                  (conj (-> [f]
-                           (into (take (- rest-arity 2))
-                                 (single-char-syms-from \a))
+                           (into (take (- rest-arity 2)) rest-arity-fixed-arg-names)
                            (conj '& args)))))
     :unroll-arity (fn [_ [f & fixed-args] rest-arg]
+                    (assert f)
                     (let [[fixed-args last-fixed] (if rest-arg
                                                     [fixed-args nil]
                                                     [(butlast fixed-args) (last fixed-args)])]
                       `(. ~f (~'applyTo
                                ~(if rest-arg
                                   (reduce (fn [acc x] `(cons ~x ~acc))
-                                          `(#'clojure.core/spread ~rest-arg)
+                                          `(~spread ~rest-arg)
                                           (reverse fixed-args))
                                   (if (empty? fixed-args)
                                     `(seq ~last-fixed)
@@ -318,12 +334,12 @@
 (def unroll-apply-spec (unroll-apply-spec*))
 
 (deftest unroll-apply-spec-test
-  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:size 0})))
+  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:fixed-arities 0})))
          '([f & args] (. f (applyTo ((var cc/spread) args))))))
-  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:size 1})))
+  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:fixed-arities 1})))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f a & args] (. f (applyTo (cc/cons a ((var cc/spread) args))))))))
-  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:size 2})))
+  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:fixed-arities 2})))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))
            ([f a b & args] (. f (applyTo (cc/cons a (cc/cons b ((var cc/spread) args)))))))))
@@ -371,29 +387,38 @@
      (reduce1 comp (list* f g fs))))
 
 (defn unroll-comp-spec*
+  ":outer-size   Number of fixed arities for outer function. Default: 3
+   :inner-size   Number of fixed arities for inner function. Default: 4
+   :inner-argvs  A function taking fixed-args, and rest-arg of outer arity
+                 and returning :argvs for inner. Default: nil.
+   :reduce-fn    Form to use for `reduce`. Default: 'clojure.core/reduce"
   ([] (unroll-comp-spec* {}))
-  ([{:keys [outer-size inner-size] :or {outer-size 3 inner-size 4}}]
-   {:argvs (uniformly-flowing-argvs
-             {:arities (range outer-size)
-              :fixed-names (single-char-syms-from \f)
-              :rest-name 'fs})
-    :unroll-arity (fn [this fixed-fs rest-fs]
-                    (assert this)
-                    (if rest-fs
-                      `(reduce ~this ~(maybe-list* fixed-fs rest-fs))
-                      (case (count fixed-fs)
-                        0 `identity
-                        1 (first fixed-fs)
-                        `(fn ~@(unroll-arities
-                                 {:argvs (uniformly-flowing-argvs
-                                           {:arities (range inner-size)
-                                            :fixed-names (single-char-syms-from \x)
-                                            :rest-name 'args})
-                                  :unroll-arity (fn [_ fixed-args rest-args]
-                                                  (reduce (fn [acc outer-f]
-                                                            (list outer-f acc))
-                                                          (maybe-apply (peek fixed-fs) fixed-args rest-args)
-                                                          (pop fixed-fs)))})))))}))
+  ([{:keys [outer-size inner-size reduce-fn inner-argvs]
+     :or {outer-size 3 inner-size 4 reduce-fn `reduce}}]
+   (let [inner-argvs (or inner-argvs
+                         (let [argvs (uniformly-flowing-argvs
+                                       {:arities (range inner-size)
+                                        :fixed-names (single-char-syms-from \x)
+                                        :rest-name 'args})]
+                           (fn [_ _] argvs)))]
+     {:argvs (uniformly-flowing-argvs
+               {:arities (range outer-size)
+                :fixed-names (single-char-syms-from \f)
+                :rest-name 'fs})
+      :unroll-arity (fn [this fixed-fs rest-fs]
+                      (assert this)
+                      (if rest-fs
+                        `(~reduce-fn ~this ~(maybe-list* fixed-fs rest-fs))
+                        (case (count fixed-fs)
+                          0 `identity
+                          1 (first fixed-fs)
+                          `(fn ~@(unroll-arities
+                                   {:argvs (inner-argvs fixed-fs rest-fs)
+                                    :unroll-arity (fn [_ fixed-args rest-args]
+                                                    (reduce (fn [acc outer-f]
+                                                              (list outer-f acc))
+                                                            (maybe-apply (peek fixed-fs) fixed-args rest-args)
+                                                            (pop fixed-fs)))})))))})))
 
 (def unroll-comp-spec (unroll-comp-spec*))
 

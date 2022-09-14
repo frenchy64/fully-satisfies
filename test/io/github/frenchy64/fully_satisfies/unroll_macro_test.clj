@@ -428,52 +428,52 @@
 (def unroll-comp-spec (unroll-comp-spec*))
 
 (deftest unroll-comp-spec-test
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 0 :inner-size 0}) :this 'unroll-comp)))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 0 :inner-size 0}) :this 'this/comp)))
          (prettify-unroll (unroll-arities (unroll-comp-spec* {:outer-size 0 :inner-size 0})))
          '([& fs] (cc/reduce (cc/fn [f g]
                                (cc/fn [& args] (f (cc/apply g args))))
                              cc/identity
                              fs))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'unroll-comp)))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
            ([& fs] (cc/reduce (cc/fn [f g]
                                 (cc/fn [& args] (f (cc/apply g args))))
                               cc/identity
                               fs)))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'unroll-comp)))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f & fs] (cc/reduce (cc/fn [f g]
                                   (cc/fn [& args] (f (cc/apply g args))))
                                 f
                                 fs)))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 0}) :this 'unroll-comp)))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn [& args] (f (cc/apply g args))))
-           ([f g & fs] (cc/reduce unroll-comp f (cc/list* g fs))))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 1}) :this 'unroll-comp)))
+           ([f g & fs] (cc/reduce this/comp f (cc/list* g fs))))))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 1}) :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn
                     ([] (f (g)))
                     ([& args] (f (cc/apply g args)))))
-           ([f g & fs] (cc/reduce unroll-comp f (cc/list* g fs))))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 2}) :this 'unroll-comp)))
+           ([f g & fs] (cc/reduce this/comp f (cc/list* g fs))))))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 3 :inner-size 2}) :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn
                     ([] (f (g)))
                     ([x] (f (g x)))
                     ([x & args] (f (cc/apply g x args)))))
-           ([f g & fs] (cc/reduce unroll-comp f (cc/list* g fs))))))
-  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 4 :inner-size 0}) :this 'unroll-comp)))
+           ([f g & fs] (cc/reduce this/comp f (cc/list* g fs))))))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 4 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn [& args] (f (cc/apply g args))))
            ([f g h] (cc/fn [& args] (g (f (cc/apply h args)))))
-           ([f g h & fs] (cc/reduce unroll-comp f (cc/list* g h fs))))))
-  (is (= (prettify-unroll (unroll-arities (assoc unroll-comp-spec :this 'unroll-comp)))
+           ([f g h & fs] (cc/reduce this/comp f (cc/list* g h fs))))))
+  (is (= (prettify-unroll (unroll-arities (assoc unroll-comp-spec :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn 
@@ -482,7 +482,7 @@
                     ([x y] (f (g x y)))
                     ([x y z] (f (g x y z)))
                     ([x y z & args] (f (cc/apply g x y z args)))))
-           ([f g & fs] (cc/reduce unroll-comp f (cc/list* g fs)))))))
+           ([f g & fs] (cc/reduce this/comp f (cc/list* g fs)))))))
 
 (defunroll unroll-comp
   "Takes a set of functions and returns a fn that is the composition

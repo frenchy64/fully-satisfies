@@ -389,7 +389,7 @@
 (defn unroll-comp-spec*
   ":outer-size   Number of fixed arities for outer function. Default: 3
    :inner-size   Number of fixed arities for inner function. Default: 4
-   :inner-argvs  A function taking fixed-args, and rest-arg of outer arity
+   :inner-argvs  A function taking fixed-args and rest-arg of outer arity
                  and returning :argvs for inner. Default: nil.
    :reduce-fn    Form to use for `reduce`. Default: 'clojure.core/reduce"
   ([] (unroll-comp-spec* {}))
@@ -424,11 +424,14 @@
 
 (deftest unroll-comp-spec-test
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 0 :inner-size 0}) :this 'unroll-comp)))
+         ;;FIXME
          '([& fs] (cc/reduce unroll-comp fs))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'unroll-comp)))
+         ;;FIXME
          '(([] cc/identity)
            ([& fs] (cc/reduce unroll-comp fs)))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'unroll-comp)))
+         ;;FIXME
          '(([] cc/identity) 
            ([f] f)
            ([f & fs] (cc/reduce unroll-comp (cc/list* f fs))))))

@@ -433,15 +433,13 @@
          (prettify-unroll (unroll-arities (unroll-comp-spec* {:outer-size 0 :inner-size 0})))
          '([& fs] (cc/reduce (cc/fn
                                ([] cc/identity)
-                               ([f g]
-                                (cc/fn [& args] (f (cc/apply g args)))))
+                               ([f g] (cc/fn [& args] (f (cc/apply g args)))))
                              fs))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 1 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)
            ([& fs] (cc/reduce (cc/fn
                                 ([] cc/identity)
-                                ([f g]
-                                 (cc/fn [& args] (f (cc/apply g args)))))
+                                ([f g] (cc/fn [& args] (f (cc/apply g args)))))
                               fs)))))
   (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 2 :inner-size 0}) :this 'this/comp)))
          '(([] cc/identity)

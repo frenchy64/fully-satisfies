@@ -133,15 +133,6 @@
     (flatten-arities
       (with-meta arities {::argvs argvs}))))
 
-(defn fn-tail->arglists [fn-tail]
-  (map (fn [argv]
-         (let [rest-arg (argv->rest-arg argv)]
-           (with-meta
-             (cond-> (argv->fixed-args argv)
-               rest-arg (conj '& rest-arg))
-             (meta argv))))
-       (-> fn-tail meta ::argvs)))
-
 (defmacro defunroll [nme doc attr config]
   (assert (symbol? config))
   (let [config-var (or (resolve config)

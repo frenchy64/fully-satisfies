@@ -146,9 +146,6 @@
                            (symbol (-> *ns* ns-name name) (name config))
                            config)))
         _ (assert (var? config-var) config)
-        fn-tail (unroll-arities (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme))))]
-    `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote (fn-tail->arglists fn-tail))))
-       ~@fn-tail)))
-
-(comment
-  )
+        {:keys [argvs] :as c} (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme)))]
+    `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote argvs)))
+       ~@(unroll-arities c))))

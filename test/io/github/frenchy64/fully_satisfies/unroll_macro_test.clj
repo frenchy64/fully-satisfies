@@ -423,7 +423,7 @@
                                                     (reduce (fn [acc outer-f]
                                                               (list outer-f acc))
                                                             (maybe-apply (peek fixed-fs) fixed-args rest-args)
-                                                            (pop fixed-fs)))})))))})))
+                                                            (rseq (pop fixed-fs))))})))))})))
 
 (def unroll-comp-spec (unroll-comp-spec*))
 
@@ -471,8 +471,15 @@
          '(([] cc/identity)
            ([f] f)
            ([f g] (cc/fn [& args] (f (cc/apply g args))))
-           ([f g h] (cc/fn [& args] (g (f (cc/apply h args)))))
+           ([f g h] (cc/fn [& args] (f (g (cc/apply h args)))))
            ([f g h & fs] (cc/reduce this/comp f (cc/list* g h fs))))))
+  (is (= (prettify-unroll (unroll-arities (assoc (unroll-comp-spec* {:outer-size 5 :inner-size 3}) :this 'this/comp)))
+         '(([] cc/identity)
+           ([f] f)
+           ([f g] (cc/fn ([] (f (g))) ([x] (f (g x))) ([x y] (f (g x y))) ([x y & args] (f (cc/apply g x y args)))))
+           ([f g h] (cc/fn ([] (f (g (h)))) ([x] (f (g (h x)))) ([x y] (f (g (h x y)))) ([x y & args] (f (g (cc/apply h x y args))))))
+           ([f g h i] (cc/fn ([] (f (g (h (i))))) ([x] (f (g (h (i x))))) ([x y] (f (g (h (i x y))))) ([x y & args] (f (g (h (cc/apply i x y args)))))))
+           ([f g h i & fs] (cc/reduce this/comp f (cc/list* g h i fs))))))
   (is (= (prettify-unroll (unroll-arities (assoc unroll-comp-spec :this 'this/comp)))
          '(([] cc/identity)
            ([f] f)

@@ -122,13 +122,16 @@
                     where this and rest-arg are nilable. Returns the body of the arity."
   [{:keys [argvs unroll-arity this]}]
   (assert (every? argv? argvs) (pr-str argvs this))
-  (let [arities (->> (gensym-pretty-argvs argvs)
-                     (map (fn [argv]
-                            {:pre [(argv? argv)]}
-                            (let [fixed-args (argv->fixed-args argv)
-                                  rest-arg (argv->rest-arg argv)]
-                              (list argv
-                                    (unroll-arity this fixed-args rest-arg))))))]
+  (let [gargvs (gensym-pretty-argvs argvs)
+        arities (map (fn [argv]
+                       {:pre [(argv? argv)]}
+                       (list argv
+                             (unroll-arity {:this this
+                                            :argvs gargvs
+                                            :argv argv
+                                            :fixed-args (argv->fixed-args argv)
+                                            :rest-arg (argv->rest-arg argv)})))
+                     gargvs)]
     (flatten-arities
       (with-meta arities {::argvs argvs}))))
 

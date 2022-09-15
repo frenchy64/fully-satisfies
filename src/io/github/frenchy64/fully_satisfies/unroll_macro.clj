@@ -60,6 +60,8 @@
                    pretty-rest-arg (conj '& pretty-rest-arg))))
              argvs)))
 
+;;FIXME add :leading-fixed-names so the (range 0) idiom can be used with
+;; leading args. eg., swap!/swap-vals!
 (defn uniformly-flowing-argvs
   "Generates a list of argument vectors.
 

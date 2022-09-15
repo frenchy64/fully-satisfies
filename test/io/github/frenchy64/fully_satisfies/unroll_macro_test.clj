@@ -120,7 +120,6 @@
                   :fixed-names (single-char-syms-from \a)
                   :rest-name 'args})
               (range 6))
-
          '(([& args])
            ([] [& args])
            ([] [a] [a & args])

@@ -127,8 +127,7 @@
                             {:pre [(argv? argv)]}
                             (let [fixed-args (argv->fixed-args argv)
                                   rest-arg (argv->rest-arg argv)]
-                              (list (cond-> fixed-args
-                                      rest-arg (conj '& rest-arg))
+                              (list argv
                                     (unroll-arity this fixed-args rest-arg))))))]
     (flatten-arities
       (with-meta arities {::argvs argvs}))))

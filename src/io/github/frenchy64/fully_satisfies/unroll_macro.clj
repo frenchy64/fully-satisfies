@@ -67,18 +67,23 @@
 
   Use this function if you have a uniform pattern of arities like [], [x], [x y], [x y & args].
   
-   :arities        a list of the number of arguments for each arity (add 1 for rest arg).
-                   If empty, a single [& rest] arity will be generated. Idiom: (range 0),
-                   for (fn [& rest]), (range 1) for (fn ([]) ([& rest])).
+   :arities        a list of the number of :fixed-names for each arity.
+                   If empty, a single [& rest] arity will be generated.
+                   Idiom: (range 0) => ([& rest])
+                          (range 1) => ([] [& rest])
+                          (range 2) => ([] [a] [a & rest])
+                          (range 3) => ([] [a] [a b] [a b & rest])
    :rest-arity     the number of arguments (fixed + rest) that the rest arity will take.
                    If :skip, no arity will have rest arguments.
                    Default: (if (seq arities) (apply max arities) [1]).
+   :leading-names  a distinct list of variable names to use before fixed arguments
    :fixed-names    a distinct list of variable names to use for fixed arguments
    :rest-name      a name to use for rest argument"
   [{:keys [arities
            rest-arity
            fixed-names
-           rest-name]}]
+           rest-name
+           leading-names]}]
   {:post [(every? argv? %)]}
   (let [[arities rest-arity] (or (when-some [arities (not-empty (vec (sort arities)))]
                                    (if (= :skip rest-arity)
@@ -91,7 +96,8 @@
                                          (let [rest-arity (inc (apply max arities))]
                                            [(conj arities rest-arity) rest-arity]))))
                                  (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
-                                 [[1] 1])]
+                                 [[1] 1])
+        leading-names (vec leading-names)]
     (map (fn [nargs]
            (assert (nat-int? nargs) (pr-str nargs))
            (let [rest-arg (when (= nargs rest-arity)
@@ -100,9 +106,9 @@
                                  rest-arg dec))
                  _ (assert (nat-int? nfixed))
                  fixed-args (if fixed-names
-                              (into [] (take nfixed) fixed-names)
-                              (mapv #(symbol (str "fixed" %)) (range nfixed)))
-                 _ (assert (= nfixed (count fixed-args)))]
+                              (into leading-names (take nfixed) fixed-names)
+                              (into leading-names (map #(symbol (str "fixed" %))) (range nfixed)))
+                 _ (assert (= (+ nfixed (count leading-names)) (count fixed-args)))]
              (cond-> fixed-args
                rest-arg (conj '& rest-arg))))
          arities)))

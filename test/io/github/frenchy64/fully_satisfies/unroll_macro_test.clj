@@ -557,8 +557,9 @@
   ([] (unroll-juxt-spec* {}))
   ([{:keys [outer-size inner-size]}] ;;FIXME use params in body and set defaults
    {:argvs (uniformly-flowing-argvs
-             {:arities (range 1 4) ;;hmm we can't use the same trick as (range 0).
-              :fixed-names (single-char-syms-from \f)
+             {:arities (range 3)
+              :leading-names ['f]
+              :fixed-names (single-char-syms-from \g)
               :rest-name 'fs})
     :unroll-arity (fn [{fixed-fs :fixed-args rest-fs :rest-arg}]
                     (let [fs (gensym-pretty 'fs)
@@ -671,8 +672,9 @@
 
 (def unroll-partial-spec
   {:argvs (uniformly-flowing-argvs
-            {:arities (range 1 5)
-             :fixed-names (cons 'f (map #(symbol (str "arg" %)) (next (range))))
+            {:arities (range 4)
+             :leading-names ['f]
+             :fixed-names (map #(symbol (str "arg" %)) (next (range)))
              :rest-name 'more})
    :unroll-arity (fn [{[f & fixed-args] :fixed-args :keys [rest-arg]}]
                    `(fn ~@(unroll-arities
@@ -1049,7 +1051,7 @@
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
             (uniformly-flowing-argvs
-              {:arities (range 0 (inc rest-arity))
+              {:arities (range (inc rest-arity))
                :fixed-names (map #(symbol (str "f" %)) (next (range)))
                :rest-name 'fs}))
    :unroll-arity (fn [{fixed-fs :fixed-args rest-f :rest-arg}]
@@ -1259,12 +1261,13 @@
 
 (def unroll-swap!-spec
   {:argvs (uniformly-flowing-argvs
-            {:arities (range 2 5)
-             :fixed-names (list* (with-meta 'atom {:tag 'clojure.lang.IAtom})
-                                 'f
-                                 (single-char-syms-from \x))
+            {:arities (range 3)
+             :leading-names [(with-meta 'atom {:tag 'clojure.lang.IAtom})
+                             'f]
+             :fixed-names (single-char-syms-from \x)
              :rest-name 'args})
    :unroll-arity (fn [{[atm f & xs] :fixed-args args :rest-arg}]
+                   (assert ((if args = <=) (count xs) 2))
                    `(.swap ~atm ~f ~@xs ~@(some-> args list)))})
 
 (deftest unroll-swap!-spec-test
@@ -1314,12 +1317,13 @@
   {:argvs (mapv
             #(with-meta % {:tag 'clojure.lang.IPersistentVector})
             (uniformly-flowing-argvs
-              {:arities (range 2 5)
-               :fixed-names (list* (with-meta 'atom {:tag 'clojure.lang.IAtom2})
-                                   'f
-                                   (single-char-syms-from \x))
+              {:arities (range 3)
+               :leading-names [(with-meta 'atom {:tag 'clojure.lang.IAtom2})
+                               'f]
+               :fixed-names (single-char-syms-from \x)
                :rest-name 'args}))
    :unroll-arity (fn [{[atm f & xs] :fixed-args args :rest-arg}]
+                   (assert ((if args = <=) (count xs) 2))
                    `(.swapVals ~atm ~f ~@xs ~@(some-> args list)))})
 
 (deftest unroll-swap-vals!-spec-test
@@ -1376,8 +1380,9 @@
 
 (def unroll-update-spec
   {:argvs (uniformly-flowing-argvs
-            {:arities (range 3 7)
-             :fixed-names (list* 'm 'k 'f (single-char-syms-from \x))
+            {:arities (range 4)
+             :leading-names ['m 'k 'f]
+             :fixed-names (single-char-syms-from \x)
              :rest-name 'more})
    :unroll-arity (fn [{[m k f & xs] :fixed-args args :rest-arg}]
                    `(assoc ~m ~k ~(maybe-apply f (list* `(get ~m ~k) xs) args)))})
@@ -1510,8 +1515,9 @@
 (def unroll-map-spec
   {:argvs (list* '[f] '[f coll]
                  (uniformly-flowing-argvs
-                   {:arities (range 3 5)
-                    :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
+                   {:arities (range 2 4)
+                    :leading-names '[f]
+                    :fixed-names (map #(symbol (str 'c %)) (next (range)))
                     :rest-name 'colls}))
    :unroll-arity (fn [{:keys [this] [f & cxs] :fixed-args colls :rest-arg}]
                    (assert (and this f))
@@ -1805,8 +1811,9 @@
 (def unroll-mapv-spec
   {:argvs (cons '[f coll]
                 (uniformly-flowing-argvs
-                  {:arities (range 3 5)
-                   :fixed-names (cons 'f (map #(symbol (str 'c %)) (next (range))))
+                  {:arities (range 2 4)
+                   :leading-names ['f]
+                   :fixed-names (map #(symbol (str 'c %)) (next (range)))
                    :rest-name 'colls}))
    :unroll-arity (fn [{[f & cxs] :fixed-args colls :rest-arg}]
                    (if (and (= 1 (count cxs)) (not colls))

@@ -1512,71 +1512,61 @@
                       (cons (map first ss) (step (map rest ss)))))))]
      (map #(apply f %) (step (conj colls c3 c2 c1))))))
 
-(defn unroll-map-spec*
-  ([] (unroll-map-spec* {}))
-  ([{:keys []}]
-   {:argvs (let [f 'f]
-             (list* [f] [f 'coll]
-                    (uniformly-flowing-argvs
-                      {:arities (range 2 4)
-                       :leading-names [f]
-                       :fixed-names (map #(symbol (str 'c %)) (next (range)))
-                       :rest-name 'colls})))
-    :unroll-arity (fn [{:keys [this] [f & cxs] :fixed-args colls :rest-arg}]
-                    (assert (and this f))
-                    (cond
-                      ;; transducer
-                      (and (not cxs) (not colls))
-                      (let [result-name 'result
-                            [rf result] (map gensym-pretty ['rf result-name])]
-                        `(fn [~rf]
-                           (fn 
-                             ([] (~rf))
-                             ([~result] (~rf ~result))
-                             ~@(unroll-arities
-                                   {:argvs (uniformly-flowing-argvs
-                                             {:arities (range 1)
-                                              :leading-names [result-name 'input1]
-                                              :fixed-names (map #(symbol (str 'input %)) (nnext (range)))
-                                              :rest-name 'inputs})
-                                    :unroll-arity (fn [{[result & inputxs] :fixed-args inputs :rest-arg}]
-                                                    `(~rf ~@(some-> result list)
-                                                          ~@(when (and result (or inputxs inputs))
-                                                              [(maybe-apply f inputxs inputs)])))}))))
+(def unroll-map-spec
+  {:argvs (list* '[f] '[f coll]
+                 (uniformly-flowing-argvs
+                   {:arities (range 2 4)
+                    :leading-names '[f]
+                    :fixed-names (map #(symbol (str 'c %)) (next (range)))
+                    :rest-name 'colls}))
+   :unroll-arity (fn [{:keys [this] [f & cxs] :fixed-args colls :rest-arg}]
+                   (assert (and this f))
+                   (cond
+                     ;; transducer
+                     (and (not cxs) (not colls))
+                     (let [rf (gensym-pretty 'rf)]
+                       `(fn [~rf]
+                          (fn ~@(unroll-arities
+                                  {:argvs (uniformly-flowing-argvs
+                                            {:arities (range 3)
+                                             :fixed-names (cons 'result (map #(symbol (str 'input %)) (next (range))))
+                                             :rest-name 'inputs})
+                                   :unroll-arity (fn [{[result & inputxs] :fixed-args inputs :rest-arg}]
+                                                   `(~rf ~@(some-> result list)
+                                                         ~@(when (and result (or inputxs inputs))
+                                                             [(maybe-apply f inputxs inputs)])))}))))
 
-                      ;; variable
-                      colls
-                      (let [[step cs ss xs] (map gensym-pretty '[step cs ss xs])]
-                        `(let [~step (fn ~step [~cs]
-                                       (lazy-seq
-                                         (let [~ss (~this seq ~cs)]
-                                           (when (every? identity ~ss)
-                                             (cons (~this first ~ss) (~step (~this rest ~ss)))))))]
-                           (~this (fn [~xs] (apply ~f ~xs)) (~step ~(maybe-conj colls (reverse cxs))))))
+                     ;; variable
+                     colls
+                     (let [[step cs ss xs] (map gensym-pretty '[step cs ss xs])]
+                       `(let [~step (fn ~step [~cs]
+                                      (lazy-seq
+                                        (let [~ss (~this seq ~cs)]
+                                          (when (every? identity ~ss)
+                                            (cons (~this first ~ss) (~step (~this rest ~ss)))))))]
+                          (~this (fn [~xs] (apply ~f ~xs)) (~step ~(maybe-conj colls (reverse cxs))))))
 
-                      ;; fixed
-                      :else
-                      (let [sxs (map-indexed (fn [i _] (gensym-pretty (str 's (inc i)))) cxs)
-                            non-chunked-case `(cons (~f ~@(map #(list `first %) sxs))
-                                                    (~this ~f ~@(map #(list `rest %) sxs)))]
-                        `(lazy-seq
-                           (let [~@(mapcat (fn [s c] [s `(seq ~c)]) sxs cxs)]
-                             (when ~(maybe-and sxs)
-                               ~(if (= 1 (count cxs))
-                                  (let [[coll] cxs
-                                        [s] sxs
-                                        [c size b i] (map gensym-pretty '[c size b i])]
-                                    `(if (chunked-seq? ~s)
-                                       (let [~c (chunk-first ~s)
-                                             ~size (int (count ~c))
-                                             ~b (chunk-buffer ~size)]
-                                         (dotimes [~i ~size]
-                                           (chunk-append ~b (~f (.nth ~c ~i))))
-                                         (chunk-cons (chunk ~b) (~this ~f (chunk-rest ~s))))
-                                       ~non-chunked-case))
-                                  non-chunked-case)))))))}))
-
-(def unroll-map-spec (unroll-map-spec*))
+                     ;; fixed
+                     :else
+                     (let [sxs (map-indexed (fn [i _] (gensym-pretty (str 's (inc i)))) cxs)
+                           non-chunked-case `(cons (~f ~@(map #(list `first %) sxs))
+                                                   (~this ~f ~@(map #(list `rest %) sxs)))]
+                       `(lazy-seq
+                          (let [~@(mapcat (fn [s c] [s `(seq ~c)]) sxs cxs)]
+                            (when ~(maybe-and sxs)
+                              ~(if (= 1 (count cxs))
+                                 (let [[coll] cxs
+                                       [s] sxs
+                                       [c size b i] (map gensym-pretty '[c size b i])]
+                                   `(if (chunked-seq? ~s)
+                                      (let [~c (chunk-first ~s)
+                                            ~size (int (count ~c))
+                                            ~b (chunk-buffer ~size)]
+                                        (dotimes [~i ~size]
+                                          (chunk-append ~b (~f (.nth ~c ~i))))
+                                        (chunk-cons (chunk ~b) (~this ~f (chunk-rest ~s))))
+                                      ~non-chunked-case))
+                                 non-chunked-case)))))))})
 
 (deftest unroll-map-spec-test
   (is (= (prettify-unroll (unroll-arities (assoc unroll-map-spec :this 'this/map)))

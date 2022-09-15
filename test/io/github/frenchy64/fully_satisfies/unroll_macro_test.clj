@@ -1459,6 +1459,54 @@
          '([f]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/constantly
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn constantly
+  "Returns a function that takes any number of arguments and returns x."
+  {:added "1.0"
+   :static true}
+  [x] (fn [& args] x))
+
+(defn unroll-constantly-spec*
+  ([] (unroll-constantly-spec* {}))
+  ([{:keys [size] :or {size 0}}]
+   {:argvs '[[x]]
+    :unroll-arity (fn [{[x] :fixed-args}]
+                    `(fn ~@(unroll-arities
+                             {:argvs (uniformly-flowing-argvs
+                                       {:arities (range size)
+                                        :fixed-names (map #(symbol (str 'a %)) (next (range)))
+                                        :rest-name 'args})
+                              :unroll-arity (fn [_] x)})))}))
+
+(def unroll-constantly-spec (unroll-constantly-spec*))
+
+(deftest unroll-constantly-spec-test
+  (is (= (prettify-unroll (unroll-arities (unroll-constantly-spec* {:size 4})))
+         '([x] (cc/fn
+                 ([] x)
+                 ([a1] x)
+                 ([a1 a2] x)
+                 ([a1 a2 a3] x)
+                 ([a1 a2 a3 & args] x)))))
+  (is (= (prettify-unroll (unroll-arities unroll-constantly-spec))
+         '([x] (cc/fn [& args] x)))))
+
+(defunroll unroll-constantly
+  "Returns a function that takes any number of arguments and returns x."
+  {:added "1.0"
+   :static true}
+  unroll-constantly-spec)
+
+(deftest unroll-constantly-test
+  (is (= (-> #'unroll-constantly meta :arglists)
+         (-> #'clojure.core/constantly meta :arglists)
+         '([x]))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/map
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -2108,7 +2108,6 @@
 ;; clojure.core/mapcat
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO
 #_
 (defn mapcat
   "Returns the result of applying concat to the result of applying map

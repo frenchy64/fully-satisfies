@@ -2151,3 +2151,16 @@
            ([f c1 c2 & colls] (cc/apply cc/concat (cc/apply cc/map f c1 c2 colls))))))
   (is (= (prettify-unroll (unroll-arities unroll-mapcat-spec))
          '(([f] (cc/comp (cc/map f) cc/cat)) ([f & colls] (cc/apply cc/concat (cc/apply cc/map f colls)))))))
+
+(defunroll unroll-mapcat
+  "Returns the result of applying concat to the result of applying map
+  to f and colls.  Thus function f should return a collection. Returns
+  a transducer when no collections are provided"
+  {:added "1.0"
+   :static true}
+  unroll-mapcat-spec)
+
+(deftest unroll-mapcat-test
+  (is (= (-> #'unroll-mapcat meta :arglists)
+         (-> #'clojure.core/mapcat meta :arglists)
+         '([f] [f & colls]))))

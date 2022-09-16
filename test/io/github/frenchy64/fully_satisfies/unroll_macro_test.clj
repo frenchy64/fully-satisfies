@@ -295,9 +295,11 @@
    :fixed-arg-names     Infinite sequence of parameter names for fixed arities.
                         Used between first and last parameter. Default: (single-char-syms-from \\x)
    :rest-arity-fixed-arg-names     Infinite sequence of parameter names for fixed params in rest arity.
-                        Used after first fixed parameter. Default: (single-char-syms-from \\a)"
+                        Used after first fixed parameter. Default: (single-char-syms-from \\a)
+   :direct-invoke-if-possible    If rest-arg is empty at runtime, directly call the function."
   ([] (unroll-apply-spec* {}))
-  ([{:keys [fixed-arities spread rest-arg-name f-arg-name fixed-arg-names rest-arity-fixed-arg-names]
+  ([{:keys [fixed-arities spread rest-arg-name f-arg-name fixed-arg-names rest-arity-fixed-arg-names
+            direct-invoke-if-possible]
      :or {fixed-arities 4
           f-arg-name 'f
           rest-arg-name 'args
@@ -319,15 +321,21 @@
                     (assert f)
                     (let [[fixed-args last-fixed] (if rest-arg
                                                     [fixed-args nil]
-                                                    [(butlast fixed-args) (last fixed-args)])]
-                      `(. ~f (~'applyTo
-                               ~(if rest-arg
-                                  (reduce (fn [acc x] `(cons ~x ~acc))
-                                          `(~spread ~rest-arg)
-                                          (reverse fixed-args))
-                                  (if (empty? fixed-args)
-                                    `(seq ~last-fixed)
-                                    `(list* ~@fixed-args ~last-fixed)))))))}))
+                                                    [(butlast fixed-args) (last fixed-args)])
+                          slow-case `(. ~f (~'applyTo
+                                             ~(if rest-arg
+                                                (reduce (fn [acc x] `(cons ~x ~acc))
+                                                        `(~spread ~rest-arg)
+                                                        (reverse fixed-args))
+                                                (if (empty? fixed-args)
+                                                  (cond->> last-fixed
+                                                    (not direct-invoke-if-possible) (list `seq))
+                                                  `(list* ~@fixed-args ~last-fixed)))))]
+                      (if (and direct-invoke-if-possible (not rest-arg))
+                        `(if-some [~last-fixed (seq ~last-fixed)]
+                           ~slow-case
+                           (~f ~@fixed-args))
+                        slow-case)))}))
 
 (def unroll-apply-spec (unroll-apply-spec*))
 
@@ -341,6 +349,12 @@
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))
            ([f a b & args] (. f (applyTo (cc/cons a (cc/cons b ((var cc/spread) args)))))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-apply-spec* {:fixed-arities 3
+                                                               :direct-invoke-if-possible true})))
+         '(([f args] (cc/if-some [args (cc/seq args)] (. f (applyTo args)) (f)))
+           ([f x args] (cc/if-some [args (cc/seq args)] (. f (applyTo (cc/list* x args))) (f x)))
+           ([f x y args] (cc/if-some [args (cc/seq args)] (. f (applyTo (cc/list* x y args))) (f x y)))
+           ([f a b c & args] (. f (applyTo (cc/cons a (cc/cons b (cc/cons c ((var cc/spread) args))))))))))
   (is (= (prettify-unroll (unroll-arities unroll-apply-spec))
          '(([f args] (. f (applyTo (cc/seq args))))
            ([f x args] (. f (applyTo (cc/list* x args))))

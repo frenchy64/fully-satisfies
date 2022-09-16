@@ -2020,3 +2020,134 @@
       (reduce1 merge2 maps))))
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/dissoc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn dissoc
+  "dissoc[iate]. Returns a new map of the same (hashed/sorted) type,
+  that does not contain a mapping for key(s)."
+  {:added "1.0"
+   :static true}
+  ([map] map)
+  ([map key]
+   (. clojure.lang.RT (dissoc map key)))
+  ([map key & ks]
+   (let [ret (dissoc map key)]
+     (if ks
+       (recur ret (first ks) (next ks))
+       ret))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/disj
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn disj
+  "disj[oin]. Returns a new set of the same (hashed/sorted) type, that
+  does not contain key(s)."
+  {:added "1.0"
+   :static true}
+  ([set] set)
+  ([^clojure.lang.IPersistentSet set key]
+   (when set
+     (. set (disjoin key))))
+  ([set key & ks]
+   (when set
+     (let [ret (disj set key)]
+       (if ks
+         (recur ret (first ks) (next ks))
+         ret)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/with-bindings*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn with-bindings*
+  "Takes a map of Var/value pairs. Installs for the given Vars the associated
+  values as thread-local bindings. Then calls f with the supplied arguments.
+  Pops the installed bindings after f returned. Returns whatever f returns."
+  {:added "1.1"
+   :static true}
+  [binding-map f & args]
+  (push-thread-bindings binding-map)
+  (try
+    (apply f args)
+    (finally
+      (pop-thread-bindings))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/bound-fn*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn bound-fn*
+  "Returns a function, which will install the same bindings in effect as in
+  the thread at the time bound-fn* was called and then call f with any given
+  arguments. This may be used to define a helper function which runs on a
+  different thread, but needs the same bindings in place."
+  {:added "1.1"
+   :static true}
+  [f]
+  (let [bindings (get-thread-bindings)]
+    (fn [& args]
+      (apply with-bindings* bindings f args))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/mapcat
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn mapcat
+  "Returns the result of applying concat to the result of applying map
+  to f and colls.  Thus function f should return a collection. Returns
+  a transducer when no collections are provided"
+  {:added "1.0"
+   :static true}
+  ([f] (comp (map f) cat))
+  ([f & colls]
+     (apply concat (apply map f colls))))
+
+(defn unroll-mapcat-spec*
+  ([] (unroll-mapcat-spec* {}))
+  ([{:keys [size] :or {size 0}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range (inc size))
+              :leading-names '[f]
+              :fixed-names (map #(symbol (str 'c %)) (next (range)))
+              :rest-name 'colls})
+    :unroll-arity (fn [{[f & cxs] :fixed-args colls :rest-arg}]
+                    (assert f)
+                    (cond
+                      (and (not cxs) (not colls)) `(comp (map ~f) cat)
+                      :else `(apply concat
+                                    ~(if colls
+                                       `(apply map ~f ~@cxs ~colls)
+                                       `(map ~f ~@cxs)))))}))
+
+(def unroll-mapcat-spec (unroll-mapcat-spec*))
+
+(deftest unroll-mapcat-spec-test
+  (is (= (prettify-unroll (unroll-arities (unroll-mapcat-spec* {:size 1})))
+         '(([f] (cc/comp (cc/map f) cc/cat))
+           ([f c1] (cc/apply cc/concat (cc/map f c1)))
+           ([f c1 & colls] (cc/apply cc/concat (cc/apply cc/map f c1 colls))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-mapcat-spec* {:size 2})))
+         '(([f] (cc/comp (cc/map f) cc/cat))
+           ([f c1] (cc/apply cc/concat (cc/map f c1)))
+           ([f c1 c2] (cc/apply cc/concat (cc/map f c1 c2)))
+           ([f c1 c2 & colls] (cc/apply cc/concat (cc/apply cc/map f c1 c2 colls))))))
+  (is (= (prettify-unroll (unroll-arities unroll-mapcat-spec))
+         '(([f] (cc/comp (cc/map f) cc/cat)) ([f & colls] (cc/apply cc/concat (cc/apply cc/map f colls)))))))

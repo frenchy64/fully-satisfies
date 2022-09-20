@@ -137,6 +137,30 @@ user=> (get "123" 4294967296 :not-found)
 - `count+last` vs `count+butlast+last`
 - defmulti with opt-in `:default` dispatch cache https://clojure.atlassian.net/browse/CLJ-2626
 - `thrown?`, `thrown-with-msg?` inherits try syntax https://github.com/clojure/clojure/blob/5ffe3833508495ca7c635d47ad7a1c8b820eab76/src/clj/clojure/test.clj#L504-L535
+- report [another](https://clojure.atlassian.net/browse/CLJ-2649) `some-fn` and `every-pred` short-circuiting inconsistencies
+```clojure
+;; # some-fn
+;; these are `(some #(some % args) fs)`, or `(some #(some % fs) args)`, or some hybrid
+;; should be `(some #(some % args) fs)`
+       ([x y z & args] (or (sp2 x y z)
+                           (some #(or (p1 %) (p2 %)) args)))))
+       ([x y z & args] (or (sp3 x y z)
+                           (some #(or (p1 %) (p2 %) (p3 %)) args)))))
+         ([x y z & args] (or (spn x y z)
+                             (some #(some % args) ps)))))))
+
+;; # every-pred
+;; these are `(every? #(every? % args) preds)` or `(every? #(every? % preds) args)`, or some hybrid
+;; should be `(every? #(every? % args) preds)`.
+       ([x y z & args] (boolean (and (ep2 x y z)
+                                     (every? #(and (p1 %) (p2 %)) args))))))
+       ([x y z & args] (boolean (and (ep3 x y z)
+                                     (every? #(and (p1 %) (p2 %) (p3 %)) args))))))
+         ([x y z & args] (boolean (and (epn x y z)
+                                       (every? #(every? % args) ps))))))))
+```
+
+
 
 ## License
 

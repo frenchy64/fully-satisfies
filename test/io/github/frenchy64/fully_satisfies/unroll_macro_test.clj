@@ -2307,3 +2307,69 @@
            (into [] (unroll-mapcat vector) (range i))))
     (is (= (apply mapcat vector (repeat (inc i) (range i)))
            (apply unroll-mapcat vector (repeat (inc i) (range i)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; medley.core/assoc-some
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defn assoc-some
+  "Associates a key k, with a value v in a map m, if and only if v is not nil."
+  ([m k v]
+   (if (nil? v) m (assoc m k v)))
+  ([m k v & kvs]
+   (reduce (fn [m [k v]] (assoc-some m k v))
+           (assoc-some m k v)
+           (partition 2 kvs))))
+
+(defn assoc-some-spec*
+  ([] (assoc-some-spec* {}))
+  ([{:keys [size]
+     :or {size 4}}]
+   (assert (nat-int? size))
+   {:argvs (uniformly-flowing-argvs
+             {:arities (map #(* % 2) (range 1 size))
+              :leading-names '[m]
+              :fixed-names (mapcat (fn [i] [(symbol (str 'k i))
+                                            (symbol (str 'v i))])
+                                   (next (range)))
+              :rest-name 'kvs})
+    :unroll-arity (fn [{[m & [k v :as fixed-kvs]] :fixed-args kvs :rest-arg assoc-some :this}]
+                    (assert assoc-some)
+                    (let [fixed `(cond-> ~m
+                                   ~@(mapcat (fn [[k v]]
+                                               [`(some? ~v) `(assoc ~k ~v)])
+                                             (partition 2 fixed-kvs)))]
+                      (if kvs
+                        `(reduce (fn [~m [~k ~v]] (~assoc-some ~m ~k ~v))
+                                 (~assoc-some ~m ~@fixed-kvs)
+                                 (partition 2 ~kvs))
+                        fixed)))}))
+
+(def assoc-some-spec (assoc-some-spec*))
+
+(deftest unroll-assoc-some-spec-test
+  (is (= (prettify-unroll (unroll-arities (assoc assoc-some-spec :this 'this/assoc-some)))
+         '(([m k1 v1] (cc/cond-> m (cc/some? v1) (cc/assoc k1 v1)))
+           ([m k1 v1 k2 v2] (cc/cond-> m (cc/some? v1) (cc/assoc k1 v1) (cc/some? v2) (cc/assoc k2 v2)))
+           ([m k1 v1 k2 v2 k3 v3] (cc/cond-> m (cc/some? v1) (cc/assoc k1 v1) (cc/some? v2) (cc/assoc k2 v2) (cc/some? v3) (cc/assoc k3 v3)))
+           ([m k1 v1 k2 v2 k3 v3 & kvs]
+            (cc/reduce (cc/fn [m [k1 v1]] (this/assoc-some m k1 v1))
+                       (this/assoc-some m k1 v1 k2 v2 k3 v3)
+                       (cc/partition 2 kvs)))))))
+
+
+(defunroll unroll-assoc-some
+  "Associates a key k, with a value v in a map m, if and only if v is not nil."
+  {}
+  assoc-some-spec)
+
+(deftest unroll-assoc-some-test
+  (is (= (-> #'unroll-assoc-some meta :arglists)
+         '([m k1 v1] [m k1 v1 k2 v2] [m k1 v1 k2 v2 k3 v3] [m k1 v1 k2 v2 k3 v3 & kvs])))
+  (doseq [i (range 1 11)
+          provide-nil (map set (comb/subsets (range i)))
+          :let [args (mapcat (fn [i] [i (when-not (provide-nil i) i)])
+                             (range i))]]
+    (is (= (apply assoc-some {} args)
+           (apply unroll-assoc-some {} args)))))

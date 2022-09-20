@@ -2021,7 +2021,10 @@
 (deftest unroll-mapv-test
   (is (= (-> #'unroll-mapv meta :arglists)
          (-> #'clojure.core/mapv meta :arglists)
-         '([f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
+         '([f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls])))
+  (dotimes [i 10]
+    (is (= (apply mapv + (repeat (inc i) (range i)))
+           (apply unroll-mapv + (repeat (inc i) (range i)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2120,7 +2123,13 @@
 
 (deftest unroll-merge-test
   (is (= (-> #'unroll-merge meta :arglists)
-         '([] [m1] [m1 m2] [m1 m2 m3] [m1 m2 m3 m4] [m1 m2 m3 m4 & maps]))))
+         '([] [m1] [m1 m2] [m1 m2 m3] [m1 m2 m3 m4] [m1 m2 m3 m4 & maps])))
+  (doseq [i (range 10)
+          provide-nil (map set (comb/subsets (range i)))
+          :let [args (map (fn [i] (when-not (provide-nil i) {:a i}))
+                          (range i))]]
+    (is (= (apply merge args)
+           (apply unroll-merge args)))))
 
 
 
@@ -2292,4 +2301,9 @@
 (deftest unroll-mapcat-test
   (is (= (-> #'unroll-mapcat meta :arglists)
          (-> #'clojure.core/mapcat meta :arglists)
-         '([f] [f & colls]))))
+         '([f] [f & colls])))
+  (dotimes [i 10]
+    (is (= (into [] (mapcat vector) (range i))
+           (into [] (unroll-mapcat vector) (range i))))
+    (is (= (apply mapcat vector (repeat (inc i) (range i)))
+           (apply unroll-mapcat vector (repeat (inc i) (range i)))))))

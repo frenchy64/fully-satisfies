@@ -32,8 +32,18 @@
 (defn maybe-concat [& colls]
   (when-some [rests (not-empty (remove nil? colls))]
     (if (next rests)
-      `(concat ~@colls)
-      (first colls))))
+      `(concat ~@rests)
+      (first rests))))
+
+(deftest maybe-concat-test
+  (is (= nil (maybe-concat)))
+  (is (= 'a (maybe-concat 'a)))
+  (is (= `(concat ~'a ~'b) (maybe-concat 'a 'b)))
+  (is (= 'b (maybe-concat nil 'b)))
+  (is (= `(concat ~'a ~'b ~'c) (maybe-concat 'a 'b 'c)))
+  (is (= `(concat ~'a ~'c) (maybe-concat 'a nil 'c)))
+  (is (= 'a (maybe-concat 'a nil nil)))
+  (is (= nil (maybe-concat nil nil nil))))
 
 (defn maybe-and [exprs]
   (let [exprs (remove true? exprs)]
@@ -190,7 +200,10 @@
 (deftest unroll-vector-test
   (is (= (-> #'unroll-vector meta :arglists)
          (-> #'clojure.core/vector meta :arglists)
-         '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
+         '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args])))
+  (dotimes [i 10]
+    (is (= (apply clojure.core/vector (range i))
+           (apply unroll-vector (range i))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -414,7 +427,10 @@
 (deftest unroll-apply-test
   (is (= (-> #'unroll-apply meta :arglists)
          (-> #'clojure.core/apply meta :arglists)
-         '([f args] [f x args] [f x y args] [f x y z args] [f a b c d & args]))))
+         '([f args] [f x args] [f x y args] [f x y z args] [f a b c d & args])))
+  (dotimes [i 10]
+    (is (= (clojure.core/apply clojure.core/list* (concat (range i) [(range i)]))
+           (unroll-apply clojure.core/list* (concat (range i) [(range i)]))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -560,7 +576,14 @@
 (deftest unroll-comp-test
   (is (= (-> #'unroll-comp meta :arglists)
          (-> #'clojure.core/comp meta :arglists)
-         '([] [f] [f g] [f g & fs]))))
+         '([] [f] [f g] [f g & fs])))
+  (is (= (clojure.core/comp) (unroll-comp)))
+  (is (= + (clojure.core/comp +) (unroll-comp +)))
+  (doseq [i (range 1 10)]
+    (is (= (apply (apply clojure.core/comp (concat (repeat i inc) [+]))
+                  (range i))
+           (apply (apply unroll-comp (concat (repeat i inc) [+]))
+                  (range i))))))
 
 
 
@@ -682,7 +705,12 @@
 (deftest unroll-juxt-test
   (is (= (-> #'unroll-juxt meta :arglists)
          (-> #'clojure.core/juxt meta :arglists)
-         '([f] [f g] [f g h] [f g h & fs]))))
+         '([f] [f g] [f g h] [f g h & fs])))
+  (doseq [i (range 1 10)]
+    (is (= (apply (apply clojure.core/juxt (repeat i vector))
+                  (range i))
+           (apply (apply unroll-juxt (repeat i vector))
+                  (range i))))))
 
 
 
@@ -734,31 +762,28 @@
              :fixed-names (map #(symbol (str "arg" %)) (next (range)))
              :rest-name 'more})
    :unroll-arity (fn [{[f & fixed-args] :fixed-args :keys [rest-arg]}]
-                   `(fn ~@(unroll-arities
-                            {:argvs (uniformly-flowing-argvs
-                                      {:arities (range (if rest-arg 0 4))
-                                       :fixed-names (single-char-syms-from \x)
-                                       :rest-name 'args})
-                             :unroll-arity (fn [{fixed-additional-args :fixed-args rest-additional-args :rest-arg}]
-                                             (maybe-apply f
-                                                          (concat fixed-args fixed-additional-args)
-                                                          (maybe-concat rest-additional-args rest-arg)))})))})
+                   (if (and (not fixed-args) (not rest-arg))
+                     f ;; don't eta expand
+                     `(fn ~@(unroll-arities
+                              {:argvs (uniformly-flowing-argvs
+                                        {:arities (range (if rest-arg 0 4))
+                                         :fixed-names (single-char-syms-from \x)
+                                         :rest-name 'args})
+                               :unroll-arity (fn [{fixed-additional-args :fixed-args rest-additional-args :rest-arg}]
+                                               (maybe-apply f
+                                                            (concat fixed-args fixed-additional-args)
+                                                            (maybe-concat rest-arg rest-additional-args)))}))))})
 
 (deftest unroll-partial-spec-test
   (is (= (prettify-unroll (unroll-arities unroll-partial-spec))
-         '(([f]
-            (cc/fn
-              ([] (f))
-              ([x] (f x))
-              ([x y] (f x y))
-              ([x y z] (f x y z))
-              ([x y z & args] (cc/apply f x y z args))))
+         '(([f] f)
            ([f arg1]
             (cc/fn
               ([] (f arg1))
               ([x] (f arg1 x))
               ([x y] (f arg1 x y))
-              ([x y z] (f arg1 x y z)) ([x y z & args] (cc/apply f arg1 x y z args))))
+              ([x y z] (f arg1 x y z))
+              ([x y z & args] (cc/apply f arg1 x y z args))))
            ([f arg1 arg2]
             (cc/fn
               ([] (f arg1 arg2))
@@ -774,7 +799,7 @@
               ([x y z] (f arg1 arg2 arg3 x y z))
               ([x y z & args] (cc/apply f arg1 arg2 arg3 x y z args))))
            ([f arg1 arg2 arg3 & more]
-            (cc/fn [& args] (cc/apply f arg1 arg2 arg3 (cc/concat args more))))))))
+            (cc/fn [& args] (cc/apply f arg1 arg2 arg3 (cc/concat more args))))))))
 
 (defunroll unroll-partial
   "Takes a function f and fewer than the normal arguments to f, and
@@ -787,7 +812,13 @@
 (deftest unroll-partial-test
   (is (= (-> #'unroll-partial meta :arglists)
          (-> #'clojure.core/partial meta :arglists)
-         '([f] [f arg1] [f arg1 arg2] [f arg1 arg2 arg3] [f arg1 arg2 arg3 & more]))))
+         '([f] [f arg1] [f arg1 arg2] [f arg1 arg2 arg3] [f arg1 arg2 arg3 & more])))
+  (is (= (partial identity) (unroll-partial identity)))
+  (doseq [i (range 1 10)]
+    (is (= (apply (apply clojure.core/partial vector (range i))
+                  (range i))
+           (apply (apply unroll-partial vector (range i))
+                  (range i))))))
 
 
 

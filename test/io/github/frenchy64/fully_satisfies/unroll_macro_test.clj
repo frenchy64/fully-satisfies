@@ -2,6 +2,7 @@
   (:require [clojure.core :as cc]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [clojure.test :refer [is]]
+            [clojure.math.combinatorics :as comb]
             [io.github.frenchy64.fully-satisfies.unroll-macro
              :refer [defunroll unroll-arities gensym-pretty prettify-unroll
                      single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
@@ -1259,7 +1260,15 @@
 (deftest unroll-fnil-test
   (is (= (-> #'unroll-fnil meta :arglists)
          (-> #'clojure.core/fnil meta :arglists)
-         '([f x] [f x y] [f x y z]))))
+         '([f x] [f x y] [f x y z])))
+  (doseq [patched-args (map range (range 1 4))
+          :let [defaults (map (fn [i] (+ 10 (* i i))) patched-args)]
+          provide-nil (map set (comb/subsets patched-args))
+          :let [unpatched (map (fn [i] (when-not (provide-nil i) (+ 10 i)))
+                               patched-args)]
+          i (range 10)]
+    (is (= (apply (apply fnil + defaults) (concat unpatched (range i)))
+           (apply (apply unroll-fnil + defaults) (concat unpatched (range i)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

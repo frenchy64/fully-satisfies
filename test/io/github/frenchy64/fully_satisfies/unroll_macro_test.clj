@@ -1332,6 +1332,7 @@
    :added "1.3"}
   unroll-binding-conveyor-fn-spec)
 
+;;TODO test semantics
 (deftest unroll-binding-conveyor-fn-test
   (is (= (-> #'unroll-binding-conveyor-fn meta :arglists)
          (-> #'clojure.core/binding-conveyor-fn meta :arglists)
@@ -1383,6 +1384,7 @@
    :static true}
   unroll-swap!-spec)
 
+;;TODO test semantics
 (deftest unroll-swap!-test
   (is (= (-> #'unroll-swap! meta :arglists)
          (-> #'clojure.core/swap! meta :arglists)
@@ -1438,6 +1440,7 @@
   {:added "1.9"}
   unroll-swap-vals!-spec)
 
+;;TODO test semantics
 (deftest unroll-swap-vals!-test
   (is (= (-> #'unroll-swap-vals! meta :arglists)
          (-> #'clojure.core/swap-vals! meta :arglists)
@@ -1504,7 +1507,10 @@
 (deftest unroll-update-test
   (is (= (-> #'unroll-update meta :arglists)
          (-> #'clojure.core/update meta :arglists)
-         '([m k f] [m k f x] [m k f x y] [m k f x y z] [m k f x y z & more]))))
+         '([m k f] [m k f x] [m k f x y] [m k f x y z] [m k f x y z & more])))
+  (dotimes [i 10]
+    (is (= (apply update {:a 1} :a + (range i))
+           (apply unroll-update {:a 1} :a + (range i))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/complement
@@ -1553,7 +1559,10 @@
 (deftest unroll-complement-test
   (is (= (-> #'unroll-complement meta :arglists)
          (-> #'clojure.core/complement meta :arglists)
-         '([f]))))
+         '([f])))
+  (dotimes [i 10]
+    (is (= (apply (complement #(even? (apply + %&))) (range i))
+           (apply (unroll-complement #(even? (apply + %&))) (range i))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/constantly
@@ -1600,7 +1609,10 @@
 (deftest unroll-constantly-test
   (is (= (-> #'unroll-constantly meta :arglists)
          (-> #'clojure.core/constantly meta :arglists)
-         '([x]))))
+         '([x])))
+  (dotimes [i 10]
+    (is (= (apply (constantly i) (range i))
+           (apply (unroll-constantly i) (range i))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1763,7 +1775,13 @@
 (deftest unroll-map-test
   (is (= (-> #'unroll-map meta :arglists)
          (-> #'clojure.core/map meta :arglists)
-         '([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls]))))
+         '([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls])))
+  (dotimes [i 10]
+    ;;TODO test multi-arity transducer
+    (is (= (into [] (map inc) (range i))
+           (into [] (unroll-map inc) (range i))))
+    (is (= (apply map + (repeat (inc i) (range i)))
+           (apply unroll-map + (repeat (inc i) (range i)))))))
 
 
 
@@ -1816,7 +1834,6 @@
 
 (deftest unroll-interleave-spec-test
   (is (= (prettify-unroll (unroll-arities (assoc unroll-interleave-spec :this 'this/interleave)))
-
          '(([] ())
            ([c1] (cc/lazy-seq c1))
            ([c1 c2] (cc/lazy-seq
@@ -1840,7 +1857,10 @@
 (deftest unroll-interleave-test
   (is (= (-> #'unroll-interleave meta :arglists)
          (-> #'clojure.core/interleave meta :arglists)
-         '([] [c1] [c1 c2] [c1 c2 & colls]))))
+         '([] [c1] [c1 c2] [c1 c2 & colls])))
+  (dotimes [i 10]
+    (is (= (apply interleave (map (fn [i] (range i (+ 10 i))) (range i)))
+           (apply unroll-interleave (map (fn [i] (range i (+ 10 i))) (range i)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/memoize
@@ -1927,7 +1947,20 @@
 
 (deftest unroll-memoize-test
   (is (= (-> #'unroll-memoize meta :arglists)
-         '([f]))))
+         '([f])))
+  (dotimes [i 10]
+    (let [mem-atom (atom 0)
+          mem (memoize (fn [& args]
+                         (swap! mem-atom inc)
+                         (apply + args)))
+          umem-atom (atom 0)
+          umem (unroll-memoize (fn [& args]
+                                 (swap! umem-atom inc)
+                                 (apply + args)))]
+      (dotimes [_ 5]
+        (is (= (apply mem (range i))
+               (apply umem (range i)))))
+      (is (= 1 @mem-atom @umem-atom)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/mapv

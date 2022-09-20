@@ -154,3 +154,28 @@
         {:keys [argvs] :as c} (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme)))]
     `(defn ~nme ~doc ~(update attr :arglists #(or % (list 'quote argvs)))
        ~@(unroll-arities c))))
+
+(defmacro defunrollmacro [nme doc attr config]
+  (assert (symbol? config))
+  (let [config-var (or (resolve config)
+                       (requiring-resolve
+                         (if (simple-symbol? config)
+                           (symbol (-> *ns* ns-name name) (name config))
+                           config)))
+        _ (assert (var? config-var) config)
+        {:keys [argvs] :as c} (assoc @config-var :this (symbol (-> *ns* ns-name name) (name nme)))
+        handle (gensym 'handle)
+        args (gensym 'args)]
+    `(defmacro ~nme ~doc ~(update attr :arglists #(or % (list 'quote argvs)))
+       [& ~args]
+       (let [~handle (fn ~@(unroll-arities c))
+             setup# (fn ~@(mapcat (fn [argv]
+                                    (let [fixed-args (argv->fixed-args argv)
+                                          rest-arg (argv->rest-arg)]
+                                      `(let [~@(mapcat (fn [fixed-arg] [fixed-arg (list 'unquote fixed-arg)])
+                                                       fixed-args)
+                                             ~@(when rest-arg
+                                                 [rest-arg (list 'unquote `(vec ~rest-arg))])]
+                                         (apply ~handle (concat ~fixed-args ~rest-arg)))))
+                                  argvs))]
+         (apply setup# args)))))

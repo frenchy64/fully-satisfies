@@ -193,6 +193,47 @@
          '([] [a] [a b] [a b c] [a b c d] [a b c d e] [a b c d e f] [a b c d e f & args]))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/list
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn list
+  ([] clojure.lang.PersistentList/EMPTY)
+  ([a] (-> clojure.lang.PersistentList/EMPTY (conj a)))
+  ([a b] (-> clojure.lang.PersistentList/EMPTY (conj a) (conj b)))
+  ([a b & args] (apply clojure.lang.PersistentList/creator a b args)))
+
+(def unroll-list-spec
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 5)
+             :fixed-names (single-char-syms-from \a)
+             :rest-name 'args})
+   :unroll-arity (fn [{:keys [fixed-args rest-arg]}]
+                   (if rest-arg
+                     `(apply clojure.lang.PersistentList/creator ~@fixed-args ~rest-arg)
+                     `(-> clojure.lang.PersistentList/EMPTY
+                          ~@(map (fn [a] `(conj ~a))
+                                 (rseq fixed-args)))))})
+
+(deftest unroll-list-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-list-spec))
+         '(([] (cc/-> clojure.lang.PersistentList/EMPTY))
+           ([a] (cc/-> clojure.lang.PersistentList/EMPTY (cc/conj a)))
+           ([a b] (cc/-> clojure.lang.PersistentList/EMPTY (cc/conj b) (cc/conj a)))
+           ([a b c] (cc/-> clojure.lang.PersistentList/EMPTY (cc/conj c) (cc/conj b) (cc/conj a)))
+           ([a b c d] (cc/-> clojure.lang.PersistentList/EMPTY (cc/conj d) (cc/conj c) (cc/conj b) (cc/conj a)))
+           ([a b c d & args] (cc/apply clojure.lang.PersistentList/creator a b c d args))))))
+
+(defunroll unroll-list
+  "doc"
+  {}
+  unroll-list-spec)
+
+(deftest unroll-list-test
+  (dotimes [i 10]
+    (is (= (apply clojure.core/list (range i))
+           (apply unroll-list (range i))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/list*
@@ -229,7 +270,7 @@
                       `(seq ~(first fixed-args))
                       (reduce (fn [acc x] `(cons ~x ~acc))
                               (if rest-arg `(#'clojure.core/spread ~rest-arg) (peek fixed-args))
-                              (some-> fixed-args not-empty pop rseq))))}))
+                              (some-> fixed-args not-empty (cond-> (not rest-arg) pop) rseq))))}))
 
 (def unroll-list*-spec (unroll-list*-spec*))
 
@@ -238,17 +279,17 @@
          '([& more] ((var cc/spread) more))))
   (is (= (prettify-unroll (unroll-arities (unroll-list*-spec* {:size 1})))
          '(([args] (cc/seq args)) 
-           ([a & more] ((var cc/spread) more)))))
+           ([a & more] (cc/cons a ((var cc/spread) more))))))
   (is (= (prettify-unroll (unroll-arities (unroll-list*-spec* {:size 2})))
          '(([args] (cc/seq args)) 
            ([a args] (cc/cons a args)) 
-           ([a b & more] (cc/cons a ((var cc/spread) more))))))
+           ([a b & more] (cc/cons a (cc/cons b ((var cc/spread) more)))))))
   (is (= (prettify-unroll (unroll-arities unroll-list*-spec))
          '(([args] (cc/seq args))
            ([a args] (cc/cons a args))
            ([a b args] (cc/cons a (cc/cons b args)))
            ([a b c args] (cc/cons a (cc/cons b (cc/cons c args))))
-           ([a b c d & more] (cc/cons a (cc/cons b (cc/cons c ((var cc/spread) more)))))))))
+           ([a b c d & more] (cc/cons a (cc/cons b (cc/cons c (cc/cons d ((var cc/spread) more))))))))))
 
 (defunroll unroll-list*
   "Creates a new seq containing the items prepended to the rest, the
@@ -260,8 +301,10 @@
 (deftest unroll-list*-test
   (is (= (-> #'unroll-list* meta :arglists)
          (-> #'clojure.core/list* meta :arglists)
-         '([args] [a args] [a b args] [a b c args] [a b c d & more]))))
-
+         '([args] [a args] [a b args] [a b c args] [a b c d & more])))
+  (dotimes [i 10]
+    (is (= (apply clojure.core/list* (concat (range i) [(range i)]))
+           (apply unroll-list* (concat (range i) [(range i)]))))))
 
 
 

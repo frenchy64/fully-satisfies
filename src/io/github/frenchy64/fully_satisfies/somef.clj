@@ -18,45 +18,49 @@
     (defn somef [& fs]
       (fn [& args] (some #(some % args) fs)))"
   {:arglists '([& fs])}
-  ([] ;; fully-satisfies: added zero-arity
-     (fn
-       ([] nil)
-       ([x] nil)
-       ([x y] nil)
-       ([x y z] nil)
-       ([x y z & args] nil)))
-  ([f] ;; fully-satisfies: renamed ps to fs
-     (fn sf1
-       ([] nil)
-       ([x] (or (f x) nil)) ;; fully-satisfies: end (or ...) calls outside `some` with nil
-       ([x y] (or (f x) (f y) nil))
-       ([x y z] (or (f x) (f y) (f z) nil))
-       ([x y z & args] (or (sf1 x y z)
-                           (some f args)))))
-  ([f1 f2]
-     (fn sf2
-       ([] nil)
-       ([x] (or (f1 x) (f2 x) nil))
-       ([x y] (or (f1 x) (f1 y) (f2 x) (f2 y) nil))
-       ([x y z] (or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) nil))
-       ([x y z & args] (or (sf2 x y z)
-                           (some #(or (f1 %) (f2 %)) args)))))
-  ([f1 f2 f3]
-     (fn sf3
-       ([] nil)
-       ([x] (or (f1 x) (f2 x) (f3 x) nil))
-       ([x y] (or (f1 x) (f1 y) (f2 x) (f2 y) (f3 x) (f3 y) nil))
-       ([x y z] (or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) (f3 x) (f3 y) (f3 z) nil))
-       ([x y z & args] (or (sf3 x y z)
-                           (some #(or (f1 %) (f2 %) (f3 %)) args)))))
-  ([f1 f2 f3 & fs]
-     (let [fs (list* f1 f2 f3 fs)]
-       (fn sfn
-         ([] nil)
-         ([x] (some #(% x) fs))
-         ([x y] (some #(or (% x) (% y)) fs))
-         ([x y z] (some #(or (% x) (% y) (% z)) fs))
-         ([x y z & args] (or (sfn x y z)
-                             (some #(some % args) fs)))))))
+  ([] (fn ([] nil) ([x] nil) ([x y] nil) ([x y z] nil) ([x y z & args] nil)))
+  ([f1] (fn
+          ([] nil)
+          ([x] (or (f1 x) nil))
+          ([x y] (or (f1 x) (f1 y) nil))
+          ([x y z] (or (f1 x) (f1 y) (f1 z) nil))
+          ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)))))
+  ([f1 f2] (fn
+             ([] nil)
+             ([x] (or (f1 x) (f2 x) nil))
+             ([x y] (or (f1 x) (f1 y)
+                        (f2 x) (f2 y)
+                        nil))
+             ([x y z] (or (f1 x) (f1 y) (f1 z)
+                          (f2 x) (f2 y) (f2 z)
+                          nil))
+             ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))]
+                               (or (tf f1) (tf f2))))))
+  ([f1 f2 f3] (fn
+                ([] nil)
+                ([x] (or (f1 x) (f2 x) (f3 x) nil))
+                ([x y] (or (f1 x) (f1 y)
+                           (f2 x) (f2 y)
+                           (f3 x) (f3 y)
+                           nil))
+                ([x y z] (or (f1 x) (f1 y) (f1 z)
+                             (f2 x) (f2 y) (f2 z)
+                             (f3 x) (f3 y) (f3 z)
+                             nil))
+                ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))]
+                                  (or (tf f1) (tf f2) (tf f3))))))
+  ([f1 f2 f3 & fs] (fn
+                     ([] nil)
+                     ([x] (or (f1 x) (f2 x) (f3 x) (some (fn [f] (f x)) fs)))
+                     ([x y] (or (f1 x) (f1 y)
+                                (f2 x) (f2 y)
+                                (f3 x) (f3 y)
+                                (some (fn [f] (or (f x) (f y))) fs)))
+                     ([x y z] (or (f1 x) (f1 y) (f1 z)
+                                  (f2 x) (f2 y) (f2 z)
+                                  (f3 x) (f3 y) (f3 z)
+                                  (some (fn [f] (or (f x) (f y) (f z))) fs)))
+                     ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))]
+                                       (or (tf f1) (tf f2) (tf f3) (some tf fs)))))))
 
 (def some-fn somef)

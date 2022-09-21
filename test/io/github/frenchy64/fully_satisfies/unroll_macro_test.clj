@@ -63,6 +63,29 @@
     init
     `(-> ~init ~@es)))
 
+(defn non-false-expr?
+  "Expression will never return the value `false`."
+  [e]
+  (or ((some-fn nil? number? true?) e)
+      (and (seq? e)
+           (#{`some} (first e))
+           (= 3 (count e)))))
+
+(defn maybe-or-nil [exprs]
+  (let [exprs (remove nil? exprs)]
+    (if (= 0 (count exprs))
+      nil
+      (if (and (= 1 (count exprs))
+               (non-false-expr? (first exprs)))
+        (first exprs)
+        `(or ~@exprs ~@(when-not (non-false-expr? (last exprs))
+                         [nil]))))))
+
+(deftest maybe-or-nil-test
+  (is (= nil (maybe-or-nil [])))
+  (is (= `(some ~'f ~'coll) (maybe-or-nil [`(some ~'f ~'coll) nil])))
+  (is (= `(or ~'f ~'g nil) (maybe-or-nil ['f 'g]))))
+
 (defn maybe-or [exprs]
   (case (count exprs)
     0 nil
@@ -913,8 +936,15 @@
    (assert (#{:everyp :somef} mode))
    {:argvs (uniformly-flowing-argvs
              {:arities (range outer-size)
-              :fixed-names (map #(symbol (str "p" %)) (next (range)))
-              :rest-name 'ps})
+              :fixed-names (map (fn [i]
+                                  (symbol (str (case mode
+                                                 :everyp 'p
+                                                 :somef 'f)
+                                               i)))
+                                (next (range)))
+              :rest-name (case mode
+                           :everyp 'ps
+                           :somef 'fs)})
     :unroll-arity (fn [{fixed-preds :fixed-args rest-pred :rest-arg outer-argv :argv}]
                     `(fn ~@(unroll-arities
                              {:argvs (uniformly-flowing-argvs
@@ -932,9 +962,12 @@
                                                     maybe-combine-rest (case mode
                                                                          :everyp maybe-every?
                                                                          :somef maybe-some)
-                                                    maybe-combine-fixed (case mode
-                                                                          :everyp maybe-and
-                                                                          :somef maybe-or)
+                                                    maybe-combine-fixed-outer (case mode
+                                                                                :everyp (comp maybe-boolean maybe-and)
+                                                                                :somef (if (and tp rest-arg) maybe-or maybe-or-nil))
+                                                    maybe-combine-fixed-inner (case mode
+                                                                                :everyp maybe-and
+                                                                                :somef maybe-or)
                                                     tp-gen (fn [p]
                                                              (cond-> (mapv #(list p %) fixed-args)
                                                                rest-arg (conj (maybe-combine-rest p rest-arg))))
@@ -942,17 +975,13 @@
                                                     p (gensym-pretty (case mode
                                                                        :everyp 'p
                                                                        :somef 'f))
-                                                    body ((case mode
-                                                            :everyp maybe-boolean
-                                                            :somef identity)
-                                                          (maybe-combine-fixed
-                                                            (cond-> (into [] (mapcat tp-call) fixed-preds)
-                                                              rest-pred (conj (maybe-combine-rest (or tp `(fn [~p] ~(maybe-combine-fixed (tp-call p)))) rest-pred)))))]
+                                                    body (maybe-combine-fixed-outer
+                                                           (cond-> (into [] (mapcat tp-call) fixed-preds)
+                                                             rest-pred (conj (maybe-combine-rest (or tp `(fn [~p] ~(maybe-combine-fixed-inner (tp-call p)))) rest-pred))))]
                                                 (if tp
-                                                  `(let [~tp (fn [~p] ~(maybe-combine-fixed (tp-gen p)))] ~body)
+                                                  `(let [~tp (fn [~p] ~(maybe-combine-fixed-inner (tp-gen p)))] ~body)
                                                   body)))})))}))
 
-;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
 (defn unroll-everyp-spec*
   ":use-local-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
                     a true value to bind a local function called `tp` to better manage method size.
@@ -960,11 +989,7 @@
    :outer-size      Number of fixed arities for outer fn that takes predicates.
    :outer-argv->inner-size      Function from outer argv to number of fixed arities for inner fn that takes args."
   ([] (unroll-everyp-spec* {}))
-  ([opt]
-   (unroll-everyp-or-somef-spec*
-     (into {:outer-size 4
-            :outer-argv->inner-size (constantly 4)}
-           (assoc opt :mode :everyp)))))
+  ([opt] (unroll-everyp-or-somef-spec* (assoc opt :mode :everyp))))
 
 (def unroll-everyp-spec (unroll-everyp-spec*))
 
@@ -1168,29 +1193,145 @@
                          (some #(or (% x) (% y) (% z) (some % args)) fs))))))
 
 ;; TODO unit test
-(def unroll-somef-spec
-  {:argvs (let [rest-arity 4]
-            (assert (<= 2 rest-arity))
-            (uniformly-flowing-argvs
-              {:arities (range (inc rest-arity))
-               :fixed-names (map #(symbol (str "f" %)) (next (range)))
-               :rest-name 'fs}))
-   :unroll-arity (fn [{fixed-fs :fixed-args rest-f :rest-arg outer-argv :argv}]
-                   `(fn ~@(unroll-arities
-                            {:argvs (uniformly-flowing-argvs
-                                      {:arities (range 5)
-                                       :fixed-names (single-char-syms-from \x)
-                                       :rest-name 'args})
-                             :unroll-arity (fn [{:keys [fixed-args rest-arg]}]
-                                             (let [f-tests (fn [f] (mapv #(list f %) fixed-args))]
-                                               `(or ~@(-> []
-                                                          (into (mapcat #(cond-> (f-tests %)
-                                                                           rest-arg (conj `(cc/some ~% ~rest-arg)))
-                                                                        fixed-fs))
-                                                          (conj (when rest-f
-                                                                  (let [f (gensym-pretty 'f)]
-                                                                    `(cc/some (fn [~f] (and ~@(f-tests f))) ~rest-arg))))))))})))})
+(defn unroll-somef-spec*
+  ":use-local-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
+                    a true value to bind a local function called `tf` to better manage method size.
+                    Default: nil (inline everything)
+   :outer-size      Number of fixed arities for outer fn that takes predicates.
+   :outer-argv->inner-size      Function from outer argv to number of fixed arities for inner fn that takes args."
+  ([] (unroll-somef-spec* {}))
+  ([opt] (unroll-everyp-or-somef-spec* (assoc opt :mode :somef))))
 
+(def unroll-somef-spec (unroll-somef-spec*))
+
+(deftest unroll-somef-spec-test
+  (is (= (prettify-unroll (unroll-arities (unroll-somef-spec*
+                                            {:outer-size 0
+                                             :outer-argv->inner-size (constantly 0)})))
+         '([& fs] (cc/fn [& args] (cc/some (cc/fn [f] (cc/some f args)) fs)))))
+  (is (= (prettify-unroll (unroll-arities (unroll-somef-spec*
+                                            {:outer-size 1
+                                             :outer-argv->inner-size (constantly 0)})))
+
+         '(([] (cc/fn [& args] nil))
+           ([& fs] (cc/fn [& args] (cc/some (cc/fn [f] (cc/some f args)) fs))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-somef-spec*
+                                            {:outer-size 1
+                                             :outer-argv->inner-size (constantly 1)})))
+
+
+         '(([] (cc/fn ([] nil) ([& args] nil)))
+           ([& fs] (cc/fn ([] nil) ([& args] (cc/some (cc/fn [f] (cc/some f args)) fs)))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-somef-spec*
+                                            {:outer-size 3
+                                             :outer-argv->inner-size (constantly 4)
+                                             ;; let-bind tf only on & args
+                                             :use-local-helper (comp argv->rest-arg :inner-argv)})))
+
+         '(([] (cc/fn ([] nil) ([x] nil) ([x y] nil) ([x y z] nil) ([x y z & args] nil)))
+           ([f1] (cc/fn 
+                   ([] nil)
+                   ([x] (cc/or (f1 x) nil))
+                   ([x y] (cc/or (f1 x) (f1 y) nil))
+                   ([x y z] (cc/or (f1 x) (f1 y) (f1 z) nil))
+                   ([x y z & args] (cc/or (f1 x) (f1 y) (f1 z) (cc/some f1 args)))))
+           ([f1 f2] (cc/fn
+                      ([] nil)
+                      ([x] (cc/or (f1 x) (f2 x) nil))
+                      ([x y] (cc/or (f1 x) (f1 y) (f2 x) (f2 y) nil))
+                      ([x y z] (cc/or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) nil))
+                      ([x y z & args] (cc/let [tf (cc/fn [f] (cc/or (f x) (f y) (f z) (cc/some f args)))]
+                                        (cc/or (tf f1) (tf f2))))))
+           ([f1 f2 & fs] (cc/fn
+                           ([] nil)
+                           ([x] (cc/or (f1 x) (f2 x) (cc/some (cc/fn [f] (f x)) fs)))
+                           ([x y] (cc/or (f1 x) (f1 y) (f2 x) (f2 y) (cc/some (cc/fn [f] (cc/or (f x) (f y))) fs)))
+                           ([x y z] (cc/or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) (cc/some (cc/fn [f] (cc/or (f x) (f y) (f z))) fs)))
+                           ([x y z & args] (cc/let [tf (cc/fn [f] (cc/or (f x) (f y) (f z) (cc/some f args)))]
+                                             (cc/or (tf f1) (tf f2) (cc/some tf fs)))))))))
+  (is (= (prettify-unroll (unroll-arities (unroll-somef-spec*
+                                            {:use-local-helper (comp argv->rest-arg :inner-argv)}))
+                          {:unqualify-core true})
+
+         '(([] (fn ([] nil) ([x] nil) ([x y] nil) ([x y z] nil) ([x y z & args] nil)))
+           ([f1] (fn
+                   ([] nil)
+                   ([x] (or (f1 x) nil))
+                   ([x y] (or (f1 x) (f1 y) nil))
+                   ([x y z] (or (f1 x) (f1 y) (f1 z) nil))
+                   ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)))))
+           ([f1 f2] (fn
+                      ([] nil)
+                      ([x] (or (f1 x) (f2 x) nil))
+                      ([x y] (or (f1 x) (f1 y) (f2 x) (f2 y) nil))
+                      ([x y z] (or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) nil))
+                      ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))]
+                                        (or (tf f1) (tf f2))))))
+           ([f1 f2 f3] (fn
+                         ([] nil)
+                         ([x] (or (f1 x) (f2 x) (f3 x) nil))
+                         ([x y] (or (f1 x) (f1 y) (f2 x) (f2 y) (f3 x) (f3 y) nil))
+                         ([x y z] (or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) (f3 x) (f3 y) (f3 z) nil))
+                         ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))] (or (tf f1) (tf f2) (tf f3))))))
+           ([f1 f2 f3 & fs] (fn
+                              ([] nil)
+                              ([x] (or (f1 x) (f2 x) (f3 x) (some (fn [f] (f x)) fs)))
+                              ([x y] (or (f1 x) (f1 y) (f2 x) (f2 y) (f3 x) (f3 y) (some (fn [f] (or (f x) (f y))) fs)))
+                              ([x y z] (or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) (f3 x) (f3 y) (f3 z) (some (fn [f] (or (f x) (f y) (f z))) fs)))
+                              ([x y z & args] (let [tf (fn [f] (or (f x) (f y) (f z) (some f args)))] (or (tf f1) (tf f2) (tf f3) (some tf fs)))))))))
+  (is (= (prettify-unroll (unroll-arities unroll-somef-spec))
+         '(([] (cc/fn ([] nil) ([x] nil) ([x y] nil) ([x y z] nil) ([x y z & args] nil)))
+           ([f1] (cc/fn
+                   ([] nil)
+                   ([x] (cc/or (f1 x) nil))
+                   ([x y] (cc/or (f1 x) (f1 y) nil))
+                   ([x y z] (cc/or (f1 x) (f1 y) (f1 z) nil))
+                   ([x y z & args] (cc/or (f1 x) (f1 y) (f1 z) (cc/some f1 args)))))
+           ([f1 f2] (cc/fn
+                      ([] nil)
+                      ([x] (cc/or (f1 x) (f2 x) nil))
+                      ([x y] (cc/or (f1 x) (f1 y)
+                                    (f2 x) (f2 y)
+                                    nil))
+                      ([x y z] (cc/or (f1 x) (f1 y) (f1 z)
+                                      (f2 x) (f2 y) (f2 z)
+                                      nil))
+                      ([x y z & args] (cc/or (f1 x) (f1 y) (f1 z) (cc/some f1 args)
+                                             (f2 x) (f2 y) (f2 z) (cc/some f2 args)))))
+           ([f1 f2 f3] (cc/fn
+                         ([] nil)
+                         ([x] (cc/or (f1 x) (f2 x) (f3 x) nil))
+                         ([x y] (cc/or (f1 x) (f1 y)
+                                       (f2 x) (f2 y)
+                                       (f3 x) (f3 y)
+                                       nil))
+                         ([x y z] (cc/or (f1 x) (f1 y) (f1 z)
+                                         (f2 x) (f2 y) (f2 z)
+                                         (f3 x) (f3 y) (f3 z)
+                                         nil))
+                         ([x y z & args] (cc/or (f1 x) (f1 y) (f1 z) (cc/some f1 args)
+                                                (f2 x) (f2 y) (f2 z) (cc/some f2 args)
+                                                (f3 x) (f3 y) (f3 z) (cc/some f3 args)))))
+           ([f1 f2 f3 & fs] (cc/fn
+                              ([] nil)
+                              ([x] (cc/or (f1 x) (f2 x) (f3 x) (cc/some (cc/fn [f] (f x)) fs)))
+                              ([x y] (cc/or (f1 x) (f1 y) (f2 x) (f2 y) (f3 x) (f3 y) (cc/some (cc/fn [f] (cc/or (f x) (f y))) fs)))
+                              ([x y z] (cc/or (f1 x) (f1 y) (f1 z) (f2 x) (f2 y) (f2 z) (f3 x) (f3 y) (f3 z) (cc/some (cc/fn [f] (cc/or (f x) (f y) (f z))) fs)))
+                              ([x y z & args] (cc/or (f1 x) (f1 y) (f1 z) (cc/some f1 args)
+                                                     (f2 x) (f2 y) (f2 z) (cc/some f2 args)
+                                                     (f3 x) (f3 y) (f3 z) (cc/some f3 args)
+                                                     (cc/some (cc/fn [f] (cc/or (f x) (f y) (f z) (cc/some f args)))
+                                                              fs)))))))))
+
+(defunroll unroll-somef
+  "Combines functions into a variable-arity disjunction.
+  
+  Definitionally equivalent to:
+
+    (defn somef [& fs]
+      (fn [& args] (some #(some % args) fs)))"
+  {:arglists '([& fs])}
+  unroll-somef-spec)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/fnil

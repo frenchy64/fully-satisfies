@@ -74,24 +74,28 @@
     `(conj ~target ~@xs)
     target))
 
-(defn true-expression? [coll]
-  (true? coll))
+(defn true-expression? [e]
+  (true? e))
 
-(defn single-arg-true-function? [coll]
+(defn false-expression? [e]
+  (or (nil? e)
+      (false? e)))
+
+(defn single-arg-function-returning? [coll f]
   (boolean (when (seq? coll)
              (when (and (= 3 (count coll))
                         (= `fn (first coll))
                         (vector? (second coll))
                         (= 1 (count (second coll))))
-               (true-expression? (last coll))))))
+               (f (last coll))))))
 
 (deftest single-arg-true-function?-test
-  (is (single-arg-true-function? `(fn [_] true)))
-  (is (not (single-arg-true-function? `(fn [] true))))
-  (is (not (single-arg-true-function? `(fn [_] false)))))
+  (is (single-arg-function-returning? `(fn [_] true) true-expression?))
+  (is (not (single-arg-function-returning? `(fn [] true) true-expression?)))
+  (is (not (single-arg-function-returning? `(fn [_] false) true-expression?))))
 
 (defn maybe-every? [f coll]
-  (if (single-arg-true-function? f)
+  (if (single-arg-function-returning? f true-expression?)
     true
     `(every? ~f ~coll)))
 
@@ -99,6 +103,15 @@
   (is (= true (maybe-every? `(fn [_] true) 'coll)))
   (is (= `(every? (fn [~'_ ~'_] true) ~'coll) (maybe-every? `(fn [~'_ ~'_] true) 'coll)))
   (is (= `(every? (fn [~'p] ~'p) ~'coll) (maybe-every? `(fn [~'p] ~'p) 'coll))))
+
+(defn maybe-some [f coll]
+  (when-not (single-arg-function-returning? f false-expression?)
+    `(some ~f ~coll)))
+
+(deftest maybe-some-test
+  (is (= nil (maybe-some `(fn [_] nil) 'coll)))
+  (is (= `(some (fn [~'_ ~'_] nil) ~'coll) (maybe-some `(fn [~'_ ~'_] nil) 'coll)))
+  (is (= `(some (fn [~'p] ~'p) ~'coll) (maybe-some `(fn [~'p] ~'p) 'coll))))
 
 (defn boolean-function? [sym]
   (boolean
@@ -824,7 +837,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Naive everyp
+;; everyp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -887,18 +900,17 @@
                                    (p3 x) (p3 y) (p3 z) (every? p3 args)
                                    (every? (fn [p] (and (p x) (p y) (p z) (every? p args))) ps)))))))
 
-;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
-(defn unroll-naive-everyp-spec*
-  ":use-tp-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
+(defn unroll-everyp-or-somef-spec*
+  ":use-local-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
                     a true value to bind a local function called `tp` to better manage method size.
                     Default: nil (inline everything)
    :outer-size      Number of fixed arities for outer fn that takes predicates.
    :outer-argv->inner-size      Function from outer argv to number of fixed arities for inner fn that takes args."
-  ([] (unroll-naive-everyp-spec* {}))
-  ([{:keys [outer-size outer-argv->inner-size use-tp-helper]
+  ([{:keys [mode outer-size outer-argv->inner-size use-local-helper]
      :or {outer-size 4
           outer-argv->inner-size (constantly 4)}}]
    (assert (nat-int? outer-size))
+   (assert (#{:everyp :somef} mode))
    {:argvs (uniformly-flowing-argvs
              {:arities (range outer-size)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
@@ -910,37 +922,64 @@
                                         :fixed-names (single-char-syms-from \x)
                                         :rest-name 'args})
                               :unroll-arity (fn [{:keys [fixed-args rest-arg] inner-argv :argv}]
-                                              (let [tp (when (and use-tp-helper
+                                              (let [tp (when (and use-local-helper
                                                                   (< 1 (cond-> (count fixed-preds) rest-pred inc))
                                                                   (< 1 (cond-> (count fixed-args) rest-arg inc))
-                                                                  (use-tp-helper {:outer-argv outer-argv :inner-argv inner-argv}))
-                                                         (gensym-pretty 'tp))
+                                                                  (use-local-helper {:outer-argv outer-argv :inner-argv inner-argv}))
+                                                         (gensym-pretty (case mode
+                                                                          :everyp 'tp
+                                                                          :somef 'tf)))
+                                                    maybe-combine-rest (case mode
+                                                                         :everyp maybe-every?
+                                                                         :somef maybe-some)
+                                                    maybe-combine-fixed (case mode
+                                                                          :everyp maybe-and
+                                                                          :somef maybe-or)
                                                     tp-gen (fn [p]
                                                              (cond-> (mapv #(list p %) fixed-args)
-                                                               rest-arg (conj (maybe-every? p rest-arg))))
+                                                               rest-arg (conj (maybe-combine-rest p rest-arg))))
                                                     tp-call (fn [p] (if tp [`(~tp ~p)] (tp-gen p)))
-                                                    p (gensym-pretty 'p)
-                                                    body (maybe-boolean
-                                                           (maybe-and (cond-> (into [] (mapcat tp-call) fixed-preds)
-                                                                        rest-pred (conj (maybe-every? (or tp `(fn [~p] ~(maybe-and (tp-call p)))) rest-pred)))))]
+                                                    p (gensym-pretty (case mode
+                                                                       :everyp 'p
+                                                                       :somef 'f))
+                                                    body ((case mode
+                                                            :everyp maybe-boolean
+                                                            :somef identity)
+                                                          (maybe-combine-fixed
+                                                            (cond-> (into [] (mapcat tp-call) fixed-preds)
+                                                              rest-pred (conj (maybe-combine-rest (or tp `(fn [~p] ~(maybe-combine-fixed (tp-call p)))) rest-pred)))))]
                                                 (if tp
-                                                  `(let [~tp (fn [~p] ~(maybe-and (tp-gen p)))] ~body)
+                                                  `(let [~tp (fn [~p] ~(maybe-combine-fixed (tp-gen p)))] ~body)
                                                   body)))})))}))
 
-(def unroll-naive-everyp-spec (unroll-naive-everyp-spec*))
+;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
+(defn unroll-everyp-spec*
+  ":use-local-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
+                    a true value to bind a local function called `tp` to better manage method size.
+                    Default: nil (inline everything)
+   :outer-size      Number of fixed arities for outer fn that takes predicates.
+   :outer-argv->inner-size      Function from outer argv to number of fixed arities for inner fn that takes args."
+  ([] (unroll-everyp-spec* {}))
+  ([opt]
+   (unroll-everyp-or-somef-spec*
+     (into {:outer-size 4
+            :outer-argv->inner-size (constantly 4)}
+           (assoc opt :mode :everyp)))))
 
-(deftest unroll-naive-everyp-spec-test
-  (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
+(def unroll-everyp-spec (unroll-everyp-spec*))
+
+(deftest unroll-everyp-spec-test
+  (is (= (prettify-unroll (unroll-arities (unroll-everyp-spec*
                                             {:outer-size 0
                                              :outer-argv->inner-size (constantly 0)})))
          '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
-  (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-arities (unroll-everyp-spec*
                                             {:outer-size 1
                                              :outer-argv->inner-size (constantly 0)})))
 
          '(([] (cc/fn [& args] true))
            ([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps))))))
-  (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-arities (unroll-everyp-spec*
                                             {:outer-size 1
                                              :outer-argv->inner-size (constantly 1)})))
 
@@ -951,11 +990,11 @@
            ([& ps] (cc/fn
                      ([] true)
                      ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
-  (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
+  (is (= (prettify-unroll (unroll-arities (unroll-everyp-spec*
                                             {:outer-size 3
                                              :outer-argv->inner-size (constantly 4)
                                              ;; let-bind tp only on & args
-                                             :use-tp-helper (comp argv->rest-arg :inner-argv)})))
+                                             :use-local-helper (comp argv->rest-arg :inner-argv)})))
          '(([] (cc/fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
            ([p1] (cc/fn
                    ([] true)
@@ -978,8 +1017,8 @@
                            ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
                                              (cc/boolean (cc/and (tp p1) (tp p2) (cc/every? tp ps))))))))))
   ;; potentially useful implementation. maybe the non-rest arities should fully unroll.
-  (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                            {:use-tp-helper (comp argv->rest-arg :inner-argv)}))
+  (is (= (prettify-unroll (unroll-arities (unroll-everyp-spec*
+                                            {:use-local-helper (comp argv->rest-arg :inner-argv)}))
                           {:unqualify-core true})
 
          '(([] (fn
@@ -1015,7 +1054,7 @@
                               ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z) (every? (fn [p] (and (p x) (p y) (p z))) ps))))
                               ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                                 (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps))))))))))
-  (is (= (prettify-unroll (unroll-arities unroll-naive-everyp-spec))
+  (is (= (prettify-unroll (unroll-arities unroll-everyp-spec))
          '(([] (cc/fn
                  ([] true)
                  ([x] true)
@@ -1129,7 +1168,7 @@
                          (some #(or (% x) (% y) (% z) (some % args)) fs))))))
 
 ;; TODO unit test
-(def unroll-naive-somef-spec
+(def unroll-somef-spec
   {:argvs (let [rest-arity 4]
             (assert (<= 2 rest-arity))
             (uniformly-flowing-argvs
@@ -1151,6 +1190,7 @@
                                                           (conj (when rest-f
                                                                   (let [f (gensym-pretty 'f)]
                                                                     `(cc/some (fn [~f] (and ~@(f-tests f))) ~rest-arg))))))))})))})
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/fnil

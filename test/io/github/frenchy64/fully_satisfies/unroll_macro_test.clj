@@ -5,7 +5,7 @@
             [clojure.math.combinatorics :as comb]
             [io.github.frenchy64.fully-satisfies.unroll-macro
              :refer [defunroll unroll-arities gensym-pretty prettify-unroll
-                     single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
+                     argv->rest-arg single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
 
 (defn maybe-apply [f fixed-args rest-args]
   (if (some? rest-args)
@@ -889,8 +889,11 @@
 
 ;;TODO make `:smaller-arities?` threshold-based config (only kicks in after x-sized arities)
 (defn unroll-naive-everyp-spec*
+  ":use-tp-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
+                    a true value to bind a local function called `tp` to better manage method size.
+                    Default: nil (inline everything)"
   ([] (unroll-naive-everyp-spec* {}))
-  ([{:keys [outer-size inner-size smaller-arities?]
+  ([{:keys [outer-size inner-size use-tp-helper]
      :or {outer-size 4
           inner-size 4}}]
    (assert (nat-int? outer-size))
@@ -899,16 +902,17 @@
              {:arities (range outer-size)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
               :rest-name 'ps})
-    :unroll-arity (fn [{fixed-preds :fixed-args rest-pred :rest-arg}]
+    :unroll-arity (fn [{fixed-preds :fixed-args rest-pred :rest-arg outer-argv :argv}]
                     `(fn ~@(unroll-arities
                              {:argvs (uniformly-flowing-argvs
                                        {:arities (range inner-size)
                                         :fixed-names (single-char-syms-from \x)
                                         :rest-name 'args})
-                              :unroll-arity (fn [{:keys [fixed-args rest-arg]}]
-                                              (let [tp (when (and smaller-arities?
+                              :unroll-arity (fn [{:keys [fixed-args rest-arg] inner-argv :argv}]
+                                              (let [tp (when (and use-tp-helper
                                                                   (< 1 (cond-> (count fixed-preds) rest-pred inc))
-                                                                  (< 1 (cond-> (count fixed-args) rest-arg inc)))
+                                                                  (< 1 (cond-> (count fixed-args) rest-arg inc))
+                                                                  (use-tp-helper {:outer-argv outer-argv :inner-argv inner-argv}))
                                                          (gensym-pretty 'tp))
                                                     tp-gen (fn [p]
                                                              (cond-> (mapv #(list p %) fixed-args)
@@ -949,74 +953,60 @@
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
                                                 {:outer-size 3
                                                  :inner-size 4
-                                                 :smaller-arities? true})))
-
+                                                 ;; let-bind tp only on & args
+                                                 :use-tp-helper (comp argv->rest-arg :inner-argv)})))
          '(([] (cc/fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
-           ([p1] (cc/fn
-                   ([] true)
-                   ([x] (cc/boolean (p1 x)))
-                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
-                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
-                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+           ([p1] (cc/fn ([] true) ([x] (cc/boolean (p1 x))) ([x y] (cc/boolean (cc/and (p1 x) (p1 y)))) ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)))) ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
            ([p1 p2] (cc/fn
                       ([] true)
                       ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
-                      ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
-                               (cc/boolean (cc/and (tp p1)
-                                                   (tp p2)))))
-                      ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
-                                 (cc/boolean (cc/and (tp p1)
-                                                     (tp p2)))))
+                      ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y))))
+                      ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
                       ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
-                                        (cc/boolean (cc/and (tp p1)
-                                                            (tp p2)))))))
+                                        (cc/boolean (cc/and (tp p1) (tp p2)))))))
            ([p1 p2 & ps] (cc/fn
                            ([] true)
                            ([x] (cc/boolean (cc/and (p1 x) (p2 x) (cc/every? (cc/fn [p] (p x)) ps))))
-                           ([x y] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y)))]
-                                    (cc/boolean (cc/and (tp p1)
-                                                        (tp p2)
-                                                        (cc/every? tp ps)))))
-                           ([x y z] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z)))]
-                                      (cc/boolean (cc/and (tp p1)
-                                                          (tp p2)
-                                                          (cc/every? tp ps)))))
+                           ([x y] (cc/boolean (cc/and (p1 x) (p1 y) (p2 x) (p2 y) (cc/every? (cc/fn [p] (cc/and (p x) (p y))) ps))))
+                           ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (cc/every? (cc/fn [p] (cc/and (p x) (p y) (p z))) ps))))
                            ([x y z & args] (cc/let [tp (cc/fn [p] (cc/and (p x) (p y) (p z) (cc/every? p args)))]
-                                             (cc/boolean (cc/and (tp p1)
-                                                                 (tp p2)
-                                                                 (cc/every? tp ps))))))))))
+                                             (cc/boolean (cc/and (tp p1) (tp p2) (cc/every? tp ps))))))))))
   ;; potentially useful implementation. maybe the non-rest arities should fully unroll.
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                              {:smaller-arities? true}))
-                            {:unqualify-core true})
-         '(([] (fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
-           ([p1] (fn ([] true)
+                                            {:use-tp-helper (comp argv->rest-arg :inner-argv)}))
+                          {:unqualify-core true})
+
+         '(([] (fn
+                 ([] true)
+                 ([x] true)
+                 ([x y] true)
+                 ([x y z] true)
+                 ([x y z & args] true)))
+           ([p1] (fn
+                   ([] true)
                    ([x] (boolean (p1 x)))
                    ([x y] (boolean (and (p1 x) (p1 y))))
                    ([x y z] (boolean (and (p1 x) (p1 y) (p1 z))))
                    ([x y z & args] (boolean (and (p1 x) (p1 y) (p1 z) (every? p1 args))))))
-           ([p1 p2] (fn ([] true)
+           ([p1 p2] (fn
+                      ([] true)
                       ([x] (boolean (and (p1 x) (p2 x))))
-                      ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                               (boolean (and (tp p1) (tp p2)))))
-                      ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                                 (boolean (and (tp p1) (tp p2)))))
+                      ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y))))
+                      ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
                       ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                         (boolean (and (tp p1) (tp p2)))))))
-           ([p1 p2 p3] (fn ([] true)
+           ([p1 p2 p3] (fn
+                         ([] true)
                          ([x] (boolean (and (p1 x) (p2 x) (p3 x))))
-                         ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                                  (boolean (and (tp p1) (tp p2) (tp p3)))))
-                         ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                                    (boolean (and (tp p1) (tp p2) (tp p3)))))
+                         ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
+                         ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
                          ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                            (boolean (and (tp p1) (tp p2) (tp p3)))))))
-           ([p1 p2 p3 & ps] (fn ([] true)
+           ([p1 p2 p3 & ps] (fn
+                              ([] true)
                               ([x] (boolean (and (p1 x) (p2 x) (p3 x) (every? (fn [p] (p x)) ps))))
-                              ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                                       (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
-                              ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                                         (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
+                              ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y) (every? (fn [p] (and (p x) (p y))) ps))))
+                              ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z) (every? (fn [p] (and (p x) (p y) (p z))) ps))))
                               ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                                 (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps))))))))))
   (is (= (prettify-unroll (unroll-arities unroll-naive-everyp-spec))
@@ -2373,3 +2363,42 @@
                              (range i))]]
     (is (= (apply assoc-some {} args)
            (apply unroll-assoc-some {} args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/update-vals
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_;;TODO
+(defn update-vals
+  "m f => {k (f v) ...}
+  Given a map m and a function f of 1-argument, returns a new map where the keys of m
+  are mapped to result of applying f to the corresponding values of m."
+  {:added "1.11"}
+  [m f]
+  (with-meta
+    (persistent!
+     (reduce-kv (fn [acc k v] (assoc! acc k (f v)))
+                (if (instance? clojure.lang.IEditableCollection m)
+                  (transient m)
+                  (transient {}))
+                m))
+    (meta m)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/update-keys
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_;;TODO
+(defn update-keys
+  "m f => {(f k) v ...}
+  Given a map m and a function f of 1-argument, returns a new map whose
+  keys are the result of applying f to the keys of m, mapped to the
+  corresponding values of m.
+  f must return a unique key for each key of m, else the behavior is undefined."
+  {:added "1.11"}
+  [m f]
+  (let [ret (persistent!
+             (reduce-kv (fn [acc k v] (assoc! acc (f k) v))
+                        (transient {})
+                        m))]
+    (with-meta ret (meta m))))

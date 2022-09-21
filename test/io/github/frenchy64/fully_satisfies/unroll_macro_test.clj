@@ -891,13 +891,14 @@
 (defn unroll-naive-everyp-spec*
   ":use-tp-helper   A predicate taking {:outer-argv outer-argv :inner-argv inner-argv}. Return
                     a true value to bind a local function called `tp` to better manage method size.
-                    Default: nil (inline everything)"
+                    Default: nil (inline everything)
+   :outer-size      Number of fixed arities for outer fn that takes predicates.
+   :outer-argv->inner-size      Function from outer argv to number of fixed arities for inner fn that takes args."
   ([] (unroll-naive-everyp-spec* {}))
-  ([{:keys [outer-size inner-size use-tp-helper]
+  ([{:keys [outer-size outer-argv->inner-size use-tp-helper]
      :or {outer-size 4
-          inner-size 4}}]
+          outer-argv->inner-size (constantly 4)}}]
    (assert (nat-int? outer-size))
-   (assert (nat-int? inner-size))
    {:argvs (uniformly-flowing-argvs
              {:arities (range outer-size)
               :fixed-names (map #(symbol (str "p" %)) (next (range)))
@@ -905,7 +906,7 @@
     :unroll-arity (fn [{fixed-preds :fixed-args rest-pred :rest-arg outer-argv :argv}]
                     `(fn ~@(unroll-arities
                              {:argvs (uniformly-flowing-argvs
-                                       {:arities (range inner-size)
+                                       {:arities (range (outer-argv->inner-size outer-argv))
                                         :fixed-names (single-char-syms-from \x)
                                         :rest-name 'args})
                               :unroll-arity (fn [{:keys [fixed-args rest-arg] inner-argv :argv}]
@@ -930,18 +931,18 @@
 
 (deftest unroll-naive-everyp-spec-test
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                                {:outer-size 0
-                                                 :inner-size 0})))
+                                            {:outer-size 0
+                                             :outer-argv->inner-size (constantly 0)})))
          '([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                                {:outer-size 1
-                                                 :inner-size 0})))
+                                            {:outer-size 1
+                                             :outer-argv->inner-size (constantly 0)})))
 
          '(([] (cc/fn [& args] true))
            ([& ps] (cc/fn [& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps))))))
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                                {:outer-size 1
-                                                 :inner-size 1})))
+                                            {:outer-size 1
+                                             :outer-argv->inner-size (constantly 1)})))
 
 
          '(([] (cc/fn
@@ -951,12 +952,17 @@
                      ([] true)
                      ([& args] (cc/every? (cc/fn [p] (cc/every? p args)) ps)))))))
   (is (= (prettify-unroll (unroll-arities (unroll-naive-everyp-spec*
-                                                {:outer-size 3
-                                                 :inner-size 4
-                                                 ;; let-bind tp only on & args
-                                                 :use-tp-helper (comp argv->rest-arg :inner-argv)})))
+                                            {:outer-size 3
+                                             :outer-argv->inner-size (constantly 4)
+                                             ;; let-bind tp only on & args
+                                             :use-tp-helper (comp argv->rest-arg :inner-argv)})))
          '(([] (cc/fn ([] true) ([x] true) ([x y] true) ([x y z] true) ([x y z & args] true)))
-           ([p1] (cc/fn ([] true) ([x] (cc/boolean (p1 x))) ([x y] (cc/boolean (cc/and (p1 x) (p1 y)))) ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z)))) ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
+           ([p1] (cc/fn
+                   ([] true)
+                   ([x] (cc/boolean (p1 x)))
+                   ([x y] (cc/boolean (cc/and (p1 x) (p1 y))))
+                   ([x y z] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z))))
+                   ([x y z & args] (cc/boolean (cc/and (p1 x) (p1 y) (p1 z) (cc/every? p1 args))))))
            ([p1 p2] (cc/fn
                       ([] true)
                       ([x] (cc/boolean (cc/and (p1 x) (p2 x))))
@@ -1061,24 +1067,23 @@
   {:arglists '([& fs])}
   ([]
      (fn
-       ([] (or nil))
-       ([x] (or nil))
-       ([x y] (or nil))
-       ([x y z] (or nil))
-       ([x y z & args] (or nil))))
+       ([] nil)
+       ([x] nil)
+       ([x y] nil)
+       ([x y z] nil)
+       ([x y z & args] nil)))
   ([f1]
      (fn
-       ([] (or nil))
+       ([] nil)
        ([x] (or (f1 x) nil))
        ([x y] (or (f1 x) (f1 y)
                   nil))
        ([x y z] (or (f1 x) (f1 y) (f1 z)
                     nil))
-       ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
-                           nil))))
+       ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)))))
   ([f1 f2]
      (fn
-       ([] (or nil))
+       ([] nil)
        ([x] (or (f1 x) (f2 x)
                 nil))
        ([x y] (or (f1 x) (f1 y)
@@ -1088,11 +1093,10 @@
                     (f2 x) (f2 y) (f2 z)
                     nil))
        ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
-                           (f2 x) (f2 y) (f2 z) (some f2 args)
-                           nil))))
+                           (f2 x) (f2 y) (f2 z) (some f2 args)))))
   ([f1 f2 f3]
      (fn
-       ([] (or nil))
+       ([] nil)
        ([x] (or (f1 x) (f2 x) (f3 x)
                 nil))
        ([x y] (or (f1 x) (f1 y)
@@ -1105,11 +1109,10 @@
                     nil))
        ([x y z & args] (or (f1 x) (f1 y) (f1 z) (some f1 args)
                            (f2 x) (f2 y) (f2 z) (some f2 args)
-                           (f3 x) (f3 y) (f3 z) (some f3 args)
-                           nil))))
+                           (f3 x) (f3 y) (f3 z) (some f3 args)))))
   ([f1 f2 f3 & fs]
    (fn
-     ([] (or nil))
+     ([] nil)
      ([x] (or (f1 x) (f2 x) (f3 x)
               (some #(or (% x)) fs)))
      ([x y] (or (f1 x) (f1 y)
@@ -1133,7 +1136,7 @@
               {:arities (range (inc rest-arity))
                :fixed-names (map #(symbol (str "f" %)) (next (range)))
                :rest-name 'fs}))
-   :unroll-arity (fn [{fixed-fs :fixed-args rest-f :rest-arg}]
+   :unroll-arity (fn [{fixed-fs :fixed-args rest-f :rest-arg outer-argv :argv}]
                    `(fn ~@(unroll-arities
                             {:argvs (uniformly-flowing-argvs
                                       {:arities (range 5)

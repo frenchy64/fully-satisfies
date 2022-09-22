@@ -1,10 +1,10 @@
-(ns io.github.frenchy64.fully-satisfies-test
+(ns io.github.frenchy64.fully-satisfies.fully-satisfies-test
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
             [io.github.frenchy64.fully-satisfies :refer [fully-satisfies?] :as fs]))
 
 (defn te* [top-levels body]
-  (let [g (gensym "io.github.frenchy64.fully-satisfies-test")]
+  (let [g (gensym "io.github.frenchy64.fully-satisfies.fully-satisfies-test")]
     ((binding [*ns* *ns*]
        (eval `(do (ns ~g
                     (:require ~'[clojure.test :refer [is]]

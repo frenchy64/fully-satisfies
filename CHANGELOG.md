@@ -1,4 +1,6 @@
 # Next - TBD
+- fix `everyp` short-circuiting order
+- fix `somef` short-circuiting order
 
 # 1.7.0 - 30th September 2021
 - add `non-leaky-macros` namespaces

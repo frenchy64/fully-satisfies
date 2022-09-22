@@ -33,28 +33,22 @@
   ([p1 p2] (fn
              ([] true)
              ([x] (boolean (and (p1 x) (p2 x))))
-             ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                      (boolean (and (tp p1) (tp p2)))))
-             ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                        (boolean (and (tp p1) (tp p2)))))
+             ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y))))
+             ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z))))
              ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                (boolean (and (tp p1) (tp p2)))))))
   ([p1 p2 p3] (fn
                 ([] true)
                 ([x] (boolean (and (p1 x) (p2 x) (p3 x))))
-                ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                         (boolean (and (tp p1) (tp p2) (tp p3)))))
-                ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                           (boolean (and (tp p1) (tp p2) (tp p3)))))
+                ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y))))
+                ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z))))
                 ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                   (boolean (and (tp p1) (tp p2) (tp p3)))))))
   ([p1 p2 p3 & ps] (fn
                      ([] true)
                      ([x] (boolean (and (p1 x) (p2 x) (p3 x) (every? (fn [p] (p x)) ps))))
-                     ([x y] (let [tp (fn [p] (and (p x) (p y)))]
-                              (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
-                     ([x y z] (let [tp (fn [p] (and (p x) (p y) (p z)))]
-                                (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps)))))
+                     ([x y] (boolean (and (p1 x) (p1 y) (p2 x) (p2 y) (p3 x) (p3 y) (every? (fn [p] (and (p x) (p y))) ps))))
+                     ([x y z] (boolean (and (p1 x) (p1 y) (p1 z) (p2 x) (p2 y) (p2 z) (p3 x) (p3 y) (p3 z) (every? (fn [p] (and (p x) (p y) (p z))) ps))))
                      ([x y z & args] (let [tp (fn [p] (and (p x) (p y) (p z) (every? p args)))]
                                        (boolean (and (tp p1) (tp p2) (tp p3) (every? tp ps))))))))
 

@@ -112,7 +112,9 @@
   Use in conjunction with `testing` in this namespace."
   [name & body]
   (when t/*load-tests*
-    `(def ~(vary-meta name assoc :test `(fn [] (-run-test-body #(do ~@body))))
+    `(def ~(vary-meta name assoc :test `(fn []
+                                          ;;move to `test-var` when proposing upstream
+                                          (-run-test-body #(do ~@body))))
           (fn [] (t/test-var (var ~name))))))
 
 (defmacro deftest [& args] `(deftest+report-uncaught-contexts ~@args))

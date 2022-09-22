@@ -115,7 +115,8 @@
 (deftest single-arg-true-function?-test
   (is (single-arg-function-returning? `(fn [_] true) true-expression?))
   (is (not (single-arg-function-returning? `(fn [] true) true-expression?)))
-  (is (not (single-arg-function-returning? `(fn [_] false) true-expression?))))
+  (is (not (single-arg-function-returning? `(fn [_] false) true-expression?)))
+  (is (single-arg-function-returning? `(fn [_] false) false-expression?)))
 
 (defn maybe-every? [f coll]
   (if (single-arg-function-returning? f true-expression?)

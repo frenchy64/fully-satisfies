@@ -1,4 +1,4 @@
-(ns io.github.frenchy64.fully-satisfies.unroll-macro
+(ns io.github.frenchy64.fully-satisfies.unroll
   "Utilities to unroll functions."
   (:require [clojure.walk :as walk]))
 

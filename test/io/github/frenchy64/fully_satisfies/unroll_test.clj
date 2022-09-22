@@ -1,9 +1,9 @@
-(ns io.github.frenchy64.fully-satisfies.unroll-macro-test
+(ns io.github.frenchy64.fully-satisfies.unroll-test
   (:require [clojure.core :as cc]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [clojure.test :refer [is]]
             [clojure.math.combinatorics :as comb]
-            [io.github.frenchy64.fully-satisfies.unroll-macro
+            [io.github.frenchy64.fully-satisfies.unroll
              :refer [defunroll unroll-arities gensym-pretty prettify-unroll
                      argv->rest-arg single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
 

@@ -5,8 +5,8 @@ Utilities for Clojure.
 
 - [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol (considering direct, extended, and metadata methods).
 - [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
-- [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a [zero-arity](https://clojure.atlassian.net/browse/CLJ-1094), and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
-- [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a [zero-arity](https://clojure.atlassian.net/browse/CLJ-1094).
+- [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
+- [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a zero-arity.
 - [never?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.never.html#var-never.3F) -- a predicate `never?` that always returns false.
 - [run-all!](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.run-all.html#var-run-all.21) -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
 - [clearing-future](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.clearing-future.html#var-clearing-future) -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
@@ -19,7 +19,7 @@ Utilities for Clojure.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.7.0)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.7.1)
 
 ## Dependency
 
@@ -28,14 +28,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.7.0"]
+[io.github.frenchy64/fully-satisfies "1.7.1"]
 ```
 
 Clojure CLI (Maven deps):
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:mvn/version "1.7.0"}}
+         {:mvn/version "1.7.1"}}
 ```
 
 Clojure CLI (git deps):
@@ -43,16 +43,16 @@ Clojure CLI (git deps):
 ```clojure
   ;; requires `clj -X:deps prep` to compile java
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.7.0", :git/sha "f0d97e2"}}
+         {:git/tag "1.7.1", :git/sha "db2c6e3"}}
 ```
 
 Try it in a REPL:
 
 ```clojure
 # compile
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.0", :git/sha "f0d97e2"}}}' -X:deps prep
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.1", :git/sha "db2c6e3"}}}' -X:deps prep
 # start REPL
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.0", :git/sha "f0d97e2"}}}'
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.1", :git/sha "db2c6e3"}}}'
 ```
 
 ## Usage
@@ -134,33 +134,6 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
-- `count+last` vs `count+butlast+last`
-- defmulti with opt-in `:default` dispatch cache https://clojure.atlassian.net/browse/CLJ-2626
-- `thrown?`, `thrown-with-msg?` inherits try syntax https://github.com/clojure/clojure/blob/5ffe3833508495ca7c635d47ad7a1c8b820eab76/src/clj/clojure/test.clj#L504-L535
-- report [another](https://clojure.atlassian.net/browse/CLJ-2649) `some-fn` and `every-pred` short-circuiting inconsistencies
-```clojure
-;; # some-fn
-;; these are `(some #(some % args) fs)`, or `(some #(some % fs) args)`, or some hybrid
-;; should be `(some #(some % args) fs)`
-       ([x y z & args] (or (sp2 x y z)
-                           (some #(or (p1 %) (p2 %)) args)))))
-       ([x y z & args] (or (sp3 x y z)
-                           (some #(or (p1 %) (p2 %) (p3 %)) args)))))
-         ([x y z & args] (or (spn x y z)
-                             (some #(some % args) ps)))))))
-
-;; # every-pred
-;; these are `(every? #(every? % args) preds)` or `(every? #(every? % preds) args)`, or some hybrid
-;; should be `(every? #(every? % args) preds)`.
-       ([x y z & args] (boolean (and (ep2 x y z)
-                                     (every? #(and (p1 %) (p2 %)) args))))))
-       ([x y z & args] (boolean (and (ep3 x y z)
-                                     (every? #(and (p1 %) (p2 %) (p3 %)) args))))))
-         ([x y z & args] (boolean (and (epn x y z)
-                                       (every? #(every? % args) ps))))))))
-```
-
-
 
 ## License
 

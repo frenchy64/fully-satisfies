@@ -1,8 +1,7 @@
 # Next - TBD
 
 # 1.7.1 - 22nd September 2022
-- fix `everyp` short-circuiting order
-- fix `somef` short-circuiting order
+- https://github.com/frenchy64/fully-satisfies/issues/6 fix `everyp`/`somef` short-circuiting order
 - improve `io.github.frenchy64.fully-satisfies.uncaught-testing-contexts`
   - use atom to track exceptional contexts for binding conveyance compatibility
   - remove heuristics for choosing exceptional context. first wins for (root-cause of) each exception.

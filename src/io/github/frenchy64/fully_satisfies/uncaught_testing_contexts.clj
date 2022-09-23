@@ -36,46 +36,42 @@
     ;expected: nil
     ;actual: java.lang.AssertionError: Assert failed: false
     ;..."
-  (:require [clojure.test :as t]))
+  (:require [clojure.stacktrace :as stack]
+            [clojure.string :as str]
+            [clojure.test :as t]))
 
-(def ^:dynamic *exceptional-testing-contexts* nil) ; bound to the last t/*testing-contexts* that did not finished executing
+; bound to an atom that contains the last t/*testing-contexts* that did not finished executing.
+; an atom so tests can be delegated to other threads via binding conveyance.
+(def ^:dynamic *exceptional-testing-contexts* nil)
 
 (defn record-uncaught-exception-contexts
   "Call when an exception is thrown in a testing context 
   to record the most likely *testing-contexts* to report
   in *exceptional-testing-contexts*."
-  []
-  (when (thread-bound? #'*exceptional-testing-contexts*)
-    (let [etc (vec *exceptional-testing-contexts*)
-          tc (vec t/*testing-contexts*)]
-      (when (or ;; prefer longer contexts
-                (<= (count etc) (count tc))
-                ;; heuristically ignore context changes due to stack unwinding.
-                ;; downside: cannot distinguish between normal unwinding
-                ;;  (testing "a" (testing "b" (throw ...)))
-                ;; and throw during unwinding
-                ;;  (testing "a" (try (testing "b" (throw ...))
-                ;;                 (catch ... (throw ...))))
-                ;; "a b" is suggested as the exceptional context in both cases.
-                (not (= tc (subvec etc
-                                   (- (count etc) (count tc))
-                                   (count etc)))))
-        (try (set! *exceptional-testing-contexts* t/*testing-contexts*)
-             ;; thread-bound? returns true with implicit binding conveyance even though you
-             ;; can't set! from non-binding thread.
-             ;; see https://clojure.atlassian.net/browse/CLJ-1077
-             (catch IllegalStateException _))))))
+  [e]
+  (some-> *exceptional-testing-contexts*
+          (swap! update (stack/root-cause e) #(or % t/*testing-contexts*))))
 
 (defn report-uncaught-exception
   "Report an uncaught exception using *exceptional-testing-contexts* to
   guess the most helpful message."
   [e]
-  (t/do-report {:type :error, :message (if-some [etc *exceptional-testing-contexts*]
-                                         (str "Uncaught exception, possibly thrown in testing context: "
-                                              (binding [t/*testing-contexts* etc]
-                                                (t/testing-contexts-str)))
-                                         "Uncaught exception, not in assertion.")
-                :expected nil, :actual e}))
+  (let [root (stack/root-cause e)]
+    (t/do-report {:type :error, :message (if-some [{etc root :as e->etc} (some-> *exceptional-testing-contexts* deref not-empty)]
+                                           (str "Uncaught exception, thrown in testing context: "
+                                                (binding [t/*testing-contexts* etc]
+                                                  (t/testing-contexts-str))
+                                                (when-some [rest-etcs (some-> e->etc (dissoc root) not-empty vals (->> (mapv vec)) sort (->> (mapv list*)))]
+                                                  ;; might want to print exception msg to help disambiguate?
+                                                  (str "\n\nAlso found uncaught exceptions in the following testing contexts: "
+                                                       (apply str
+                                                              (str/join "\n"
+                                                                        (map (fn [etc]
+                                                                               (binding [t/*testing-contexts* etc]
+                                                                                 (t/testing-contexts-str)))
+                                                                             rest-etcs))))))
+                                           "Uncaught exception, not in assertion.")
+                  :expected nil, :actual e})))
 
 (defmacro testing+record-uncaught-contexts
   "Like clojure.test/testing, except records testing contexts on
@@ -88,7 +84,7 @@
           (catch Throwable e#
             ;; `resolve` for forward compatibility, eg., avoid https://clojure.atlassian.net/browse/CLJ-2564?focusedCommentId=48791
             (when-some [f# (resolve '~`record-uncaught-exception-contexts)]
-              (f#))
+              (f# e#))
             (throw e#)))))
 
 (defmacro testing [& args] `(testing+record-uncaught-contexts ~@args))
@@ -98,7 +94,7 @@
   "For libraries that mimic clojure.test's API. f
   should be a thunk that runs the test."
   [f]
-  (binding [*exceptional-testing-contexts* nil]
+  (binding [*exceptional-testing-contexts* (atom {})]
     (try (f)
          (catch Throwable e
            (report-uncaught-exception e)))))

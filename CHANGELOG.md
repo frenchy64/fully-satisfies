@@ -1,6 +1,10 @@
 # Next - TBD
 - fix `everyp` short-circuiting order
 - fix `somef` short-circuiting order
+- improve `io.github.frenchy64.fully-satisfies.uncaught-testing-contexts`
+  - use atom to track exceptional contexts for binding conveyance compatibility
+  - remove heuristics for choosing exceptional context. first wins for (root-cause of) each exception.
+  - report most likely exceptional context first, then list other candidates.
 
 # 1.7.0 - 30th September 2021
 - add `non-leaky-macros` namespaces

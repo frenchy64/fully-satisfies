@@ -20,7 +20,8 @@
                    ~@body))
               (partition 2 ts))))
 
-(def most-likely-msg-prefix "Uncaught exception, possibly thrown in testing context: ")
+(def most-likely-msg-prefix "Uncaught exception, thrown in testing context: ")
+(def also-uncaught-msg-prefix "\n\nAlso found uncaught exceptions in the following testing contexts: ")
 
 (deftests-for-test-var
   ^{::expected-test-var-message "Uncaught exception, not in assertion."}
@@ -74,7 +75,7 @@
         (assert (identical? @the-e e))
         (throw e))))
 
-  ^{::expected-test-var-message (str most-likely-msg-prefix "adjacent")}
+  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar")}
   rethrown-from-adjacent-context
   (let [the-e (atom nil)
         e (testing "foo"
@@ -99,7 +100,7 @@
      (assert (identical? @the-e e))
      (throw e)))
 
-  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar")}
+  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar baz")}
   implicit-binding-conveyance-test
   (testing "foo"
     (testing "bar"
@@ -107,14 +108,29 @@
          (testing "baz"
            (throw (ex-info "" {::expected true}))))))
 
-  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar")}
+  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar baz")}
   explicit-binding-conveyance-test
   (testing "foo"
     (testing "bar"
       (let [f (bound-fn []
                 (testing "baz"
                   (throw (ex-info "" {::expected true}))))]
-        @(future (f))))))
+        @(future (f)))))
+
+  ^{::expected-test-var-message (str most-likely-msg-prefix "foo bar3"
+                                     also-uncaught-msg-prefix
+                                     "foo bar1\n"
+                                     "foo bar2")}
+  also-thrown-test
+  (testing "foo"
+    (try (testing "bar1"
+           (throw (ex-info "asdf1" {::expected false})))
+         (catch Exception _))
+    (try (testing "bar2"
+           (throw (ex-info "asdf2" {::expected false})))
+         (catch Exception _))
+    (testing "bar3"
+      (throw (ex-info "asdf3" {::expected true})))))
 
 (deftest testing-try-catch-finally-leak-test
   (let [finally vector

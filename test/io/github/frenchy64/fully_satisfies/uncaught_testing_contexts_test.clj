@@ -174,7 +174,7 @@
             (is (::expected
                   (some 
                     ex-data
-                    (take-while some? (iterate #(some-> ^Exception % .getCause)
+                    (take-while some? (iterate #(some-> ^Throwable % .getCause)
                                                e))))
                 e))
           (is (= expected

@@ -1,4 +1,6 @@
 # Next - TBD
+
+# 1.7.1 - 22nd September 2022
 - fix `everyp` short-circuiting order
 - fix `somef` short-circuiting order
 - improve `io.github.frenchy64.fully-satisfies.uncaught-testing-contexts`

@@ -132,6 +132,7 @@
     (testing "bar3"
       (throw (ex-info "asdf3" {::expected true})))))
 
+;; NOTE: excluded from upstream patch
 (deftest testing-try-catch-finally-leak-test
   (let [finally vector
         catch vector

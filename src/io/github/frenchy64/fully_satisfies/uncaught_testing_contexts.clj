@@ -80,7 +80,7 @@
   Use in conjunction with `deftest` in this namespace."
   [string & body]
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
-     (try (do ~@body) ;; don't let body leak catch/finally syntax
+     (try (do ~@body) ;; don't let body leak catch/finally syntax (excluded from upstream patch)
           (catch Throwable e#
             ;; `resolve` for forward compatibility, eg., avoid https://clojure.atlassian.net/browse/CLJ-2564?focusedCommentId=48791
             (when-some [f# (resolve '~`record-uncaught-exception-contexts)]

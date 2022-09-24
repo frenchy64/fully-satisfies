@@ -134,6 +134,10 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
+- https://clojure.atlassian.net/browse/CLJ-2228
+- https://clojure.atlassian.net/browse/CLJ-1458
+  - + unrolling
+- https://clojure.atlassian.net/browse/CLJ-1412
 
 ## License
 

@@ -159,7 +159,10 @@ user=> (get "123" 4294967296 :not-found)
          ([x y z & args] (boolean (and (epn x y z)
                                        (every? #(every? % args) ps))))))))
 ```
-
+- https://clojure.atlassian.net/browse/CLJ-2228
+- https://clojure.atlassian.net/browse/CLJ-1458
+  - + unrolling
+- https://clojure.atlassian.net/browse/CLJ-1412
 
 
 ## License

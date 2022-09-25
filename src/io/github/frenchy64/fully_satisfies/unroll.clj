@@ -101,22 +101,24 @@
                                  [[1] 1])
         leading-names (vec leading-names)
         trailing-names (vec trailing-names)]
-    (map (fn [nargs]
-           (assert (nat-int? nargs) (pr-str nargs))
-           (let [rest-arg (when (= nargs rest-arity)
-                            (or rest-name 'rest))
-                 nfixed (max 0 (cond-> nargs
-                                 rest-arg dec))
-                 _ (assert (nat-int? nfixed))
-                 fixed-args (-> (if fixed-names
-                                  (into leading-names (take nfixed) fixed-names)
-                                  (into leading-names (map #(symbol (str "fixed" %))) (range nfixed)))
-                                (into trailing-names))
-                 _ (assert (= (+ nfixed (count leading-names) (count trailing-names))
-                              (count fixed-args)))]
-             (cond-> fixed-args
-               rest-arg (conj '& rest-arg))))
-         arities)))
+    (mapv (fn [nargs]
+            (assert (nat-int? nargs) (pr-str nargs))
+            (let [rest-arg (when (= nargs rest-arity)
+                             (or rest-name 'rest))
+                  _ (when rest-arg
+                      (assert (simple-symbol? rest-arg) (pr-str rest-arg)))
+                  nfixed (max 0 (cond-> nargs
+                                  rest-arg dec))
+                  _ (assert (nat-int? nfixed))
+                  fixed-args (-> (if fixed-names
+                                   (into leading-names (take nfixed) fixed-names)
+                                   (into leading-names (map #(symbol (str "fixed" %))) (range nfixed)))
+                                 (into trailing-names))
+                  _ (assert (= (+ nfixed (count leading-names) (count trailing-names))
+                               (count fixed-args)))]
+              (cond-> fixed-args
+                rest-arg (conj '& rest-arg))))
+          arities)))
 
 (defn flatten-arities [arities]
   (cond-> arities
@@ -184,3 +186,12 @@
                                          (apply ~handle (concat ~fixed-args ~rest-arg)))))
                                   argvs))]
          (apply setup# args)))))
+
+(defmacro deftype-unroll [& args]
+  `(deftype ~@(mapcat (fn [a]
+                        (if (and (seq? a)
+                                 (= 2 (count a))
+                                 (= 'clojure.core/unquote-splicing (first a)))
+                          (unroll-arities @(requiring-resolve (second a)))
+                          [a]))
+                args)))

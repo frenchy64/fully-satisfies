@@ -2692,10 +2692,12 @@
                           _ (assert args)
                           final-arity? (= argv (apply max-key (comp count argv->fixed-args) argvs))
                           n (count as)
-                          invoke-arity (str 'cljs$core$IFn$_invoke$arity$ n)]
+                          invoke-arity (str 'cljs$core$IFn$_invoke$arity$ n)
+                          invoke-prop (symbol (str ".-" invoke-arity))
+                          invoke-inv (symbol (str "." invoke-arity))]
                       `(if (nil? ~args)
-                         (if (~(symbol (str ".-" invoke-arity)) ~f)
-                           (~(symbol (str "." invoke-arity)) ~f ~@as)
+                         (if (~invoke-prop ~f)
+                           (~invoke-inv ~f ~@as)
                            (.call ~f ~f ~@as))
                          ~(if final-arity?
                             `(~gen-apply-to-simple ~f ~n ~args)
@@ -2779,3 +2781,295 @@
          (apply-to f bc arglist)
          (.cljs$lang$applyTo f arglist)))
      (apply-to-simple f a b c d (spread args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/vary-meta
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn vary-meta
+ "Returns an object of the same type and value as obj, with
+  (apply f (meta obj) args) as its metadata."
+  ([obj f]
+   (with-meta obj (f (meta obj))))
+  ([obj f a]
+   (with-meta obj (f (meta obj) a)))
+  ([obj f a b]
+   (with-meta obj (f (meta obj) a b)))
+  ([obj f a b c]
+   (with-meta obj (f (meta obj) a b c)))
+  ([obj f a b c d]
+   (with-meta obj (f (meta obj) a b c d)))
+  ([obj f a b c d & args]
+   (with-meta obj (apply f (meta obj) a b c d args))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/comp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(defn comp
+  "Takes a set of functions and returns a fn that is the composition
+  of those fns.  The returned fn takes a variable number of args,
+  applies the rightmost of fns to the args, the next
+  fn (right-to-left) to the result, etc."
+  ([] identity)
+  ([f] f)
+  ([f g]
+     (fn
+       ([] (f (g)))
+       ([x] (f (g x)))
+       ([x y] (f (g x y)))
+       ([x y z] (f (g x y z)))
+       ([x y z & args] (f (apply g x y z args)))))
+  ([f g h]
+     (fn
+       ([] (f (g (h))))
+       ([x] (f (g (h x))))
+       ([x y] (f (g (h x y))))
+       ([x y z] (f (g (h x y z))))
+       ([x y z & args] (f (g (apply h x y z args))))))
+  ([f1 f2 f3 & fs]
+    (let [fs (reverse (list* f1 f2 f3 fs))]
+      (fn [& args]
+        (loop [ret (apply (first fs) args) fs (next fs)]
+          (if fs
+            (recur ((first fs) ret) (next fs))
+            ret))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/MultiFn
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+#_
+(deftype MultiFn [name dispatch-fn default-dispatch-val hierarchy
+                  method-table prefer-table method-cache cached-hierarchy]
+  IFn
+  (-invoke [mf]
+    (let [dispatch-val (dispatch-fn)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn)))
+  (-invoke [mf a]
+    (let [dispatch-val (dispatch-fn a)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a)))
+  (-invoke [mf a b]
+    (let [dispatch-val (dispatch-fn a b)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b)))
+  (-invoke [mf a b c]
+    (let [dispatch-val (dispatch-fn a b c)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c)))
+  (-invoke [mf a b c d]
+    (let [dispatch-val (dispatch-fn a b c d)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d)))
+  (-invoke [mf a b c d e]
+    (let [dispatch-val (dispatch-fn a b c d e)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e)))
+  (-invoke [mf a b c d e f]
+    (let [dispatch-val (dispatch-fn a b c d e f)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f)))
+  (-invoke [mf a b c d e f g]
+    (let [dispatch-val (dispatch-fn a b c d e f g)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g)))
+  (-invoke [mf a b c d e f g h]
+    (let [dispatch-val (dispatch-fn a b c d e f g h)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h)))
+  (-invoke [mf a b c d e f g h i]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i)))
+  (-invoke [mf a b c d e f g h i j]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j)))
+  (-invoke [mf a b c d e f g h i j k]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k)))
+  (-invoke [mf a b c d e f g h i j k l]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l)))
+  (-invoke [mf a b c d e f g h i j k l m]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m)))
+  (-invoke [mf a b c d e f g h i j k l m n]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n)))
+  (-invoke [mf a b c d e f g h i j k l m n o]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o)))
+  (-invoke [mf a b c d e f g h i j k l m n o p]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o p)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o p)))
+  (-invoke [mf a b c d e f g h i j k l m n o p q]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o p q)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o p q)))
+  (-invoke [mf a b c d e f g h i j k l m n o p q r]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o p q r)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o p q r)))
+  (-invoke [mf a b c d e f g h i j k l m n o p q r s]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o p q r s)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o p q r s)))
+  (-invoke [mf a b c d e f g h i j k l m n o p q r s t]
+    (let [dispatch-val (dispatch-fn a b c d e f g h i j k l m n o p q r s t)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (target-fn a b c d e f g h i j k l m n o p q r s t)))
+  (-invoke [mf a b c d e f g h i j k l m n o p q r s t rest]
+    (let [dispatch-val (apply dispatch-fn a b c d e f g h i j k l m n o p q r s t rest)
+          target-fn (-get-method mf dispatch-val)]
+      (when-not target-fn
+        (throw-no-method-error name dispatch-val))
+      (apply target-fn a b c d e f g h i j k l m n o p q r s t rest)))
+
+  IMultiFn
+  (-reset [mf]
+    (swap! method-table (fn [mf] {}))
+    (swap! method-cache (fn [mf] {}))
+    (swap! prefer-table (fn [mf] {}))
+    (swap! cached-hierarchy (fn [mf] nil))
+    mf)
+
+  (-add-method [mf dispatch-val method]
+    (swap! method-table assoc dispatch-val method)
+    (reset-cache method-cache method-table cached-hierarchy hierarchy)
+    mf)
+
+  (-remove-method [mf dispatch-val]
+    (swap! method-table dissoc dispatch-val)
+    (reset-cache method-cache method-table cached-hierarchy hierarchy)
+    mf)
+
+  (-get-method [mf dispatch-val]
+    (when-not (= @cached-hierarchy @hierarchy)
+      (reset-cache method-cache method-table cached-hierarchy hierarchy))
+    (if-let [target-fn (@method-cache dispatch-val)]
+      target-fn
+      (find-and-cache-best-method name dispatch-val hierarchy method-table
+        prefer-table method-cache cached-hierarchy default-dispatch-val)))
+
+  (-prefer-method [mf dispatch-val-x dispatch-val-y]
+    (when (prefers* dispatch-val-y dispatch-val-x  prefer-table)
+      (throw (js/Error. (str "Preference conflict in multimethod '" name "': " dispatch-val-y
+                   " is already preferred to " dispatch-val-x))))
+    (swap! prefer-table
+           (fn [old]
+             (assoc old dispatch-val-x
+                    (conj (get old dispatch-val-x #{})
+                          dispatch-val-y))))
+    (reset-cache method-cache method-table cached-hierarchy hierarchy))
+
+  (-methods [mf] @method-table)
+  (-prefers [mf] @prefer-table)
+  (-default-dispatch-val [mf] default-dispatch-val)
+  (-dispatch-fn [mf] dispatch-fn)
+
+  INamed
+  (-name [this] (-name name))
+  (-namespace [this] (-namespace name))
+
+  IHash
+  (-hash [this] (goog/getUid this)))
+
+(defn unroll-cljs-invoke-impl [{:keys [this-name unroll-arity]
+                                :or {this-name 'this}}]
+  {:argvs (uniformly-flowing-argvs
+            {:arities (range 22)
+             :leading-names ['this-name]
+             :fixed-names (concat (take 20 (single-char-syms-from \a))
+                                  ['rest])
+             :rest-arity :skip})
+   :unroll-arity (fn [{[this & args :as fixed-args] :fixed-args :as m}]
+                   (let [[fixed-args rest-arg] (if (= 21 (count args))
+                                                 ((juxt pop peek) (vec args))
+                                                 [(vec args) nil])]
+                     (list '-invoke fixed-args
+                           (unroll-arity (assoc m :this this :fixed-args fixed-args :rest-arg rest-arg)))))})
+
+(defn unroll-MultiFn-invoke-spec*
+  ([] (unroll-MultiFn-invoke-spec* {}))
+  ([{:keys [dispatch-fn name]
+     :or {dispatch-fn 'dispatch-fn
+          name 'name}}]
+   (unroll-cljs-invoke-impl
+     {:this-name 'mf
+      :unroll-arity (fn [{:keys [fixed-args rest-arg this]}]
+                      (assert this)
+                      (let [[dispatch-val target-fn] (map gensym-pretty '[dispatch-val target-fn])]
+                        `(let [~dispatch-val ~(maybe-apply dispatch-fn fixed-args rest-arg)
+                               ~target-fn (cljs.core/-get-method ~this ~dispatch-val)]
+                           (when-not ~target-fn
+                             (cljs.core/throw-no-method-error ~name ~dispatch-val))
+                           ~(maybe-apply target-fn fixed-args rest-arg))))})))
+
+(def unroll-MultiFn-invoke-spec (unroll-MultiFn-invoke-spec*))
+
+(deftest unroll-MultiFn-invoke-spec-test
+  (is (= (last (prettify-unroll (unroll-arities unroll-MultiFn-invoke-spec)))
+         ;;FIXME double argv
+         '([this-name a b c d e f g h i j k l m n o p q r s t rest]
+           (-invoke [a b c d e f g h i j k l m n o p q r s t]
+                    (cc/let [dispatch-val (cc/apply dispatch-fn a b c d e f g h i j k l m n o p q r s t rest)
+                             target-fn (cljs.core/-get-method this-name dispatch-val)]
+                      (cc/when-not target-fn (cljs.core/throw-no-method-error name dispatch-val))
+                      (cc/apply target-fn a b c d e f g h i j k l m n o p q r s t rest)))))))

@@ -5,7 +5,7 @@
             [clojure.math.combinatorics :as comb]
             [io.github.frenchy64.fully-satisfies.unroll
              :refer [defunroll unroll-arities gensym-pretty prettify-unroll
-                     argv->rest-arg single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
+                     argv->fixed-args argv->rest-arg single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
 
 (defn maybe-apply [f fixed-args rest-args]
   (assert f)
@@ -2635,3 +2635,91 @@
   (dotimes [i 10]
     (is (= (clojure.core/apply unroll-invoke + (range i))
            (apply + (range i))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/apply-to-simple
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn- apply-to-simple
+  "Internal. DO NOT USE!
+  Assumes args was already called with seq beforehand!"
+  ([f ^seq args]
+   (if (nil? args)
+     (if (.-cljs$core$IFn$_invoke$arity$0 f)
+       (.cljs$core$IFn$_invoke$arity$0 f)
+       (.call f f))
+     (apply-to-simple f (-first args) (next* args))))
+  ([f a0 ^seq args]
+   (if (nil? args)
+     (if (.-cljs$core$IFn$_invoke$arity$1 f)
+       (.cljs$core$IFn$_invoke$arity$1 f a0)
+       (.call f f a0))
+     (apply-to-simple f a0 (-first args) (next* args))))
+  ([f a0 a1 ^seq args]
+   (if (nil? args)
+     (if (.-cljs$core$IFn$_invoke$arity$2 f)
+       (.cljs$core$IFn$_invoke$arity$2 f a0 a1)
+       (.call f f a0 a1))
+     (apply-to-simple f a0 a1 (-first args) (next* args))))
+  ([f a0 a1 a2 ^seq args]
+   (if (nil? args)
+     (if (.-cljs$core$IFn$_invoke$arity$3 f)
+       (.cljs$core$IFn$_invoke$arity$3 f a0 a1 a2)
+       (.call f f a0 a1 a2))
+     (apply-to-simple f a0 a1 a2 (-first args) (next* args))))
+  ([f a0 a1 a2 a3 ^seq args]
+   (if (nil? args)
+     (if (.-cljs$core$IFn$_invoke$arity$4 f)
+       (.cljs$core$IFn$_invoke$arity$4 f a0 a1 a2 a3)
+       (.call f f a0 a1 a2 a3))
+     (gen-apply-to-simple f 4 args))))
+
+(defn unroll-apply-to-simple-spec*
+  ([] (unroll-apply-to-simple-spec* {}))
+  ([{:keys [size gen-apply-to-simple]
+     :or {size 5
+          gen-apply-to-simple 'cljs.core/gen-apply-to-simple}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range size)
+              :leading-names ['f]
+              :fixed-names (map #(symbol (str 'a %)) (range))
+              :trailing-names ['^seq args]
+              :rest-arity :skip})
+    :unroll-arity (fn [{[f & args] :fixed-args apply-to-simple :this :keys [argv argvs]}]
+                    (assert apply-to-simple)
+                    (let [[as args] ((juxt butlast last) args)
+                          _ (assert args)
+                          final-arity? (= argv (apply max-key (comp count argv->fixed-args) argvs))
+                          n (count as)
+                          invoke-arity (str 'cljs$core$IFn$_invoke$arity$ n)]
+                      `(if (nil? ~args)
+                         (if (~(symbol (str ".-" invoke-arity)) ~f)
+                           (~(symbol (str "." invoke-arity)) ~f ~@as)
+                           (.call ~f ~f ~@as))
+                         ~(if final-arity?
+                            `(~gen-apply-to-simple ~f ~n ~args)
+                            `(~apply-to-simple ~f ~@as (cljs.core/-first ~args) (cljs.core/next* ~args))))))}))
+
+(def unroll-apply-to-simple-spec (unroll-apply-to-simple-spec*))
+
+(deftest unroll-apply-to-simple-spec-test
+  (is (= (prettify-unroll (unroll-arities (assoc unroll-apply-to-simple-spec :this 'this/unroll-to-apply)))
+         '(([f args] (if (cc/nil? args)
+                       (if (.-cljs$core$IFn$_invoke$arity$0 f) (.cljs$core$IFn$_invoke$arity$0 f) (.call f f))
+                       (this/unroll-to-apply f (cljs.core/-first args) (cljs.core/next* args))))
+           ([f a0 args] (if (cc/nil? args)
+                          (if (.-cljs$core$IFn$_invoke$arity$1 f) (.cljs$core$IFn$_invoke$arity$1 f a0) (.call f f a0))
+                          (this/unroll-to-apply f a0 (cljs.core/-first args) (cljs.core/next* args))))
+           ([f a0 a1 args] (if (cc/nil? args)
+                             (if (.-cljs$core$IFn$_invoke$arity$2 f) (.cljs$core$IFn$_invoke$arity$2 f a0 a1) (.call f f a0 a1))
+                             (this/unroll-to-apply f a0 a1 (cljs.core/-first args) (cljs.core/next* args))))
+           ([f a0 a1 a2 args] (if (cc/nil? args)
+                                (if (.-cljs$core$IFn$_invoke$arity$3 f) (.cljs$core$IFn$_invoke$arity$3 f a0 a1 a2) (.call f f a0 a1 a2))
+                                (this/unroll-to-apply f a0 a1 a2 (cljs.core/-first args) (cljs.core/next* args))))
+           ([f a0 a1 a2 a3 args] (if (cc/nil? args)
+                                   (if (.-cljs$core$IFn$_invoke$arity$4 f) (.cljs$core$IFn$_invoke$arity$4 f a0 a1 a2 a3) (.call f f a0 a1 a2 a3))
+                                   (cljs.core/gen-apply-to-simple f 4 args))))))
+  (is (= (->> (prettify-unroll (unroll-arities (assoc unroll-apply-to-simple-spec :this 'this/unroll-to-apply)))
+              (map (comp meta peek first)))
+         (repeat 5 {:tag 'seq}))))

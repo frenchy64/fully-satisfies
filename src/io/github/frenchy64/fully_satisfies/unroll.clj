@@ -76,14 +76,16 @@
    :rest-arity     the number of arguments (fixed + rest) that the rest arity will take.
                    If :skip, no arity will have rest arguments.
                    Default: (if (seq arities) (apply max arities) [1]).
-   :leading-names  a distinct list of variable names to use before fixed arguments
+   :leading-names  a distinct list of variable names to use as fixed names before :fixed-names
+   :trailing-names a distinct list of variable names to use as fixed names after :fixed-names
    :fixed-names    a distinct list of variable names to use for fixed arguments
    :rest-name      a name to use for rest argument"
   [{:keys [arities
            rest-arity
            fixed-names
            rest-name
-           leading-names]}]
+           leading-names
+           trailing-names]}]
   {:post [(every? argv? %)]}
   (let [[arities rest-arity] (or (when-some [arities (not-empty (vec (sort arities)))]
                                    (if (= :skip rest-arity)
@@ -97,7 +99,8 @@
                                            [(conj arities rest-arity) rest-arity]))))
                                  (assert (not= :skip rest-arity) "Cannot skip rest arity with empty :arities.")
                                  [[1] 1])
-        leading-names (vec leading-names)]
+        leading-names (vec leading-names)
+        trailing-names (vec trailing-names)]
     (map (fn [nargs]
            (assert (nat-int? nargs) (pr-str nargs))
            (let [rest-arg (when (= nargs rest-arity)
@@ -105,10 +108,12 @@
                  nfixed (max 0 (cond-> nargs
                                  rest-arg dec))
                  _ (assert (nat-int? nfixed))
-                 fixed-args (if fixed-names
-                              (into leading-names (take nfixed) fixed-names)
-                              (into leading-names (map #(symbol (str "fixed" %))) (range nfixed)))
-                 _ (assert (= (+ nfixed (count leading-names)) (count fixed-args)))]
+                 fixed-args (-> (if fixed-names
+                                  (into leading-names (take nfixed) fixed-names)
+                                  (into leading-names (map #(symbol (str "fixed" %))) (range nfixed)))
+                                (into trailing-names))
+                 _ (assert (= (+ nfixed (count leading-names) (count trailing-names))
+                              (count fixed-args)))]
              (cond-> fixed-args
                rest-arg (conj '& rest-arg))))
          arities)))

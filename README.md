@@ -163,6 +163,7 @@ user=> (get "123" 4294967296 :not-found)
 - https://clojure.atlassian.net/browse/CLJ-1458
   - + unrolling
 - https://clojure.atlassian.net/browse/CLJ-1412
+- https://clojure.atlassian.net/browse/CLJ-1656
 
 
 ## License

@@ -8,6 +8,7 @@
                      argv->rest-arg single-char-syms-from flatten-arities uniformly-flowing-argvs]]))
 
 (defn maybe-apply [f fixed-args rest-args]
+  (assert f)
   (if (some? rest-args)
     `(apply ~f ~@fixed-args ~rest-args)
     (list* f fixed-args)))
@@ -2587,3 +2588,50 @@
                         (transient {})
                         m))]
     (with-meta ret (meta m))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; clojure.core/invoke (https://clojure.atlassian.net/browse/CLJ-2342)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_
+(defn invoke
+  "Invokes fn f using the provided args."
+  ([f] (f))
+  ([f x] (f x))
+  ([f x y] (f x y))
+  ([f x y z] (f x y z))
+  ([f x y z & args] (apply f x y z args)))
+
+(defn unroll-invoke-spec*
+  "Generate a spec for an unrolling of clojure.core/invoke.
+  
+   :size  Number of fixed arities to generate. Default: 4"
+  ([] (unroll-invoke-spec* {}))
+  ([{:keys [size] :or {size 4}}]
+   {:argvs (uniformly-flowing-argvs
+             {:arities (range size)
+              :leading-names ['f]
+              :fixed-names (single-char-syms-from \x)
+              :rest-name 'args})
+    :unroll-arity (fn [{[f & fixed-args] :fixed-args :keys [rest-arg]}]
+                    (maybe-apply f fixed-args rest-arg))}))
+
+(def unroll-invoke-spec (unroll-invoke-spec*))
+
+(deftest unroll-invoke-spec-test
+  (is (= (prettify-unroll (unroll-arities unroll-invoke-spec))
+         '(([f] (f))
+           ([f x] (f x))
+           ([f x y] (f x y))
+           ([f x y z] (f x y z))
+           ([f x y z & args] (cc/apply f x y z args))))))
+
+(defunroll unroll-invoke
+  "Invokes fn f using the provided args."
+  {}
+  unroll-invoke-spec)
+
+(deftest unroll-invoke-test
+  (dotimes [i 10]
+    (is (= (clojure.core/apply unroll-invoke + (range i))
+           (apply + (range i))))))

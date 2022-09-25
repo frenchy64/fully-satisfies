@@ -3107,3 +3107,137 @@
    (if ks
      (assoc m k (apply update-in (get m k) ks f a b c args))
      (assoc m k (apply f (get m k) a b c args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/Var 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(deftype Var [val sym _meta]
+  Object
+  (isMacro [_]
+    (. (val) -cljs$lang$macro))
+  (toString [_]
+    (str "#'" sym))
+  IDeref
+  (-deref [_] (val))
+  IMeta
+  (-meta [_] _meta)
+  IWithMeta
+  (-with-meta [_ new-meta]
+    (Var. val sym new-meta))
+  IEquiv
+  (-equiv [this other]
+    (if (instance? Var other)
+      (= (.-sym this) (.-sym other))
+      false))
+  IHash
+  (-hash [_]
+    (hash-symbol sym))
+  Fn
+  IFn
+  (-invoke [_]
+    ((val)))
+  (-invoke [_ a]
+    ((val) a))
+  (-invoke [_ a b]
+    ((val) a b))
+  (-invoke [_ a b c]
+    ((val) a b c))
+  (-invoke [_ a b c d]
+    ((val) a b c d))
+  (-invoke [_ a b c d e]
+    ((val) a b c d e))
+  (-invoke [_ a b c d e f]
+    ((val) a b c d e f))
+  (-invoke [_ a b c d e f g]
+    ((val) a b c d e f g))
+  (-invoke [_ a b c d e f g h]
+    ((val) a b c d e f g h))
+  (-invoke [_ a b c d e f g h i]
+    ((val) a b c d e f g h i))
+  (-invoke [_ a b c d e f g h i j]
+    ((val) a b c d e f g h i j))
+  (-invoke [_ a b c d e f g h i j k]
+    ((val) a b c d e f g h i j k))
+  (-invoke [_ a b c d e f g h i j k l]
+    ((val) a b c d e f g h i j k l))
+  (-invoke [_ a b c d e f g h i j k l m]
+    ((val) a b c d e f g h i j k l m))
+  (-invoke [_ a b c d e f g h i j k l m n]
+    ((val) a b c d e f g h i j k l m n))
+  (-invoke [_ a b c d e f g h i j k l m n o]
+    ((val) a b c d e f g h i j k l m n o))
+  (-invoke [_ a b c d e f g h i j k l m n o p]
+    ((val) a b c d e f g h i j k l m n o p))
+  (-invoke [_ a b c d e f g h i j k l m n o p q]
+    ((val) a b c d e f g h i j k l m n o p q))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r]
+    ((val) a b c d e f g h i j k l m n o p q r))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s]
+    ((val) a b c d e f g h i j k l m n o p q r s))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s t]
+    ((val) a b c d e f g h i j k l m n o p q r s t))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s t rest]
+    (apply (val) a b c d e f g h i j k l m n o p q r s t rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; cljs.core/MetaFn 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;TODO
+#_
+(deftype MetaFn [afn meta]
+  IMeta
+  (-meta [_] meta)
+  IWithMeta
+  (-with-meta [_ new-meta]
+    (MetaFn. afn new-meta))
+  Fn
+  IFn
+  (-invoke [_]
+    (afn))
+  (-invoke [_ a]
+    (afn a))
+  (-invoke [_ a b]
+    (afn a b))
+  (-invoke [_ a b c]
+    (afn a b c))
+  (-invoke [_ a b c d]
+    (afn a b c d))
+  (-invoke [_ a b c d e]
+    (afn a b c d e))
+  (-invoke [_ a b c d e f]
+    (afn a b c d e f))
+  (-invoke [_ a b c d e f g]
+    (afn a b c d e f g))
+  (-invoke [_ a b c d e f g h]
+    (afn a b c d e f g h))
+  (-invoke [_ a b c d e f g h i]
+    (afn a b c d e f g h i))
+  (-invoke [_ a b c d e f g h i j]
+    (afn a b c d e f g h i j))
+  (-invoke [_ a b c d e f g h i j k]
+    (afn a b c d e f g h i j k))
+  (-invoke [_ a b c d e f g h i j k l]
+    (afn a b c d e f g h i j k l))
+  (-invoke [_ a b c d e f g h i j k l m]
+    (afn a b c d e f g h i j k l m))
+  (-invoke [_ a b c d e f g h i j k l m n]
+    (afn a b c d e f g h i j k l m n))
+  (-invoke [_ a b c d e f g h i j k l m n o]
+    (afn a b c d e f g h i j k l m n o))
+  (-invoke [_ a b c d e f g h i j k l m n o p]
+    (afn a b c d e f g h i j k l m n o p))
+  (-invoke [_ a b c d e f g h i j k l m n o p q]
+    (afn a b c d e f g h i j k l m n o p q))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r]
+    (afn a b c d e f g h i j k l m n o p q r))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s]
+    (afn a b c d e f g h i j k l m n o p q r s))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s t]
+    (afn a b c d e f g h i j k l m n o p q r s t))
+  (-invoke [_ a b c d e f g h i j k l m n o p q r s t rest]
+    (apply afn a b c d e f g h i j k l m n o p q r s t rest)))
+

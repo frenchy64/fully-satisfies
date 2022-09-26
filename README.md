@@ -143,6 +143,7 @@ user=> (get "123" 4294967296 :not-found)
 - https://clojure.atlassian.net/browse/CLJ-1777
 - https://clojure.atlassian.net/browse/CLJ-1771
 - https://clojure.atlassian.net/browse/CLJ-2705
+- non-leaky `clojure.pprint/with-pprint-logical-block`
 
 ## License
 

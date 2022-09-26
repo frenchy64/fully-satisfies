@@ -141,6 +141,7 @@ user=> (get "123" 4294967296 :not-found)
 - fix `clojure.test-clojure.delays` to use `Thread.` + `bound-fn` for `is`
   - deserves a tutorial on how to parallelize `is`. easy gotcha to fall for.
 - https://clojure.atlassian.net/browse/CLJ-1777
+- https://clojure.atlassian.net/browse/CLJ-1771
 
 ## License
 

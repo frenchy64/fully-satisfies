@@ -1,4 +1,6 @@
 # Next - TBD
+
+# 1.9.0 - 27th September 2022
 - add spec for `reify` arguments: `:io.github.frenchy64.fully-satisfies.reify-spec/reify-args`
 - fix `io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.tools.trace/non-leaky-dotrace`
 

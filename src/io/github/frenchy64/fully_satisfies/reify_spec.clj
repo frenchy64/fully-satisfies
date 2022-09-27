@@ -1,4 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies.reify-spec
+  "To register a spec for reify, use:
+
+    (s/fdef clojure.core/reify
+      :args ::reify-spec/reify-args)"
   (:require [clojure.spec.alpha :as s]
             [clojure.core.specs.alpha :as cs]))
 

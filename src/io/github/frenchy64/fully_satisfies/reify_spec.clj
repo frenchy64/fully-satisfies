@@ -1,8 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.reify-spec
-  "To register a spec for reify, use:
-
-    (s/fdef clojure.core/reify
-      :args ::reify-spec/reify-args)"
+  "Provides a spec for clojure.core/reify via ::reify-args.
+  
+  To register a spec for reify, call (register-reify-spec)."
   (:require [clojure.spec.alpha :as s]
             [clojure.core.specs.alpha :as cs]))
 
@@ -16,3 +15,9 @@
                                                    :body (s/alt :prepost+body (s/cat :prepost map?
                                                                                      :body (s/+ any?))
                                                                 :body (s/* any?)))))))))
+
+(defn register-reify-spec
+  "Register a spec for clojure.core/reify."
+  []
+  (s/fdef clojure.core/reify
+    :args ::reify-args))

@@ -16,11 +16,10 @@ Utilities for Clojure.
 - non-overflowing [vector](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vector), [vec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vec) -- a vector implementation that [consistently handles integer overflow cases](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs), resolving [a known general attack vector](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11084#a11084) caused by [undefined behavior](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11081#a11081).
 - [latest protocol ops](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.latest-protocol.html) -- implementations of `satisfies?`, `find-protocol-impl`, `find-protocol-method`, `extends?`, `extenders` that look up the latest version of the protocol [such that they have the same behavior with partial](https://clojure.atlassian.net/browse/CLJ-2094).
 - non-leaky [clojure.core](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.core.html), [clojure.test](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.test.html) macros -- versions of the following macros that don't leak implementation details (eg., recur targets, pre/post, try/catch syntax): `locking` ([upstream report](https://clojure.atlassian.net/browse/CLJ-2573)), `binding`, `with-bindings`, `sync`, `with-local-vars`, `with-in-str`, `dosync`, `with-precision`, `with-loading-context`, `with-redefs`, `delay`, `vswap!`, `lazy-seq`, `lazy-cat`, `future`, `pvalues`, `clojure.test/{deftest,deftest-,testing,with-test,with-test-out}`, `clojure.java.shell/with-sh-{dir,env}`, `clojure.test.tap/with-tap-output`, `clojure.pprint/with-pprint-dispatch`, `clojure.core.async/thread`, `clojure.core.logic.pldb/with-{db,dbs}`, `clojure.tools.trace/dotrace`, `clojure.test.check.properties/for-all`, `clojure.test.check.generators/let`, `clojure.java.jmx/with-connection`, `clojure.core.match.debug/with-recur`
-- [`::reify-body`](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.reify-spec.html), a [spec for `clojure.core/reify`](https://clojure.atlassian.net/browse/CLJ-2661).
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
-[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.7.1)
+[Current version API documentation](https://frenchy64.github.io/fully-satisfies/1.8.0)
 
 ## Dependency
 
@@ -29,14 +28,14 @@ Available on [Clojars](https://clojars.org/io.github.frenchy64/fully-satisfies).
 Leiningen:
 
 ```clojure
-[io.github.frenchy64/fully-satisfies "1.7.1"]
+[io.github.frenchy64/fully-satisfies "1.8.0"]
 ```
 
 Clojure CLI (Maven deps):
 
 ```clojure
   :deps {io.github.frenchy64/fully-satisfies 
-         {:mvn/version "1.7.1"}}
+         {:mvn/version "1.8.0"}}
 ```
 
 Clojure CLI (git deps):
@@ -44,16 +43,16 @@ Clojure CLI (git deps):
 ```clojure
   ;; requires `clj -X:deps prep` to compile java
   :deps {io.github.frenchy64/fully-satisfies 
-         {:git/tag "1.7.1", :git/sha "db2c6e3"}}
+         {:git/tag "1.8.0", :git/sha "9ee5d60"}}
 ```
 
 Try it in a REPL:
 
 ```clojure
 # compile
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.1", :git/sha "db2c6e3"}}}' -X:deps prep
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.8.0", :git/sha "9ee5d60"}}}' -X:deps prep
 # start REPL
-clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.7.1", :git/sha "db2c6e3"}}}'
+clj -Sdeps '{:deps {io.github.frenchy64/fully-satisfies {:git/tag "1.8.0", :git/sha "9ee5d60"}}}'
 ```
 
 ## Usage
@@ -135,16 +134,6 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
-- https://clojure.atlassian.net/browse/CLJ-2228
-- https://clojure.atlassian.net/browse/CLJ-1458
-  - + unrolling
-- https://clojure.atlassian.net/browse/CLJ-1412
-- fix `clojure.test-clojure.delays` to use `Thread.` + `bound-fn` for `is`
-  - deserves a tutorial on how to parallelize `is`. easy gotcha to fall for.
-- https://clojure.atlassian.net/browse/CLJ-1777
-- https://clojure.atlassian.net/browse/CLJ-1771
-- https://clojure.atlassian.net/browse/CLJ-2705
-- non-leaky `clojure.pprint/with-pprint-logical-block`
 
 ## License
 

@@ -13,7 +13,7 @@
 (defmacro non-leaky-dotrace
   "Like clojure.tools.trace/dotrace, except body cannot leak try/catch syntax."
   [fnames & exprs]
-  `(trace/dotrace ~fnames (do ~@expr)))
+  `(trace/dotrace ~fnames (do ~@exprs)))
 
 (defmacro dotrace
   [& args]

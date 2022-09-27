@@ -13,9 +13,11 @@
   (is (nil? (s/explain-data ::sut/reify-args `(~'Object))))
   (is (nil? (s/explain-data ::sut/reify-args `(~'Object MyProtocol))))
   (is (nil? (s/explain-data ::sut/reify-args `(~'Object (~'toString [this#] (str "foo"))))))
+  (is (nil? (s/explain-data ::sut/reify-args `(~'Object (~'toString [this#] {:pre [this#]} (str "foo"))))))
   (is (nil? (s/explain-data ::sut/reify-args `(~'Object (toString [this#])))))
   (is (some? (s/explain-data ::sut/reify-args `(~'Object (~'toString [])))))
   (is (some? (s/explain-data ::sut/reify-args `(~'Object ([this#] this#)))))
+  (is (some? (s/explain-data ::sut/reify-args `(~'Object (~'toString ([this#] (str "foo")))))))
   (is (nil? (s/explain-data ::sut/reify-args `(~'Object
                                                 (~'toString [this#] (str "foo"))
                                                 MyProtocol

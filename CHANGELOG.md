@@ -1,4 +1,5 @@
 # Next - TBD
+- add spec for `reify` arguments: `:io.github.frenchy64.fully-satisfies.reify-spec/reify-args`
 
 # 1.7.1 - 22nd September 2022
 - https://github.com/frenchy64/fully-satisfies/issues/6 fix `everyp`/`somef` short-circuiting order

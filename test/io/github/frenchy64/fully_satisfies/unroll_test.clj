@@ -672,6 +672,7 @@
          ([x y z] (reduce1 #(conj %1 (%2 x y z)) [] fs))
          ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
 
+;TODO support 0 arity
 (defn unroll-juxt-spec*
   ([] (unroll-juxt-spec* {}))
   ([{:keys [outer-size inner-size]}] ;;FIXME use params in body and set defaults

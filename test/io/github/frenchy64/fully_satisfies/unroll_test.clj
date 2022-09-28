@@ -677,9 +677,8 @@
   ([] (unroll-juxt-spec* {}))
   ([{:keys [outer-size inner-size]}] ;;FIXME use params in body and set defaults
    {:argvs (uniformly-flowing-argvs
-             {:arities (range 3)
-              :leading-names ['f]
-              :fixed-names (single-char-syms-from \g)
+             {:arities (range 4)
+              :fixed-names (single-char-syms-from \f)
               :rest-name 'fs})
     :unroll-arity (fn [{fixed-fs :fixed-args rest-fs :rest-arg}]
                     (let [fs (gensym-pretty 'fs)
@@ -744,13 +743,21 @@
 
 (deftest unroll-juxt-test
   (is (= (-> #'unroll-juxt meta :arglists)
-         (-> #'clojure.core/juxt meta :arglists)
-         '([f] [f g] [f g h] [f g h & fs])))
+         (cons [] (-> #'clojure.core/juxt meta :arglists))
+         '([] [f] [f g] [f g h] [f g h & fs])))
   (doseq [i (range 1 10)]
     (is (= (apply (apply clojure.core/juxt (repeat i vector))
                   (range i))
            (apply (apply unroll-juxt (repeat i vector))
-                  (range i))))))
+                  (range i)))))
+  (doseq [fs (map #(repeat % vector) (range 20))
+          args (map #(range %) (range 20))
+          :let [res (apply (apply unroll-juxt fs) args)]]
+    (is (vector? res)
+        [fs args])
+    (is (= (mapv #(apply % args) fs)
+           res)
+        [fs args])))
 
 
 

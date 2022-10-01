@@ -135,7 +135,23 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
-- https://clojure.atlassian.net/browse/CLJ-2627
+- https://clojure.atlassian.net/browse/CLJ-2322
+- `throwArity(21)` in AFn.java should be `throwArity(20+args.length)`
+  - same in RestFn.java, that one is reproducible
+```
+Clojure 1.11.1
+user=> (defmacro big-fn [nargs] `(fn ~(conj (mapv #(gensym (do % "arg")) (range nargs)) 'last)))
+#'user/big-fn
+user=> (apply (big-fn 19) (range 21))
+Execution error (ArityException) at user/eval145 (REPL:1).
+Wrong number of args (21) passed to: user/eval145/fn--165
+user=> (apply (big-fn 19) (range 22))
+Execution error (ArityException) at user/eval168 (REPL:1).
+Wrong number of args (21) passed to: user/eval168/fn--188
+user=> (apply (big-fn 19) (range 24))
+Execution error (ArityException) at user/eval191 (REPL:1).
+Wrong number of args (21) passed to: user/eval191/fn--211
+```
 
 ## License
 

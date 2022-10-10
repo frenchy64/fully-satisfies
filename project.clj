@@ -24,7 +24,7 @@
                                   [org.clojure/tools.trace "0.7.11"]
                                   [org.clojure/math.combinatorics "0.1.6"]]}
              :cleaners-tests
-             {:jvm-opts ["-Xmx1024m"]}}
+             {:jvm-opts ["-Xmx128m"]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

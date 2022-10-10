@@ -8,7 +8,7 @@
   (let [cleaned? (atom [])
         _ (doto (volatile! (register-cleaner! (Object.) #(swap! cleaned? conj true)))
             (vreset! nil))]
-    (try-forcing-cleaners! 1000)))
+    (try-forcing-cleaners!)))
 
 (deftest reduce3-processes-sequentially-test
   (let [a (atom 0)

@@ -1,10 +1,10 @@
 (ns io.github.frenchy64.fully-satisfies.cleaners
   (:import [java.lang.ref Cleaner]))
 
-(defn cleaner
-  ([f] (cleaner (Object.) f))
-  ([v f] (let [^Runnable f #(f)]
-           (.register (Cleaner/create) v f))))
+(defn register-cleaner! [v f]
+  (let [^Runnable f #(f)]
+    (.register (Cleaner/create) v f)
+    v))
 
 (defn try-forcing-cleaners!
   ([] (try-forcing-cleaners! {:timeout-ms 10000
@@ -13,7 +13,7 @@
    (let [o (Object.)
          p (promise)
          v (volatile! (iterate inc' 0))]
-     (println "Printing cleaner as evidence" @(volatile! (cleaner #(deliver p :some-cleaners-ran))))
+     (println "Printing cleaner as evidence" @(volatile! (register-cleaner! (Object.) #(deliver p :some-cleaners-ran))))
      (try (reduce
             (fn [_ n]
               ;(println (first n))

@@ -13,7 +13,8 @@
               :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
-             :dev {:dependencies [[org.clojure/test.check "1.1.0"]
+             :dev {:jvm-opts ["-Xmx128m"] ; small heap to speed up cleaners tests
+                   :dependencies [[org.clojure/test.check "1.1.0"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]
@@ -22,9 +23,7 @@
                                   [org.clojure/java.jmx "1.0.0"]
                                   [org.clojure/core.match "1.0.0"]
                                   [org.clojure/tools.trace "0.7.11"]
-                                  [org.clojure/math.combinatorics "0.1.6"]]}
-             :cleaners-tests
-             {:jvm-opts ["-Xmx128m"]}}
+                                  [org.clojure/math.combinatorics "0.1.6"]]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

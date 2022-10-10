@@ -16,7 +16,6 @@
   (try-forcing-cleaners! #(= expected @live))
   (is (= expected @live)))
 
-
 (deftest reduce2-processes-sequentially-after-first-test
   (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
         times (atom 0)]

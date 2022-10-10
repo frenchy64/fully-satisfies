@@ -1,4 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.cleaners
+  (:require [clojure.test :refer [is]])
   (:import [java.lang.ref Cleaner]))
 
 (defn register-cleaner! [v f]
@@ -11,7 +12,6 @@
   ([f] (let [c (volatile! (range))]
          (try (loop [c @c]
                 (when-not (f)
-                  (prn "not" (first c))
                   (System/gc)
                   (recur (nthnext c 100000))))
               (catch OutOfMemoryError _
@@ -31,7 +31,6 @@
                  (let [v (i->v i)
                        rst (rec (inc i))]
                    (swap! live conj i)
-                   (prn live)
                    (register-cleaner! v #(swap! live disj i))
                    (reify clojure.lang.ISeq
                      (first [this] v)

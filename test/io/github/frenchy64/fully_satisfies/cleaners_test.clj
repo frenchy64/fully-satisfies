@@ -59,3 +59,14 @@
       (is-live #{0} live)
       (vreset! head-holder nil)
       (is-live #{} live))))
+
+
+(when-jdk9
+  (deftest seque-look-ahead-test
+    (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+          head-holder (volatile! (doto (seque 5 lseq)
+                                   seq))]
+      (first @head-holder)
+      (is-live (into #{} (range 5)) live)
+      (vreset! head-holder nil)
+      (is-live #{} live))))

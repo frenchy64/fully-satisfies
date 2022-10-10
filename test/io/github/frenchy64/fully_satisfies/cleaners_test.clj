@@ -12,15 +12,15 @@
 
 (deftest reduce3-processes-sequentially-test
   (let [a (atom 0)
-        c (repeatedly 2 #(doto (hash-map :something (rand))
-                           (register-cleaner! (fn [] (swap! a inc)))))]
+        c (repeatedly 10 #(doto (hash-map :something (rand))
+                            (register-cleaner! (fn [] (swap! a inc)))))]
     (reduce (fn [i c]
-              (let [i (case (int i)
-                        0 (do (is (= 0 @a))
-                              (inc i))
-                        1 (do (try-forcing-cleaners!)
-                              (is (= 1 @a))))]
-                (print "Printing cleaner as evidence" c)
+              (let [i (do (try-forcing-cleaners!)
+                          (is (= i @a))
+                          (inc i))]
+                (println "Printing cleaner as evidence" c)
                 i))
             0
-            c)))
+            c)
+    (try-forcing-cleaners!)
+    (is (= 10 @a))))

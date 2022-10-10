@@ -10,6 +10,7 @@
   ([] (try-forcing-cleaners! {:timeout-ms 10000
                               :growth-multiplier 100000}))
   ([{:keys [timout-ms growth-multiplier]}]
+   (System/gc)
    (let [p (promise)
          o (doto (Object.)
              (register-cleaner! #(deliver p :some-cleaners-ran)))
@@ -19,6 +20,7 @@
             (fn [_ n]
               ;(println (first n))
               (assert (zero? (first @v)) (first @v))
+              (System/gc)
               (if (not= ::timeout (deref p 1 ::timeout))
                 (reduced :some-cleaners-ran)
                 :unclear-if-cleaners-ran))

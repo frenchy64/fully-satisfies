@@ -10,10 +10,11 @@
   ([] (try-forcing-cleaners! {:timeout-ms 10000
                               :growth-multiplier 100000}))
   ([{:keys [timout-ms growth-multiplier]}]
-   (let [o (Object.)
-         p (promise)
+   (let [p (promise)
+         o (doto (Object.)
+             (register-cleaner! #(deliver p :some-cleaners-ran)))
          v (volatile! (iterate inc' 0))]
-     (println "Printing cleaner as evidence" @(volatile! (register-cleaner! (Object.) #(deliver p :some-cleaners-ran))))
+     (println "Printing cleaner as evidence" o)
      (try (reduce
             (fn [_ n]
               ;(println (first n))

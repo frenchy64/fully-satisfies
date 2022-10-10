@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  BABASHKA_VERSION: "0.6.1"
+  BABASHKA_VERSION: "0.10.163"
 
 jobs:
   test:

@@ -12,7 +12,8 @@
 
 (deftest reduce3-processes-sequentially-test
   (let [a (atom 0)
-        c (repeatedly 2 #(hash-map :cleaner (cleaner (partial swap! a inc))))]
+        c (repeatedly 2 #(doto (hash-map :something (rand))
+                           (cleaner (fn [] (swap! a inc)))))]
     (reduce (fn [i c]
               (let [i (case (int i)
                         0 (do (is (= 0 @a))

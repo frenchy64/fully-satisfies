@@ -1,9 +1,10 @@
 (ns io.github.frenchy64.fully-satisfies.cleaners
   (:import [java.lang.ref Cleaner]))
 
-(defn cleaner [f]
-  (let [^Runnable f #(f)]
-    (.register (Cleaner/create) (Object.) f)))
+(defn cleaner
+  ([f] (cleaner (Object.) f))
+  ([v f] (let [^Runnable f #(f)]
+           (.register (Cleaner/create) v f))))
 
 (defn try-forcing-cleaners!
   ([] (try-forcing-cleaners! {:timeout-ms 10000

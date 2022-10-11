@@ -60,13 +60,52 @@
       (vreset! head-holder nil)
       (is-live #{} live))))
 
+(defn my-seque [buffer-size s]
+  (let [my-seque (fn my-seque [s]
+                   (let [res (lazy-seq
+                               (when-some [[v & rst] (seq s)]
+                                 (let [rst (lazy-seq rst)]
+                                   (doall (take buffer-size rst))
+                                   (reify clojure.lang.ISeq
+                                     (first [this] v)
+                                     (next [this] (seq rst))
+                                     (more [this] rst)
+                                     (seq [this] (cons v rst))))))]
+                     (doall (take buffer-size res))
+                     res))]
+    (my-seque s)))
+
+(deftest my-seque-test
+  (is (= [0 1 2 3 4 5] (seque 6 (range 6))))
+  (is (= [0 1 2 3 4 5] (my-seque 6 (range 6))))
+  (let [a (atom [])
+        s (seque 6 (repeatedly 40
+                               (fn []
+                                 (swap! a conj 0)
+                                 0)))]
+    ;(release-pending-sends)
+    (is (= [0] (doall (take 1 s))))
+    ; should be 7 not 9
+    (is (= (repeat 9 0) @a)))
+  (testing "my-seque"
+    (let [a (atom [])]
+      (is (= [0]
+             (doall
+               (take 1 (my-seque 6 (repeatedly 40
+                                               (fn []
+                                                 (swap! a conj 0)
+                                                 0)))))))
+      (is (= (repeat 7 0) @a)))))
 
 (when-jdk9
   (deftest seque-look-ahead-test
-    (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
-          head-holder (volatile! (doto (seque 5 lseq)
-                                   seq))]
-      (first @head-holder)
-      (is-live (into #{} (range 5)) live)
-      (vreset! head-holder nil)
-      (is-live #{} live))))
+    (doseq [seque [#'my-seque
+                   #'seque]]
+      (testing (pr-str seque)
+        (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+              head-holder (volatile! (doto (seque 5 lseq)
+                                       seq))]
+          (first @head-holder)
+          (is-live (into #{} (range 6)) live)
+          (vreset! head-holder nil)
+          (is-live #{} live))))))

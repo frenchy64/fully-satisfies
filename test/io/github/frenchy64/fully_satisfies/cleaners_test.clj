@@ -60,24 +60,19 @@
       (vreset! head-holder nil)
       (is-live #{} live))))
 
-(defn my-seque [buffer-size s]
-  (let [my-seque (fn my-seque [s]
-                   (let [res (lazy-seq
-                               (when-some [[v & rst] (seq s)]
-                                 (let [rst (lazy-seq rst)]
-                                   (doall (take buffer-size rst))
-                                   (reify clojure.lang.ISeq
-                                     (first [this] v)
-                                     (next [this] (seq rst))
-                                     (more [this] rst)
-                                     (seq [this] (cons v rst))))))]
-                     (doall (take buffer-size res))
-                     res))]
-    (my-seque s)))
+(defn synchronous-seque [buffer-size s]
+  {:pre [(pos? buffer-size)]}
+  (let [synchronous-seque (fn synchronous-seque [s]
+                            (if-some [[v & rst :as s] (not-empty s)]
+                              (do (nthnext s buffer-size)
+                                  (lazy-seq
+                                    (cons v (lazy-seq (synchronous-seque rst)))))
+                              (lazy-seq)))]
+    (synchronous-seque (lazy-seq s))))
 
-(deftest my-seque-test
+(deftest synchronous-seque-test
   (is (= [0 1 2 3 4 5] (seque 6 (range 6))))
-  (is (= [0 1 2 3 4 5] (my-seque 6 (range 6))))
+  (is (= [0 1 2 3 4 5] (synchronous-seque 6 (range 6))))
   (let [a (atom [])
         s (seque 6 (repeatedly 40
                                (fn []
@@ -87,11 +82,11 @@
     (is (= [0] (doall (take 1 s))))
     ; should be 7 not 9
     (is (= (repeat 9 0) @a)))
-  (testing "my-seque"
+  (testing "synchronous-seque"
     (let [a (atom [])]
       (is (= [0]
              (doall
-               (take 1 (my-seque 6 (repeatedly 40
+               (take 1 (synchronous-seque 6 (repeatedly 40
                                                (fn []
                                                  (swap! a conj 0)
                                                  0)))))))
@@ -99,8 +94,9 @@
 
 (when-jdk9
   (deftest seque-look-ahead-test
-    (doseq [seque [#'my-seque
-                   #'seque]]
+    (doseq [seque [#'synchronous-seque
+                   ;#'seque
+                   ]]
       (testing (pr-str seque)
         (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
               head-holder (volatile! (doto (seque 5 lseq)
@@ -108,4 +104,44 @@
           (first @head-holder)
           (is-live (into #{} (range 6)) live)
           (vreset! head-holder nil)
+          (is-live #{} live))))))
+
+(when-jdk9
+  (deftest seque-reduce-look-ahead-test
+    (doseq [seque [#'synchronous-seque
+                   ;#'seque
+                   ]]
+      (testing (pr-str seque)
+        (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+              len 20
+              buffer-size 5]
+          (reduce (fn [i _]
+                    (testing (pr-str i)
+                      (is-live (into #{}
+                                     (range i
+                                            (min len (+ i buffer-size 1))))
+                               live))
+                    (inc i))
+                  0
+                  (seque buffer-size (take len lseq)))
+          (is-live #{} live))))))
+
+(when-jdk9
+  (deftest seque-loop-look-ahead-test
+    (doseq [seque [#'synchronous-seque
+                   ;#'seque
+                   ]]
+      (testing (pr-str seque)
+        (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+              len 20
+              buffer-size 5]
+          (loop [i 0
+                 c (seque buffer-size (take len lseq))]
+            (when-some [c (seq c)]
+              (testing (pr-str i)
+                (is-live (into #{}
+                               (range i
+                                      (min len (+ i buffer-size 1))))
+                         live))
+              (recur (inc i) (next c))))
           (is-live #{} live))))))

@@ -4,7 +4,7 @@
 Utilities for Clojure.
 
 - [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol (considering direct, extended, and metadata methods).
-- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
+- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.partially-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
 - [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
 - [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a zero-arity.
 - [never?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.never.html#var-never.3F) -- a predicate `never?` that always returns false.
@@ -133,6 +133,37 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 1
 user=> (get "123" 4294967296 :not-found)
 \1
+```
+- https://clojure.atlassian.net/browse/CLJ-2322
+- `throwArity(21)` in AFn.java should be `throwArity(20+args.length)`
+  - reprod:
+```
+Clojure 1.11.1
+user=> (apply {} (range 21))
+Execution error (ArityException) at user/eval214 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+user=> (apply {} (range 22))
+Execution error (ArityException) at user/eval216 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+user=> (apply {} (range 24))
+Execution error (ArityException) at user/eval218 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+```
+- same in RestFn.java
+  - reprod:
+```
+Clojure 1.11.1
+user=> (defmacro big-fn [nargs] `(fn ~(conj (mapv #(gensym (do % "arg")) (range nargs)) 'last)))
+#'user/big-fn
+user=> (apply (big-fn 19) (range 21))
+Execution error (ArityException) at user/eval145 (REPL:1).
+Wrong number of args (21) passed to: user/eval145/fn--165
+user=> (apply (big-fn 19) (range 22))
+Execution error (ArityException) at user/eval168 (REPL:1).
+Wrong number of args (21) passed to: user/eval168/fn--188
+user=> (apply (big-fn 19) (range 24))
+Execution error (ArityException) at user/eval191 (REPL:1).
+Wrong number of args (21) passed to: user/eval191/fn--211
 ```
 
 - direct-linkable protocols

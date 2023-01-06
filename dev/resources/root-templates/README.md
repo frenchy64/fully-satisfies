@@ -135,6 +135,10 @@ user=> (get "123" 4294967296 :not-found)
 \1
 ```
 
+- direct-linkable protocols
+  - apparently a matter of makings protocols non-closures
+  - https://ask.clojure.org/index.php/10967/are-protocol-methods-guaranteed-to-not-be-directly-linked?show=10990#a10990
+
 ## License
 
 Where noted, contains code from Clojure under license:

@@ -170,6 +170,12 @@ Wrong number of args (21) passed to: user/eval191/fn--211
 - direct-linkable protocols
   - apparently a matter of makings protocols non-closures
   - https://ask.clojure.org/index.php/10967/are-protocol-methods-guaranteed-to-not-be-directly-linked?show=10990#a10990
+  - approach:
+    - add new field to clojure.lang.MethodImplCache$Entry which distinguishes between 
+      the `(.isInstance c x)` test in `-cache-protocol-fn`
+    - update the `identical?` clause in the with-meta-extension part to grab this
+      entry raw (eg., replace the `fnFor` with `fnEntryFor`)
+    - move ginterf into the -cache-protocol-fn calls (1 arity at a time)
 
 ## License
 

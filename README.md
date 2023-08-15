@@ -177,6 +177,8 @@ Wrong number of args (21) passed to: user/eval191/fn--211
       entry raw (eg., replace the `fnFor` with `fnEntryFor`)
     - move ginterf into the -cache-protocol-fn calls (1 arity at a time)
 
+- defmulti with cache controls https://clojure.atlassian.net/browse/CLJ-2626
+
 ## License
 
 Where noted, contains code from Clojure under license:

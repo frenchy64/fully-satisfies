@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [butlast every?]))
+  (:refer-clojure :exclude [butlast every? take-last]))
 
 ;;TODO unit test
 (defn every?
@@ -15,3 +15,15 @@
       (recur pred (next coll))
       false)
     true))
+
+(defn take-last
+  "Returns a seq of the last n items in coll.  Depending on the type
+  of coll may be no better than linear time.  For vectors, see also subvec."
+  {:added "1.1"
+   :static true}
+  [n coll]
+  (let [s (seq coll)] ;; pull seq call before loop initialization - Ambrose
+    (loop [s s, lead (seq (drop n s))]
+      (if lead
+        (recur (next s) (next lead))
+        s))))

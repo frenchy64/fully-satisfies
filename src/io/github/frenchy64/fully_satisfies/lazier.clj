@@ -19,6 +19,8 @@
                (recur (conj ret (first s)) (next s))
                (seq ret)))))
 
+;;TODO unit test
+;; fix comma in docstring - Ambrose
 (defn sequence
   "Coerces coll to a (possibly empty) sequence, if it is not already
   one. Will not force a lazy seq. (sequence nil) yields (). When a
@@ -35,9 +37,11 @@
      coll
      (or (seq coll) ())))
   ([xform coll]
+   ;; return a sequence instead of seq - Ambrose
    (io.github.frenchy64.fully_satisfies.lazier.RT/chunkIteratorSequence
      (clojure.lang.TransformerIterator/create xform (clojure.lang.RT/iter coll))))
   ([xform coll & colls]
+   ;; return a sequence instead of seq - Ambrose
    (io.github.frenchy64.fully_satisfies.lazier.RT/chunkIteratorSequence
      (clojure.lang.TransformerIterator/createMulti
        xform

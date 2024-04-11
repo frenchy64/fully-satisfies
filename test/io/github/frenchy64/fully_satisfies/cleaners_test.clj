@@ -65,13 +65,17 @@
   (deftest map-chunks-chunked-seq-test
     (let [{:keys [live lseq]} (head-hold-detecting-chunked-seq)
           head-holder (atom (map identity lseq))]
-      (is-live #{} live)
-      (dotimes [i 32]
-        (prn i)
-        (swap! head-holder next)
-        (is-live (into (sorted-set) (range 32)) live))
-      (reset! head-holder nil)
-      (is-live #{} live))))
+      (when (testing "initial call to map is lazy"
+              (is-live #{} live))
+        (when (every?
+                (fn [i]
+                  (swap! head-holder next)
+                  (testing (str i " nexts")
+                    (is-live (into (sorted-set) (range 32)) live)))
+                (range 32))
+          (reset! head-holder nil)
+          (testing "release hold"
+            (is-live #{} live)))))))
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}

@@ -22,7 +22,7 @@
                 (when-not (f)
                   (recur (conj c (make-array Double/TYPE (dec Integer/MAX_VALUE))))))
               (catch OutOfMemoryError _
-                (println "OOM")))
+                #_(println "OOM")))
      (f))))
 
 (when-jdk9

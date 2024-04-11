@@ -55,11 +55,18 @@
 (when-jdk9
   (deftest map-does-not-chunk-lazy-seq-test
     (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
-          head-holder (volatile! (doto (map identity lseq)
-                                   seq))]
-      (is-live #{0} live)
-      (vreset! head-holder nil)
-      (is-live #{} live))))
+          head-holder (atom (map identity lseq))]
+      (when (testing "initial call to map is lazy"
+              (is-live #{} live))
+        (when (every?
+                (fn [i]
+                  (swap! head-holder (if (zero? i) seq next))
+                  (testing (str i " nexts")
+                    (is-live #{i} live)))
+                (range 32))
+          (reset! head-holder nil)
+          (testing "release hold"
+            (is-live #{} live)))))))
 
 (when-jdk9
   (deftest map-chunks-chunked-seq-test
@@ -71,7 +78,7 @@
                 (fn [i]
                   (swap! head-holder next)
                   (testing (str i " nexts")
-                    (is-live (into (sorted-set) (range 32)) live)))
+                    (is-live (into (sorted-set) (range i 32)) live)))
                 (range 32))
           (reset! head-holder nil)
           (testing "release hold"

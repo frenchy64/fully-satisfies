@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [butlast cycle drop sequence dorun bounded-count]))
+  (:refer-clojure :exclude [cycle drop sequence dorun bounded-count]))
 
 (when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
   (when (try (Class/forName "clojure.lang.IDrop")
@@ -38,17 +38,6 @@
          (lazy-seq (step n coll))))))
 
 ;;TODO unit test
-(def 
- ^{:arglists '([coll])
-   :doc "Return a seq of all but the last item in coll, in linear time"
-   :added "1.0"
-   :static true}
- butlast (fn ^:static butlast [s]
-           ;; initialize loop with (seq s) - Ambrose
-           (loop [ret [] s (seq s)]
-             (if (next s)
-               (recur (conj ret (first s)) (next s))
-               (seq ret)))))
 
 ;;TODO unit test
 ;; fix comma in docstring - Ambrose

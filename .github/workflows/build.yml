@@ -62,7 +62,7 @@ jobs:
       - name: Prepare java
         uses: actions/setup-java@v4
         with:
-          distribution: 'termurin'
+          distribution: 'temurin'
           java-version: '11'
       - name: deploy
         env: 

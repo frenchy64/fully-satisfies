@@ -17,17 +17,13 @@
 (when-jdk9
   (defn try-forcing-cleaners!
     ([] (try-forcing-cleaners! (constantly false)))
-    ([f] (let [c (volatile! (range))]
-           (try (loop [c @c]
-                  (when-not (f)
-                    (System/gc)
-                    (recur (nthnext c 100000))))
-                (catch OutOfMemoryError _
-                  (vreset! c nil)
-                  (System/gc)
-                  (println "OOM")))
-           (first @c)
-           nil))))
+    ([f] (try (loop [c []]
+                (System/gc)
+                (when-not (f)
+                  (recur (conj c (make-array Double/TYPE (dec Integer/MAX_VALUE))))))
+              (catch OutOfMemoryError _
+                (println "OOM")))
+     nil)))
 
 (when-jdk9
   (defn head-hold-detecting-lazy-seq

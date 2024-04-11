@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last])
+  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last
+                            sort-by splitv-at partitionv-all])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test
@@ -53,26 +54,6 @@
   (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
     [(take-while pred coll) (drop-while pred coll)]))
 
-(when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
-  (when (try (Class/forName "clojure.lang.IDrop")
-             (catch Throwable _))
-    (println "WARNING: io.github.frenchy64.fully-satisfies.safer/nthrest is missing 1.12 performance features")))
-
-(defn nthrest
-  "Returns the nth rest of coll, coll when n is 0."
-  {:added "1.3"
-   :static true}
-  [coll n]
-  (do #_if #_(instance? clojure.lang.IDrop coll)
-    #_
-    (if (pos? n)
-      (or (.drop ^clojure.lang.IDrop coll (if (int? n) n (Math/ceil n))) ())
-      coll)
-    (loop [n n xs coll]
-      (if-let [xs (and (pos? n) (seq xs))]
-        (recur (dec n) (rest xs))
-        xs))))
-
 (defn sort
   "Returns a sorted sequence of the items in coll. If no comparator is
   supplied, uses compare.  comparator must implement
@@ -90,3 +71,40 @@
        (with-meta (or (seq a) ()) ;; in case mutated between seq and to-array - Ambrose
                   (meta coll)))
      ())))
+
+(defn sort-by
+  "Returns a sorted sequence of the items in coll, where the sort
+  order is determined by comparing (keyfn item).  If no comparator is
+  supplied, uses compare.  comparator must implement
+  java.util.Comparator.  Guaranteed to be stable: equal elements will
+  not be reordered.  If coll is a Java array, it will be modified.  To
+  avoid this, sort a copy of the array."
+  {:added "1.0"
+   :static true}
+  ([keyfn coll]
+   (sort-by keyfn compare coll))
+  ([keyfn ^java.util.Comparator comp coll]
+   ;; use safer/sort - Ambrose
+   (sort (fn [x y] (. comp (compare (keyfn x) (keyfn y)))) coll)))
+
+(defn splitv-at
+  "Returns a vector of [(into [] (take n) coll) (drop n coll)]"
+  {:added "1.12"}
+  [n coll]
+  (let [coll (seq coll)] ;; bind seq - Ambrose
+    [(into [] (take n) coll) (drop n coll)]))
+
+(defn partitionv-all
+  "Returns a lazy sequence of vector partitions, but may include
+  partitions with fewer than n items at the end.
+  Returns a stateful transducer when no collection is provided."
+  {:added "1.12"}
+  ([n]
+   (partition-all n))
+  ([n coll]
+   (partitionv-all n n coll))
+  ([n step coll]
+   (lazy-seq
+     (when-let [s (seq coll)]
+       (let [seg (into [] (take n) s)] ;; use s not coll - Ambrose
+         (cons seg (partitionv-all n step (drop step s))))))))

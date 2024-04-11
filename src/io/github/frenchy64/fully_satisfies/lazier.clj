@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [butlast cycle drop sequence dorun]))
+  (:refer-clojure :exclude [butlast cycle drop sequence dorun bounded-count]))
 
 (when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
   (when (try (Class/forName "clojure.lang.IDrop")
@@ -102,3 +102,17 @@
    (when (pos? n) ;; lazier, test pos? first - Ambrose
      (when-let [coll (next coll)] ;; leaner, just call next instead of seq+next - Ambrose
        (recur (dec n) coll)))))
+
+(defn bounded-count
+  "If coll is counted? returns its count, else will count at most the first n
+  elements of coll using its seq"
+  {:added "1.9"}
+  [n coll]
+  (if (counted? coll)
+    (count coll)
+    (if (pos? n) ;; don't force seq if n==0 - Ambrose
+      (loop [i 0 s (seq coll)]
+        (if (and s (< i n))
+          (recur (inc i) (next s))
+          i))
+      0)))

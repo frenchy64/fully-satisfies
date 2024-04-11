@@ -23,7 +23,7 @@
                   (recur (conj c (make-array Double/TYPE (dec Integer/MAX_VALUE))))))
               (catch OutOfMemoryError _
                 (println "OOM")))
-     nil)))
+     (f))))
 
 (when-jdk9
   (defn head-hold-detecting-lazy-seq
@@ -55,7 +55,6 @@
                        (let [v (i->v i)]
                          (swap! live conj i)
                          (register-cleaner! v #(swap! live disj i))
-                         (concat [v] (rec (inc i)))
                          (chunk-append b v)))
                      (chunk-cons (chunk b) (rec (inc i))))))]
        {:lseq (rec 0)
@@ -63,5 +62,8 @@
 
 (when-jdk9
   (defn is-live [expected live]
-    (try-forcing-cleaners! #(= expected @live))
-    (is (= expected @live))))
+    (loop [tries 100]
+      (when (and (pos? tries)
+                 (not (try-forcing-cleaners! #(= expected @live))))
+        (recur (dec tries))))
+    (is (= expected (into (sorted-set) @live)))))

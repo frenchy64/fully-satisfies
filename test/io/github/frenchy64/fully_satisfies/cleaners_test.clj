@@ -64,10 +64,13 @@
 (when-jdk9
   (deftest map-chunks-chunked-seq-test
     (let [{:keys [live lseq]} (head-hold-detecting-chunked-seq)
-          head-holder (volatile! (doto (map identity lseq)
-                                   seq))]
-      (is-live (into #{} (range 32)) live)
-      (vreset! head-holder nil)
+          head-holder (atom (map identity lseq))]
+      (is-live #{} live)
+      (dotimes [i 32]
+        (prn i)
+        (swap! head-holder next)
+        (is-live (into (sorted-set) (range 32)) live))
+      (reset! head-holder nil)
       (is-live #{} live))))
 
 (defn synchronous-seque [buffer-size s]

@@ -113,7 +113,7 @@
       (when (testing "initial call to sequence realizes one element"
               ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
               (is-live #{0} live))
-        (when (testing "seq holds 32 elements"
+        (when (testing "seq holds 33 elements"
                 (swap! head-holder seq)
                 ;;surprising
                 (is-live (into (sorted-set) (range 33)) live))

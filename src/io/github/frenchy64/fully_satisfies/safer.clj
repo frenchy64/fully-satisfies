@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.safer
   (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last
-                            sort-by splitv-at partitionv-all])
+                            sort-by splitv-at partitionv-all last])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test
@@ -108,3 +108,14 @@
      (when-let [s (seq coll)]
        (let [seg (into [] (take n) s)] ;; use s not coll - Ambrose
          (cons seg (partitionv-all n step (drop step s))))))))
+
+(def 
+ ^{:arglists '([coll])
+   :doc "Return the last item in coll, in linear time"
+   :added "1.0"
+   :static true}
+ last (fn ^:static last [s]
+        (let [s (seq s)] ;; call seq at top - Ambrose
+          (if (next s)
+            (recur (next s))
+            (first s)))))

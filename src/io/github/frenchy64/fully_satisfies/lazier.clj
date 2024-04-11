@@ -1,5 +1,23 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [sequence]))
+  (:refer-clojure :exclude [butlast drop sequence]))
+
+(when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
+  (when (try (Class/forName "clojure.lang.IDrop")
+             (catch Throwable _))
+    (println "WARNING: io.github.frenchy64.fully-satisfies.safer/drop is missing 1.12 performance features")))
+
+;;TODO unit test
+(def 
+ ^{:arglists '([coll])
+   :doc "Return a seq of all but the last item in coll, in linear time"
+   :added "1.0"
+   :static true}
+ butlast (fn ^:static butlast [s]
+           ;; initialize loop with (seq s) - Ambrose
+           (loop [ret [] s (seq s)]
+             (if (next s)
+               (recur (conj ret (first s)) (next s))
+               (seq ret)))))
 
 (defn sequence
   "Coerces coll to a (possibly empty) sequence, if it is not already

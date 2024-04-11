@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [every?]))
+  (:refer-clojure :exclude [butlast every?]))
 
 ;;TODO unit test
 (defn every?

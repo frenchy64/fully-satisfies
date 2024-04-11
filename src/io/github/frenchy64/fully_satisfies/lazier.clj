@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [butlast drop sequence]))
+  (:refer-clojure :exclude [butlast cycle drop sequence]))
 
 (when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
   (when (try (Class/forName "clojure.lang.IDrop")
@@ -46,3 +46,12 @@
      (clojure.lang.TransformerIterator/createMulti
        xform
        (map #(clojure.lang.RT/iter %) (cons coll colls))))))
+
+
+(defn cycle
+  "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
+  {:added "1.0"
+   :static true}
+  [coll] (if (seq? coll) ;; wrap in lazy-seq if seq - Ambrose
+           (lazy-seq (clojure.lang.Cycle/create (seq coll)))
+           (clojure.lang.Cycle/create (seq coll))))

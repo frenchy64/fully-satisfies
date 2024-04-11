@@ -137,14 +137,14 @@
           head-holder (atom (lazier/sequence (map identity) lseq))]
       (when (testing "initial call to sequence realizes one element"
               (is-live #{} live))
-        (when (testing "seq holds 33 elements"
+        (when (testing "seq holds 32 elements"
                 (swap! head-holder seq)
-                (is-live (into (sorted-set) (range 33)) live))
+                (is-live (into (sorted-set) (range 32)) live))
           (when (every?
                   (fn [i]
                     (swap! head-holder next)
-                    (testing (str i " nexts holds 33 elements")
-                      (is-live (into (sorted-set) (range 33)) live)))
+                    (testing (str i " nexts holds 32 elements")
+                      (is-live (into (sorted-set) (range 32)) live)))
                   (range 31))
             (reset! head-holder nil)
             (testing "release hold"

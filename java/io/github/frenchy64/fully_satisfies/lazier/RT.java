@@ -25,11 +25,13 @@ public class RT{
 
 private static final int CHUNK_SIZE = 32;
 public static ISeq chunkIteratorSequence(final Iterator iter){
+    // return a LazySeq instead of calling hasNext() and forcing first element - Ambrose
     return new LazySeq(new AFn() {
         public Object invoke() {
             Object[] arr = new Object[CHUNK_SIZE];
             int n = 0;
-            while(iter.hasNext() && n < CHUNK_SIZE)
+            // switched condition order so hasNext() isn't called 33 times - Ambrose
+            while(n < CHUNK_SIZE && iter.hasNext())
                 arr[n++] = iter.next();
             return new ChunkedCons(new ArrayChunk(arr, 0, n), chunkIteratorSequence(iter));
         }

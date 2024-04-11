@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest])
+  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test
@@ -72,3 +72,21 @@
       (if-let [xs (and (pos? n) (seq xs))]
         (recur (dec n) (rest xs))
         xs))))
+
+(defn sort
+  "Returns a sorted sequence of the items in coll. If no comparator is
+  supplied, uses compare.  comparator must implement
+  java.util.Comparator.  Guaranteed to be stable: equal elements will
+  not be reordered.  If coll is a Java array, it will be modified.  To
+  avoid this, sort a copy of the array."
+  {:added "1.0"
+   :static true}
+  ([coll]
+   (sort compare coll))
+  ([^java.util.Comparator comp coll]
+   (if (seq coll)
+     (let [a (to-array coll)]
+       (. java.util.Arrays (sort a comp))
+       (with-meta (or (seq a) ()) ;; in case mutated between seq and to-array - Ambrose
+                  (meta coll)))
+     ())))

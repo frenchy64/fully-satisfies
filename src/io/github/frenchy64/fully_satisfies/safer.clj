@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [butlast every? take-last]))
+  (:refer-clojure :exclude [butlast every? split-at split-with take-last]))
 
 ;;TODO unit test
 (defn every?
@@ -27,3 +27,19 @@
       (if lead
         (recur (next s) (next lead))
         s))))
+
+(defn split-at
+  "Returns a vector of [(take n coll) (drop n coll)]"
+  {:added "1.0"
+   :static true}
+  [n coll]
+  (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
+    [(take n coll) (drop n coll)]))
+
+(defn split-with
+  "Returns a vector of [(take-while pred coll) (drop-while pred coll)]"
+  {:added "1.0"
+   :static true}
+  [pred coll]
+  (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
+    [(take-while pred coll) (drop-while pred coll)]))

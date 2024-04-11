@@ -21,7 +21,7 @@
                     (vreset! dv nil)
                     (rf result input)))))))))
   ([pred coll]
-     (let [step (fn [pred coll] ;; intialize coll with `seq` and use next instead of seq+first - Ambrose
+     (let [step (fn [pred s] ;; intialize coll with `seq` and use next instead of seq+first - Ambrose
                   (if (and s (pred (first s)))
                     (recur pred (next s))
                     s))]

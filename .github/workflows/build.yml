@@ -13,7 +13,7 @@ jobs:
   test:
     strategy:
       matrix:
-        jdk: ['8', '11', '17', '22']
+        jdk: ['8', '11', '17', '21', '22']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,9 +26,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Prepare java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: ${{ matrix.jdk }}
       - name: Install clojure tools
         uses: DeLaGuardo/setup-clojure@3.5
@@ -60,9 +60,9 @@ jobs:
         with:
           babashka-version: ${{env.BABASHKA_VERSION}}
       - name: Prepare java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: 'termurin'
           java-version: '11'
       - name: deploy
         env: 

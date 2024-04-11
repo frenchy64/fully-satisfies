@@ -78,6 +78,11 @@
                 (fn [i]
                   (swap! head-holder next)
                   (testing (str i " nexts")
+                    ;; map holds onto each chunk until the entire chunk
+                    ;; is processed. this is because a chunk is an ArrayChunk
+                    ;; which is backed by an array, and next just moves the start
+                    ;; index forward. Since the array is shared between immutable
+                    ;; seqs, it cannot be mutated.
                     (is-live (into (sorted-set) (range i 32)) live)))
                 (range 32))
           (reset! head-holder nil)

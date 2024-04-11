@@ -41,6 +41,27 @@
         :live live}))))
 
 (when-jdk9
+  (defn head-hold-detecting-chunked-seq
+    "Each element must be distinct according to identical?."
+    ([] (head-hold-detecting-chunked-seq {}))
+    ([{:keys [i->v chunk-size]
+       :or {i->v (fn [i] (Object.))
+            chunk-size 32}}]
+     (let [live (atom #{})
+           rec (fn rec [i]
+                 (lazy-seq
+                   (let [b (chunk-buffer chunk-size)]
+                     (dotimes [i chunk-size]
+                       (let [v (i->v i)]
+                         (swap! live conj i)
+                         (register-cleaner! v #(swap! live disj i))
+                         (concat [v] (rec (inc i)))
+                         (chunk-append b v)))
+                     (chunk-cons (chunk b) (rec (inc i))))))]
+       {:lseq (rec 0)
+        :live live}))))
+
+(when-jdk9
   (defn is-live [expected live]
     (try-forcing-cleaners! #(= expected @live))
     (is (= expected @live))))

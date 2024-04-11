@@ -11,6 +11,7 @@
 (when-jdk9
   (require '[io.github.frenchy64.fully-satisfies.cleaners :refer [register-cleaner! try-forcing-cleaners!
                                                                   head-hold-detecting-lazy-seq
+                                                                  head-hold-detecting-chunked-seq
                                                                   is-live]]))
 
 (when-jdk9
@@ -57,6 +58,15 @@
           head-holder (volatile! (doto (map identity lseq)
                                    seq))]
       (is-live #{0} live)
+      (vreset! head-holder nil)
+      (is-live #{} live))))
+
+(when-jdk9
+  (deftest map-chunks-chunked-seq-test
+    (let [{:keys [live lseq]} (head-hold-detecting-chunked-seq)
+          head-holder (volatile! (doto (map identity lseq)
+                                   seq))]
+      (is-live (into #{} (range 32)) live)
       (vreset! head-holder nil)
       (is-live #{} live))))
 

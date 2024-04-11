@@ -33,15 +33,10 @@
      (let [live (atom #{})
            rec (fn rec [i]
                  (lazy-seq
-                   (let [v (i->v i)
-                         rst (rec (inc i))]
+                   (let [v (i->v i)]
                      (swap! live conj i)
                      (register-cleaner! v #(swap! live disj i))
-                     (reify clojure.lang.ISeq
-                       (first [this] v)
-                       (next [this] (seq rst))
-                       (more [this] rst)
-                       (seq [this] (cons v rst))))))]
+                     (concat [v] (rec (inc i))))))]
        {:lseq (rec 0)
         :live live}))))
 

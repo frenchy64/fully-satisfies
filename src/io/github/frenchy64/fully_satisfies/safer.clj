@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.safer
-  (:refer-clojure :exclude [butlast every? split-at split-with take-last]))
+  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest])
+  (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test
 (defn every?
@@ -15,6 +16,14 @@
       (recur pred (next coll))
       false)
     true))
+
+(defn drop-last
+  "Return a lazy sequence of all but the last n (default 1) items in coll"
+  {:added "1.0"
+   :static true}
+  ([coll] (drop-last 1 coll))
+  ([n coll] (let [coll (lazier/sequence coll)] ;; bind a sequence - Ambrose
+              (map (fn [x _] x) coll (lazier/drop n coll)))))
 
 (defn take-last
   "Returns a seq of the last n items in coll.  Depending on the type
@@ -43,3 +52,23 @@
   [pred coll]
   (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
     [(take-while pred coll) (drop-while pred coll)]))
+
+(when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
+  (when (try (Class/forName "clojure.lang.IDrop")
+             (catch Throwable _))
+    (println "WARNING: io.github.frenchy64.fully-satisfies.safer/nthrest is missing 1.12 performance features")))
+
+(defn nthrest
+  "Returns the nth rest of coll, coll when n is 0."
+  {:added "1.3"
+   :static true}
+  [coll n]
+  (do #_if #_(instance? clojure.lang.IDrop coll)
+    #_
+    (if (pos? n)
+      (or (.drop ^clojure.lang.IDrop coll (if (int? n) n (Math/ceil n))) ())
+      coll)
+    (loop [n n xs coll]
+      (if-let [xs (and (pos? n) (seq xs))]
+        (recur (dec n) (rest xs))
+        xs))))

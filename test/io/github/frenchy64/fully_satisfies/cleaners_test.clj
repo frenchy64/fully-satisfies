@@ -1,7 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies.cleaners-test
   "Goal: use Java Cleaners to test for memory leaks"
   (:require [clojure.test :refer [is]]
-            [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]))
+            [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
+            [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 (defmacro ^:private when-jdk9 [& body]
   (when (try (Class/forName "java.lang.ref.Cleaner")
@@ -20,6 +21,10 @@
           _ (doto (volatile! (register-cleaner! (Object.) #(swap! cleaned? conj true)))
               (vreset! nil))]
       (try-forcing-cleaners!))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; reduce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9
   (deftest reduce2-processes-sequentially-after-first-test
@@ -43,6 +48,10 @@
               0 (take 10 lseq))
       (is-live #{} live))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; take
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (when-jdk9
   (deftest head-holding-test
     (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
@@ -51,6 +60,10 @@
                live)
       (vreset! head-holder nil)
       (is-live #{} live))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; map
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9
   (deftest map-does-not-chunk-lazy-seq-test
@@ -61,7 +74,7 @@
         (when (every?
                 (fn [i]
                   (swap! head-holder (if (zero? i) seq next))
-                  (testing (str i " nexts")
+                  (testing (str i " nexts holds 1 element")
                     (is-live #{i} live)))
                 (range 32))
           (reset! head-holder nil)
@@ -77,17 +90,65 @@
         (when (every?
                 (fn [i]
                   (swap! head-holder next)
-                  (testing (str i " nexts")
+                  (testing (str i " nexts holds 32 elements")
                     ;; map holds onto each chunk until the entire chunk
                     ;; is processed. this is because a chunk is an ArrayChunk
                     ;; which is backed by an array, and next just moves the start
                     ;; index forward. Since the array is shared between immutable
                     ;; seqs, it cannot be mutated.
-                    (is-live (into (sorted-set) (range i 32)) live)))
+                    (is-live (into (sorted-set) (range 32)) live)))
                 (range 32))
           (reset! head-holder nil)
           (testing "release hold"
             (is-live #{} live)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; sequence
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when-jdk9
+  (deftest sequence-chunks-lazy-seq-test
+    (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+          head-holder (atom (sequence (map identity) lseq))]
+      (when (testing "initial call to sequence realizes one element"
+              ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
+              (is-live #{0} live))
+        (when (testing "seq holds 32 elements"
+                (swap! head-holder seq)
+                ;;surprising
+                (is-live (into (sorted-set) (range 33)) live))
+          (when (every?
+                  (fn [i]
+                    (swap! head-holder next)
+                    (testing (str i " nexts holds 33 elements")
+                      (is-live (into (sorted-set) (range 33)) live)))
+                  (range 32))
+            (reset! head-holder nil)
+            (testing "release hold"
+              (is-live #{} live))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; lazier/sequence
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when-jdk9
+  (deftest lazier-sequence-chunks-lazy-seq-test
+    (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
+          head-holder (atom (lazier/sequence (map identity) lseq))]
+      (when (testing "initial call to sequence realizes one element"
+              (is-live #{} live))
+        (when (testing "seq holds 33 elements"
+                (swap! head-holder seq)
+                (is-live (into (sorted-set) (range 33)) live))
+          (when (every?
+                  (fn [i]
+                    (swap! head-holder next)
+                    (testing (str i " nexts holds 33 elements")
+                      (is-live (into (sorted-set) (range 33)) live)))
+                  (range 31))
+            (reset! head-holder nil)
+            (testing "release hold"
+              (is-live #{} live))))))))
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}

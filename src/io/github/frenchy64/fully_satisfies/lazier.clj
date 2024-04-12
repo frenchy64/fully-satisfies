@@ -1,6 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [cycle sequence dorun bounded-count
-                            iterator-seq dedupe]))
+  (:refer-clojure :exclude [cycle sequence bounded-count iterator-seq dedupe]))
 
 ;;TODO unit test
 ;; fix comma in docstring - Ambrose
@@ -38,23 +37,6 @@
   [coll] (if (seq? coll) ;; wrap in lazy-seq if seq - Ambrose
            (lazy-seq (clojure.lang.Cycle/create (seq coll)))
            (clojure.lang.Cycle/create (seq coll))))
-
-(defn dorun
-  "When lazy sequences are produced via functions that have side
-  effects, any effects other than those needed to produce the first
-  element in the seq do not occur until the seq is consumed. dorun can
-  be used to force any effects. Walks through the successive nexts of
-  the seq, does not retain the head and returns nil."
-  {:added "1.0"
-   :static true}
-  ([coll]
-   (when-let [s (next coll)] ;; leaner, just call next instead of seq+next - Ambrose
-     (recur s)))
-  ([n coll]
-   (when (pos? n)
-     (loop [n (dec n) s (seq coll)]
-       (when (and (pos? n) s)
-         (recur (dec n) (next s)))))))
 
 (defn bounded-count
   "If coll is counted? returns its count, else will count at most the first n

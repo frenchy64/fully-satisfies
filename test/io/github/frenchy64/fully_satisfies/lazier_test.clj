@@ -113,3 +113,21 @@
     (let [realized (atom #{})]
       (is (= 10 (lazier/bounded-count 10 (map #(swap! realized conj %) (lazy-range)))))
       (is (= (into (sorted-set) (range 10)) @realized)))))
+
+(deftest lazier-iterator-seq-test
+  (testing "iterator-seq init"
+    (let [realized (atom #{})]
+      (iterator-seq (clojure.lang.RT/iter (map #(swap! realized conj %) (lazy-range))))
+      (is (= #{0} @realized))))
+  (testing "iterator-seq init"
+    (let [realized (atom #{})]
+      (lazier/iterator-seq (clojure.lang.RT/iter (map #(swap! realized conj %) (lazy-range))))
+      (is (= #{0} @realized))))
+  (testing "iterator-seq next"
+    (let [realized (atom #{})]
+      (next (iterator-seq (clojure.lang.RT/iter (map #(swap! realized conj %) (lazy-range)))))
+      (is (= (into (sorted-set) (range 33)) @realized))))
+  (testing "iterator-seq next"
+    (let [realized (atom #{})]
+      (next (lazier/iterator-seq (clojure.lang.RT/iter (map #(swap! realized conj %) (lazy-range)))))
+      (is (= (into (sorted-set) (range 32)) @realized)))))

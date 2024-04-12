@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
   (:refer-clojure :exclude [cycle drop sequence dorun bounded-count
-                            iterator-seq]))
+                            iterator-seq dedupe]))
 
 (when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
   (when (try (Class/forName "clojure.lang.IDrop")
@@ -117,3 +117,22 @@
    :static true}
   [iter]
   (io.github.frenchy64.fully_satisfies.lazier.RT/chunkIteratorSeq iter))
+
+(defn dedupe
+  "Returns a lazy sequence removing consecutive duplicates in coll.
+  Returns a transducer when no collection is provided."
+  {:added "1.7"}
+  ([]
+   (fn [rf]
+     (let [pv (volatile! ::none)]
+       (fn
+         ([] (rf))
+         ([result] (rf result))
+         ([result input]
+            (let [prior @pv]
+              (vreset! pv input)
+              (if (= prior input)
+                result
+                (rf result input))))))))
+  ;;use lazier/sequence - Ambrose
+  ([coll] (sequence (dedupe) coll)))

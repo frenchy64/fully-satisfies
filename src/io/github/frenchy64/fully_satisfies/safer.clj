@@ -151,3 +151,14 @@
              (if (next s)
                (recur (conj ret (first s)) (next s))
                (seq ret)))))
+
+#_ ;; prone to races between nth and count, but not obvious how to fix
+(defn rand-nth
+  "Return a random element of the (sequential) collection. Will have
+  the same performance characteristics as nth for the given
+  collection."
+  {:added "1.2"
+   :static true}
+  [coll]
+  (nth coll (rand-int (count coll))))
+

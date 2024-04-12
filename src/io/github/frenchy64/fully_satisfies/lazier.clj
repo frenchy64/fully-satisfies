@@ -1,4 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
+  "Variants of clojure.core functions that are slightly lazier when
+  processing and/or returning lazy seqs."
   (:refer-clojure :exclude [cycle sequence bounded-count iterator-seq dedupe]))
 
 ;;TODO unit test
@@ -58,10 +60,15 @@
     (count coll)
     (if (pos? n)
       (loop [i 1 s (seq coll)]
+        ;; i<=(count coll)+1
         (if s
+          ;; i<=(count coll)
           (if (< i n)
+            ;; restablish i<=(count coll)+1
             (recur (inc i) (next s))
+            ;; i<=(count coll)
             i)
+          ;; i==(count coll)+1
           (dec i)))
       0)))
 

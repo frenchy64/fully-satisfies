@@ -97,6 +97,14 @@
     (let [realized (atom #{})]
       (is (= 0 (lazier/bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))
       (is (= #{} @realized))))
+  (testing "bounded-count 1"
+    (let [realized (atom #{})]
+      (is (= 1 (bounded-count 1 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= #{0 1} @realized))))
+  (testing "lazier/bounded-count 1"
+    (let [realized (atom #{})]
+      (is (= 1 (lazier/bounded-count 1 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= #{0} @realized))))
   (testing "bounded-count 10"
     (let [realized (atom #{})]
       (is (= 10 (bounded-count 10 (map #(swap! realized conj %) (lazy-range)))))

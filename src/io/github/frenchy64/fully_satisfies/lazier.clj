@@ -4,7 +4,7 @@
   (:refer-clojure :exclude [cycle sequence bounded-count iterator-seq dedupe]))
 
 ;;TODO unit test
-;; fix comma in docstring - Ambrose
+;; fix comma in docstring after "(sequence nil) yields ()" - Ambrose
 ;; https://clojure.atlassian.net/browse/CLJ-2795
 (defn sequence
   "Coerces coll to a (possibly empty) sequence, if it is not already
@@ -19,7 +19,8 @@
   lazier/sequence additionally:
   - avoids realizing the first element of the return until it is needed.
   - realizes 32 elements per chunk instead of 33, preserving 32 elements
-    per chunk."
+    per chunk.
+  - fixes a comma in the docstring."
   {:added "1.0"
    :static true}
   ([coll]

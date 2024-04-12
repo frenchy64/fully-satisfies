@@ -50,6 +50,7 @@
                 run (cons fst (take-while #(= fv (f %)) (next s)))]
             (cons run (partition-by f (lazy-seq (drop (count run) s))))))))))
 
+;;TODO figure out if this corner case is possible
 (let [halt (Object.)]
   (defn halt-when
     "Returns a transducer that ends transduction when pred returns true

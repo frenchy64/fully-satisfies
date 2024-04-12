@@ -60,15 +60,15 @@
     (count coll)
     (if (pos? n)
       (loop [i 1 s (seq coll)]
-        ;; i<=(count coll)+1
+        ;; i-1<=(count coll)
         (if s
           ;; i<=(count coll)
           (if (< i n)
-            ;; restablish i<=(count coll)+1
+            ;; restablish i-1<=(count coll)
             (recur (inc i) (next s))
             ;; i<=(count coll)
             i)
-          ;; i==(count coll)+1
+          ;; i-1==(count coll)
           (dec i)))
       0)))
 

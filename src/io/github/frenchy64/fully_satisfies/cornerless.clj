@@ -8,7 +8,7 @@
      new value.  Returns a lazy seq of partitions.  Returns a stateful
      transducer when no collection is provided.
     
-     Additionally the cornerless/partition-by transducer behaves correctly for
+     Additionally, the cornerless/partition-by transducer behaves correctly for
      all values (including :clojure.core/none)."
     {:added "1.2"
      :static true}

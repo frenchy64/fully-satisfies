@@ -159,14 +159,14 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; lazier/lsequence
+;; lazier/sequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9
   (deftest lazier-sequence-chunks-lazy-seq-test
     (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
           head-holder (atom (lazier/sequence (map identity) lseq))]
-      (when (testing "initial call to sequence realizes one element"
+      (when (testing "initial call to sequence realizes no elements"
               (is-live #{} live))
         (when (testing "seq holds 32 elements"
                 (swap! head-holder seq)

@@ -127,8 +127,23 @@
             (testing "release hold"
               (is-live #{} live))))))))
 
+(comment
+  (do (nth (sequence (map identity)
+                               (map prn (range)))
+           32)
+      nil)
+  (do (nth (lazier/sequence (map identity)
+                            (map prn (range)))
+           32)
+      nil)
+  (do (nth (lazier/sequence (map identity)
+                               (map prn (range)))
+           64)
+      nil)
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; lazier/sequence
+;; lazier/lsequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9

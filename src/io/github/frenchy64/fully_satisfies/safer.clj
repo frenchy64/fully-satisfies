@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.safer
   (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last
-                            sort-by splitv-at partitionv-all last])
+                            sort-by splitv-at partitionv-all last not-every?])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test
@@ -17,6 +17,14 @@
       (recur pred (next coll))
       false)
     true))
+
+(def
+ ^{:tag Boolean
+   :doc "Returns false if (pred x) is logical true for every x in
+  coll, else true."
+   :arglists '([pred coll])
+   :added "1.0"}
+ not-every? (comp not every?)) ;; use safer/every? - Ambrose
 
 (defn drop-last
   "Return a lazy sequence of all but the last n (default 1) items in coll"

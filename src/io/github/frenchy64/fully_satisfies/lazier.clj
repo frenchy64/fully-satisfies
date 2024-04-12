@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
-  (:refer-clojure :exclude [cycle drop sequence dorun bounded-count]))
+  (:refer-clojure :exclude [cycle drop sequence dorun bounded-count
+                            iterator-seq]))
 
 (when-not (= "true" (System/getProperty "io.github.frenchy64.fully-satisfies.safer.drop.no-1.12-perf-warn"))
   (when (try (Class/forName "clojure.lang.IDrop")
@@ -41,6 +42,7 @@
 
 ;;TODO unit test
 ;; fix comma in docstring - Ambrose
+;; https://clojure.atlassian.net/browse/CLJ-2795
 (defn sequence
   "Coerces coll to a (possibly empty) sequence, if it is not already
   one. Will not force a lazy seq. (sequence nil) yields (). When a
@@ -105,3 +107,13 @@
           (recur (inc i) (next s))
           i))
       0)))
+
+(defn iterator-seq
+  "Returns a seq on a java.util.Iterator. Note that most collections
+  providing iterators implement Iterable and thus support seq directly.
+  Seqs cache values, thus iterator-seq should not be used on any
+  iterator that repeatedly returns the same mutable object."
+  {:added "1.0"
+   :static true}
+  [iter]
+  (io.github.frenchy64.fully_satisfies.lazier.RT/chunkIteratorSeq iter))

@@ -24,6 +24,21 @@ public class RT{
 ////////////// Collections support /////////////////////////////////
 
 private static final int CHUNK_SIZE = 32;
+public static ISeq chunkIteratorSeq(final Iterator iter){
+    if(iter.hasNext()) {
+        return new LazySeq(new AFn() {
+            public Object invoke() {
+                Object[] arr = new Object[CHUNK_SIZE];
+                int n = 0;
+                while(n < CHUNK_SIZE && iter.hasNext()) // switch conditions to avoid realizing extra element - Ambrose
+                    arr[n++] = iter.next();
+                return new ChunkedCons(new ArrayChunk(arr, 0, n), chunkIteratorSeq(iter));
+            }
+        });
+    }
+    return null;
+}
+
 public static ISeq chunkIteratorSequence(final Iterator iter){
     // return a LazySeq instead of calling hasNext() and forcing first element - Ambrose
     return new LazySeq(new AFn() {

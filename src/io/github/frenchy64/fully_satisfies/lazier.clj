@@ -88,11 +88,12 @@
   lazier/dedupe additionally:
   - does not force a lazy seq until needed
   - forces 32 elements per chunk instead of 33, preserving 32 elements
-    per chunk."
+    per chunk.
+  - transducer arity behaves correctly for all inputs (including :clojure.core/none)"
   {:added "1.7"}
   ([]
    (fn [rf]
-     (let [pv (volatile! ::none)]
+     (let [pv (volatile! (Object.))]
        (fn
          ([] (rf))
          ([result] (rf result))

@@ -59,15 +59,12 @@
   (if (counted? coll)
     (count coll)
     (if (pos? n)
-      (loop [i 1 s (seq coll)]
+      (loop [i 0 s (seq coll)]
         (if s
-          (if (< i n)
-            (recur (inc i) (next s))
-            ;; out of fuel, return count so far
-            i)
-          ;; end of coll, i is count of coll is s is seq.
-          ;; back off one since it's nil.
-          (dec i)))
+          (let [i (inc i)]
+            (cond-> i
+              (< i n) (recur (next s))))
+          i))
       0)))
 
 (defn iterator-seq

@@ -84,14 +84,21 @@
 
 (deftest lazier-bounded-count-test
   (testing "semantics"
-    (doseq [f [#'bounded-count #'lazier/bounded-count]]
+    (doseq [f [#'bounded-count #'lazier/bounded-count #'lazier/bounded-count']]
       (testing (pr-str f)
         (dotimes [i 20]
           (testing (pr-str i)
             (is (= i (f 0 (range i))))
             (is (= (min i 10) (f i (lazy-range 10))))
             (is (= 0 (f i (lazy-range 0))))
-            (is (= i (f i (lazy-range i)))))))))
+            (is (= i (f i (lazy-range i))))))))
+    (doseq [i (range 20)]
+      (doseq [f [#'bounded-count #'lazier/bounded-count]]
+        (testing (pr-str f i)
+          (is (= (min i 10) (f i (lazy-seq (range 10)))))))
+      (if (zero? i)
+        (is (= i (lazier/bounded-count' i (lazy-seq (range 10)))))
+        (is (= 10 (lazier/bounded-count' i (lazy-seq (range 10))))))))
   (testing "bounded-count 0"
     (let [realized (atom #{})]
       (is (= 0 (bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))

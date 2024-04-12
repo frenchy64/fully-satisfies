@@ -68,6 +68,28 @@
           i))
       0)))
 
+(defn bounded-count'
+  "If coll is counted? returns its count, else will count at most the first n
+  elements of coll using its seq, short-circuiting if a counted? seq is found
+  within n-1 nexts.
+  
+  lazier/bounded-count' additionally:
+  - does not force coll if n==0
+  - forces at most n elements of a lazy seq instead of n+1."
+  [n coll]
+  (if (counted? coll)
+    (count coll)
+    (if (pos? n)
+      (loop [i 0 s (seq coll)]
+        (if s
+          (if (counted? s)
+            (+ i (count s))
+            (let [i (inc i)]
+              (cond-> i
+                (< i n) (recur (next s)))))
+          i))
+      0)))
+
 (defn iterator-seq
   "Returns a seq on a java.util.Iterator. Note that most collections
   providing iterators implement Iterable and thus support seq directly.

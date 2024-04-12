@@ -69,3 +69,21 @@
     (let [realized (atom #{})]
       (nnext (lazier/cycle (map #(swap! realized conj %) (lazy-range))))
       (is (= #{0 1} @realized)))))
+
+(deftest lazier-dedupe-test
+  (testing "dedupe init"
+    (let [realized (atom #{})]
+      (dedupe (map #(swap! realized conj %) (lazy-range)))
+      (is (= #{0} @realized))))
+  (testing "lazier/dedupe init"
+    (let [realized (atom #{})]
+      (lazier/dedupe (map #(swap! realized conj %) (lazy-range)))
+      (is (= #{} @realized))))
+  (testing "dedupe seq"
+    (let [realized (atom #{})]
+      (seq (dedupe (map #(swap! realized conj %) (lazy-range))))
+      (is (= (into (sorted-set) (range 33)) @realized))))
+  (testing "lazier/dedupe seq"
+    (let [realized (atom #{})]
+      (seq (lazier/dedupe (map #(swap! realized conj %) (lazy-range))))
+      (is (= (into (sorted-set) (range 32)) @realized)))))

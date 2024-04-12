@@ -31,7 +31,6 @@
        xform
        (map #(clojure.lang.RT/iter %) (cons coll colls))))))
 
-
 (defn cycle
   "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
   {:added "1.0"
@@ -52,9 +51,10 @@
    (when-let [s (next coll)] ;; leaner, just call next instead of seq+next - Ambrose
      (recur s)))
   ([n coll]
-   (when (pos? n) ;; lazier, test pos? first - Ambrose
-     (when-let [coll (next coll)] ;; leaner, just call next instead of seq+next - Ambrose
-       (recur (dec n) coll)))))
+   (when (pos? n)
+     (loop [n (dec n) s (seq coll)]
+       (when (and (pos? n) s)
+         (recur (dec n) (next s)))))))
 
 (defn bounded-count
   "If coll is counted? returns its count, else will count at most the first n

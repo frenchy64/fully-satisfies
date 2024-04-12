@@ -12,7 +12,9 @@
 (defn drop-while
   "Returns a lazy sequence of the items in coll starting from the
   first item for which (pred item) returns logical false.  Returns a
-  stateful transducer when no collection is provided."
+  stateful transducer when no collection is provided.
+  
+  Additionally, leaner/drop-while replaces calls to rest+seq with next."
   {:added "1.0"
    :static true}
   ([pred]
@@ -33,16 +35,29 @@
                   (if (and s (pred (first s)))
                     (recur pred (next s))
                     s))]
-       (lazy-seq (step pred (seq coll))))))
+       (lazy-seq (step (seq coll))))))
 
 (defn some
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
   this will return :fred if :fred is in the sequence, otherwise nil:
-  (some #{:fred} coll)"
+  (some #{:fred} coll)
+  
+  Additionally, leaner/some only calls seq once instead of for each element."
   {:added "1.0"
    :static true}
   [pred coll]
   (loop [s (seq coll)] ;; only call seq at top of loop - Ambrose
     (when s
       (or (pred (first s)) (recur (next s))))))
+
+(def
+ ^{:tag Boolean
+   :doc "Returns false if (pred x) is logical true for any x in coll,
+  else true.
+        
+  Additionally, leaner/not-any? only calls seq once instead of for each element."
+   :arglists '([pred coll])
+   :added "1.0"}
+ ;; use leaner/some - Ambrose
+ not-any? (comp not some))

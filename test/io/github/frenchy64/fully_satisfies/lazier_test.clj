@@ -3,11 +3,14 @@
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
             [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
-(defn lazy-range []
-  (let [step (fn step [i]
-               (lazy-seq
-                 (cons i (step (inc i)))))]
-    (step 0)))
+(defn lazy-range
+  ([] (lazy-range ##Inf))
+  ([end]
+   (let [step (fn step [i]
+                (lazy-seq
+                  (when (< i end)
+                    (cons i (step (inc i))))))]
+     (step 0))))
 
 (comment
   (do (lazier/dorun 0 (map prn (lazy-range)))
@@ -77,6 +80,13 @@
       (is (= (into (sorted-set) (range 32)) @realized)))))
 
 (deftest lazier-bounded-count-test
+  (testing "semantics"
+    (doseq [f [#'bounded-count #'lazier/bounded-count]]
+      (testing (pr-str f)
+        (dotimes [i 20]
+          (is (= 10 (f 0 (range 10))))
+          (is (= (min i 10) (f i (lazy-range 10)))))
+        (is (= 10 (f 0 (range 10)))))))
   (testing "bounded-count 0"
     (let [realized (atom #{})]
       (is (= 0 (bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))

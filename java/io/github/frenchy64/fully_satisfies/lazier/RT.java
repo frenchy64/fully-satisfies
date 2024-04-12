@@ -32,7 +32,9 @@ public static ISeq chunkIteratorSeq(final Iterator iter){
                 int n = 0;
                 while(n < CHUNK_SIZE && iter.hasNext()) // switch conditions to avoid realizing extra element - Ambrose
                     arr[n++] = iter.next();
-                return new ChunkedCons(new ArrayChunk(arr, 0, n), chunkIteratorSeq(iter));
+                return new ChunkedCons(new ArrayChunk(arr, 0, n),
+                    // call chunkIteratorSequence to avoid forcing extra item - Ambrose
+                    chunkIteratorSequence(iter));
             }
         });
     }

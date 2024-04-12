@@ -112,10 +112,12 @@
           head-holder (atom (sequence (map identity) lseq))]
       (when (testing "initial call to sequence realizes one element"
               ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
+              ;; https://clojure.atlassian.net/browse/CLJ-2795
               (is-live #{0} live))
         (when (testing "seq holds 33 elements"
                 (swap! head-holder seq)
-                ;;surprising
+                ;;FIXME this is a bug. recursive call to chunkIteratorSeq calls
+                ;; iter.hasNext () an extra time without adding to a chunk
                 (is-live (into (sorted-set) (range 33)) live))
           (when (every?
                   (fn [i]
@@ -138,8 +140,13 @@
   (do (first (sequence (map #(prn "computed" %))
                        (map #(do (prn "realized" %) %) (range))))
       nil)
-  (do (first (lazier/sequence (map #(prn "computed" %))
-                              (map #(do (prn "realized" %) %) (range))))
+  (do (lazier/sequence (map #(prn "computed" %))
+                       (map #(do (prn "realized" %) %) (range)))
+      nil)
+  (do (first (let [c (lazier/sequence (map #(prn "computed" %))
+                                      (map #(do (prn "realized" %) %) (range)))]
+               (prn "done")
+               c))
       nil)
   (do (nth (lazier/sequence (map identity)
                             (map prn (range)))

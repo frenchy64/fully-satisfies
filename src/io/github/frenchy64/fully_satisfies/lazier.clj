@@ -98,6 +98,7 @@
           i))
       0)))
 
+;; note: clojure.core/seq has a similar code path for Iterables
 (defn iterator-seq
   "Returns a seq on a java.util.Iterator. Note that most collections
   providing iterators implement Iterable and thus support seq directly.

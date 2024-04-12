@@ -12,7 +12,12 @@
   items of each coll, followed by the set of second
   items in each coll, until any one of the colls is exhausted.  Any
   remaining items in other colls are ignored. The transform should accept
-  number-of-colls arguments"
+  number-of-colls arguments.
+  
+  lazier/sequence additionally:
+  - avoids realizing the first element of the return until it is needed.
+  - realizes 32 elements per chunk instead of 33, preserving 32 elements
+    per chunk."
   {:added "1.0"
    :static true}
   ([coll]
@@ -31,7 +36,9 @@
        (map #(clojure.lang.RT/iter %) (cons coll colls))))))
 
 (defn cycle
-  "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
+  "Returns a lazy (infinite!) sequence of repetitions of the items in coll.
+  
+  lazier/cycle does not realize a lazy seq coll until it is needed."
   {:added "1.0"
    :static true}
   [coll] (if (seq? coll) ;; wrap in lazy-seq if seq - Ambrose
@@ -40,7 +47,11 @@
 
 (defn bounded-count
   "If coll is counted? returns its count, else will count at most the first n
-  elements of coll using its seq"
+  elements of coll using its seq.
+  
+  lazier/bounded-count additionally:
+  - does not force coll if n==0
+  - forces at most n elements of a lazy seq instead of n+1."
   {:added "1.9"}
   [n coll]
   (if (counted? coll)
@@ -56,7 +67,11 @@
   "Returns a seq on a java.util.Iterator. Note that most collections
   providing iterators implement Iterable and thus support seq directly.
   Seqs cache values, thus iterator-seq should not be used on any
-  iterator that repeatedly returns the same mutable object."
+  iterator that repeatedly returns the same mutable object.
+  
+  lazier/iterator-seq additionally:
+  - forces 32 elements per chunk instead of 33, preserving 32 elements
+    per chunk."
   {:added "1.0"
    :static true}
   [iter]
@@ -64,7 +79,12 @@
 
 (defn dedupe
   "Returns a lazy sequence removing consecutive duplicates in coll.
-  Returns a transducer when no collection is provided."
+  Returns a transducer when no collection is provided.
+
+  lazier/dedupe additionally:
+  - does not force a lazy seq until needed
+  - forces 32 elements per chunk instead of 33, preserving 32 elements
+    per chunk."
   {:added "1.7"}
   ([]
    (fn [rf]

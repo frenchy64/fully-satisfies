@@ -105,5 +105,6 @@
               (if (= prior input)
                 result
                 (rf result input))))))))
-    ;;use lazier/sequence - Ambrose
+    ;; use lazier/sequence - Ambrose
+    ;; allow :clojure.core/none - Ambrose
     ([coll] (sequence (dedupe) coll))))

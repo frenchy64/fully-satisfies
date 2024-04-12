@@ -1,6 +1,7 @@
-(ns io.github.frenchy64.fully-satisfies.cornerless
-  "Variants of clojure.core functions that don't have obscure corner cases."
-  (:refer-clojure :exclude [partition-by]))
+(ns io.github.frenchy64.fully-satisfies.uniform
+  "Variants of clojure.core functions that are generalized
+  to work uniformly for all values."
+  (:refer-clojure :exclude [partition-by halt-when]))
 
 (let [none (Object.)]
   (defn partition-by
@@ -8,7 +9,7 @@
      new value.  Returns a lazy seq of partitions.  Returns a stateful
      transducer when no collection is provided.
     
-     Additionally, the cornerless/partition-by transducer behaves correctly for
+     Additionally, the cornerless/partition-by transducer behaves uniformly for
      all values (including :clojure.core/none)."
     {:added "1.2"
      :static true}
@@ -48,3 +49,31 @@
                 fv (f fst)
                 run (cons fst (take-while #(= fv (f %)) (next s)))]
             (cons run (partition-by f (lazy-seq (drop (count run) s))))))))))
+
+(let [halt (Object.)]
+  (defn halt-when
+    "Returns a transducer that ends transduction when pred returns true
+    for an input. When retf is supplied it must be a fn of 2 arguments -
+    it will be passed the (completed) result so far and the input that
+    triggered the predicate, and its return value (if it does not throw
+    an exception) will be the return value of the transducer. If retf
+    is not supplied, the input that triggered the predicate will be
+    returned. If the predicate never returns true the transduction is
+    unaffected.
+    
+    cornerless/halt-when also works uniformly for all values (including
+    returning a map with key :clojure.core/halt)."
+    {:added "1.9"}
+    ([pred] (halt-when pred nil))
+    ([pred retf]
+       (fn [rf]
+         (fn
+           ([] (rf))
+           ([result]
+              (if (and (map? result) (contains? result halt))
+                (get result halt)
+                (rf result)))
+           ([result input]
+              (if (pred input)
+                (reduced {halt (if retf (retf (rf result) input) input)})
+                (rf result input))))))))

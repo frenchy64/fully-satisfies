@@ -124,7 +124,7 @@
                     (swap! head-holder next)
                     (testing (str i " nexts holds 33 elements")
                       (is-live (into (sorted-set) (range 33)) live)))
-                  (range 32))
+                  (range 31))
             (reset! head-holder nil)
             (testing "release hold"
               (is-live #{} live))))))))

@@ -20,12 +20,13 @@
 (when-jdk9 (import [java.lang.ref Cleaner]))
 
 (when-jdk9
+  (defonce ^:private -cleaner (Cleaner/create))
   (defn register-cleaner!
     "Register a thunk to be called when object v
     becomes phantom reachable."
     [v f]
     (let [^Runnable f #(f)]
-      (.register (Cleaner/create) v f)
+      (.register -cleaner v f)
       v)))
 
 (when-jdk9

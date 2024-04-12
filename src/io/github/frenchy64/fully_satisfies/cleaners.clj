@@ -45,23 +45,26 @@
 (when-jdk9
   (defn head-hold-detecting-lazy-seq
     "Returns a map with entries:
-    - :lseq, a lazy sequence where each element is a distinct fresh Object entity, or 
-      the result of (i->v <index>) when called.
-    - :live, an atom containing a set of indicies that are 
+    - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
+      the result of (i->v {:i <index>}) when provided. Returning :end key from i->v arg also ends the sequence.
+    - :live, an atom containing a set of indicies whose values are (likely) currently strong references.
     
     For the most precise results, each element returned by i->v should be distinct according to identical?
-    from all other values in the current JVM environment.
-    "
+    from all other values in the current JVM environment."
     ([] (head-hold-detecting-lazy-seq nil))
-    ([{:keys [i->v]
-       :or {i->v (fn [i] (Object.))}}]
+    ([{:keys [i->v n]
+       :or {i->v (fn [{:keys [i end]}] (Object.))
+            n ##Inf}}]
      (let [live (atom #{})
            rec (fn rec [i]
                  (lazy-seq
-                   (let [v (i->v i)]
-                     (swap! live conj i)
-                     (register-cleaner! v #(swap! live disj i))
-                     (concat [v] (rec (inc i))))))]
+                   (when (< i n)
+                     (let [end (Object.)
+                           v (i->v {:i i :end end})]
+                       (when-not (identical? v end)
+                         (swap! live conj i)
+                         (register-cleaner! v #(swap! live disj i))
+                         (cons v (rec (inc i))))))))]
        {:lseq (rec 0)
         :live live}))))
 

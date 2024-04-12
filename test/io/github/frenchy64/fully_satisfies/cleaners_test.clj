@@ -103,6 +103,46 @@
             (is-live #{} live)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; map
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest map-head-holding-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        c (atom (map #(do % nil) lseq))
+        _ (is-live #{} live)
+        _ (swap! c seq)
+        _ (is-live #{} live)
+        _ (swap! c next)
+        _ (is-live #{} live)
+        ;; hold onto c
+        _ (reset! c nil)
+        _ (is-live #{} live)])
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        c (atom (map #(do %) lseq))
+        ;; c=(...)
+        _ (testing "init"
+            (is-live #{} live))
+        _ (swap! c seq)
+        ;; c=(0 ...)
+        _ (testing "seq"
+            (is-live #{0} live))
+        _ (next @c)
+        ;; c=(0 1 ...)
+        _ (testing "next!"
+            (is-live #{0 1} live))
+        _ (swap! c next)
+        ;; c=(1 ...)
+        _ (testing "swap next"
+            (is-live #{1} live))
+        _ (swap! c next)
+        ;; c=(2 ...)
+        _ (testing "swap nnext"
+            (is-live #{2} live))
+        _ (reset! c nil)
+        ;; c=nil
+        _ (is-live #{} live)]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; sequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

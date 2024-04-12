@@ -56,14 +56,13 @@
   [n coll]
   (if (counted? coll)
     (count coll)
-    (if (pos? n) ;; don't force seq if n==0 - Ambrose
-      (let [n-1 (dec n)]
-        (loop [i 0 s (seq coll)] ;; start i at 1 to skip extra next - Ambrose
-          (if (= i n-1)
-            (inc i)
-            (if s
-              (recur (inc i) (next s))
-              i))))
+    (if (pos? n)
+      (loop [i 1 s (seq coll)]
+        (if s
+          (if (< i n)
+            (recur (inc i) (next s))
+            i)
+          (dec i)))
       0)))
 
 (defn iterator-seq

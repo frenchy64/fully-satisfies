@@ -84,9 +84,11 @@
     (doseq [f [#'bounded-count #'lazier/bounded-count]]
       (testing (pr-str f)
         (dotimes [i 20]
-          (is (= 10 (f 0 (range 10))))
-          (is (= (min i 10) (f i (lazy-range 10)))))
-        (is (= 10 (f 0 (range 10)))))))
+          (testing (pr-str i)
+            (is (= i (f 0 (range i))))
+            (is (= (min i 10) (f i (lazy-range 10))))
+            (is (= 0 (f i (lazy-range 0))))
+            (is (= i (f i (lazy-range i)))))))))
   (testing "bounded-count 0"
     (let [realized (atom #{})]
       (is (= 0 (bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))

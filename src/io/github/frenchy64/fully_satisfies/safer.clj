@@ -33,12 +33,13 @@
 (defn drop-last
   "Return a lazy sequence of all but the last n (default 1) items in coll
   
-  safer/drop-last additionally is thread-safe for mutable collections."
+  safer/drop-last additionally is thread-safe for mutable collections,
+  at the cost of a call to seq."
   {:added "1.0"
    :static true}
   ([coll] (drop-last 1 coll))
   ([n coll] (let [coll (lazier/sequence coll)] ;; bind a sequence - Ambrose
-              (map (fn [x _] x) coll (lazier/drop n coll)))))
+              (map (fn [x _] x) coll (drop n coll)))))
 
 (defn take-last
   "Returns a seq of the last n items in coll.  Depending on the type
@@ -57,21 +58,23 @@
 (defn split-at
   "Returns a vector of [(take n coll) (drop n coll)]
   
-  safer/split-at additionally is thread-safe for mutable collections."
+  safer/split-at additionally is thread-safe for mutable collections,
+  at the cost of a call to seq."
   {:added "1.0"
    :static true}
   [n coll]
-  (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
+  (let [coll (lazier/sequence coll)] ;; call seq on `coll` - Ambrose
     [(take n coll) (drop n coll)]))
 
 (defn split-with
   "Returns a vector of [(take-while pred coll) (drop-while pred coll)]
   
-  safer/split-with additionally is thread-safe for mutable collections."
+  safer/split-with additionally is thread-safe for mutable collections,
+  at the cost of a call to seq."
   {:added "1.0"
    :static true}
   [pred coll]
-  (let [coll (seq coll)] ;; call seq on `coll` - Ambrose
+  (let [coll (lazier/sequence coll)] ;; call seq on `coll` - Ambrose
     [(take-while pred coll) (drop-while pred coll)]))
 
 (defn sort
@@ -81,7 +84,7 @@
   not be reordered.  If coll is a Java array, it will be modified.  To
   avoid this, sort a copy of the array.
   
-  safer/sort additionally is thread-safe for mutable collections."
+  safer/sort additionally is thread-safe for mutable collections (avoids NPE)."
   {:added "1.0"
    :static true}
   ([coll]
@@ -90,7 +93,7 @@
    (if (seq coll)
      (let [a (to-array coll)]
        (. java.util.Arrays (sort a comp))
-       (with-meta (or (seq a) ()) ;; in case mutated between seq and to-array - Ambrose
+       (with-meta (or (seq a) ()) ;; in case resized between seq and to-array - Ambrose
                   (meta coll)))
      ())))
 
@@ -102,7 +105,7 @@
   not be reordered.  If coll is a Java array, it will be modified.  To
   avoid this, sort a copy of the array.
   
-  safer/sort-by additionally is thread-safe for mutable collections."
+  safer/sort-by additionally is thread-safe for mutable collections (avoids NPE)."
   {:added "1.0"
    :static true}
   ([keyfn coll]
@@ -117,7 +120,8 @@
   safer/splitv-at additionally is thread-safe for mutable collections."
   {:added "1.12"}
   [n coll]
-  (let [coll (seq coll)] ;; bind seq - Ambrose
+  (let [coll (cond-> coll
+               (not (coll? coll)) lazier/sequence)] ;; bind seq if mutable - Ambrose
     [(into [] (take n) coll) (drop n coll)]))
 
 (defn partitionv-all
@@ -134,7 +138,7 @@
   ([n step coll]
    (lazy-seq
      (when-let [s (seq coll)]
-       (let [seg (into [] (take n) s)] ;; use s not coll - Ambrose
+       (let [seg (into [] (take n) (if (coll? coll) coll s))] ;; use s not coll - Ambrose
          (cons seg (partitionv-all n step (drop step s))))))))
 
 (def 
@@ -142,15 +146,14 @@
    :doc "Return the last item in coll, in linear time
 
         safer/last additionally:
-        - is thread-safe for mutable collections
-        - has an extra call to seq but calls next once every
-          step instead of twice."
+        - is thread-safe for mutable collections, at the cost of a call to seq.
+        - calls next once every step instead of twice."
    :added "1.0"
    :static true}
  last (fn ^:static last [s]
-        (loop [s (seq s)]  ;; call seq at top - Ambrose
-          (let [n (next s)]
-            (if n
+        (when-let [s (seq s)]   ;; call seq at top and short circuit - Ambrose
+          (loop [s s]
+            (if-let [n (next s)]
               (recur n) ;; reuse next - Ambrose
               (first s))))))
 
@@ -159,19 +162,17 @@
    :doc "Return a seq of all but the last item in coll, in linear time
         
         safer/butlast additionally:
-        - is threadsafe for mutable collections.
-        - "
+        - is threadsafe for mutable collections, at the cost of an additional
+          call to seq.
+        - calls next once per element instead of twice."
    :added "1.0"
    :static true}
  butlast (fn ^:static butlast [s]
-           ;; initialize loop with (seq s) - Ambrose
-           (let [s (seq s)]  ;; call seq at top - Ambrose
-             (when s ;; short-circuit - Ambrose
-               (loop [ret [] s s]
-                 (let [n (next s)]
-                   (if n
-                     (recur (conj ret (first s)) n) ;; reuse next - Ambrose
-                     (seq ret))))))))
+           (when-let [s (seq s)] ;; call seq at top and short-circuit - Ambrose
+             (loop [ret [] s s]
+               (if-let [n (next s)]
+                 (recur (conj ret (first s)) n) ;; reuse next - Ambrose
+                 (seq ret))))))
 
 #_ ;; prone to races between nth and count, but not obvious how to fix
 (defn rand-nth
@@ -182,4 +183,3 @@
    :static true}
   [coll]
   (nth coll (rand-int (count coll))))
-

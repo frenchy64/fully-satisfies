@@ -81,27 +81,28 @@
   [iter]
   (io.github.frenchy64.fully_satisfies.lazier.RT/chunkIteratorSeq iter))
 
-(defn dedupe
-  "Returns a lazy sequence removing consecutive duplicates in coll.
-  Returns a transducer when no collection is provided.
+(let [none (Object.)]
+  (defn dedupe
+    "Returns a lazy sequence removing consecutive duplicates in coll.
+    Returns a transducer when no collection is provided.
 
-  lazier/dedupe additionally:
-  - does not force a lazy seq until needed
-  - forces 32 elements per chunk instead of 33, preserving 32 elements
+    lazier/dedupe additionally:
+    - does not force a lazy seq until needed
+    - forces 32 elements per chunk instead of 33, preserving 32 elements
     per chunk.
-  - transducer arity behaves correctly for all inputs (including :clojure.core/none)"
-  {:added "1.7"}
-  ([]
-   (fn [rf]
-     (let [pv (volatile! (Object.))]
-       (fn
-         ([] (rf))
-         ([result] (rf result))
-         ([result input]
+    - transducer arity behaves correctly for all inputs (including :clojure.core/none)"
+    {:added "1.7"}
+    ([]
+     (fn [rf]
+       (let [pv (volatile! none)]
+         (fn
+           ([] (rf))
+           ([result] (rf result))
+           ([result input]
             (let [prior @pv]
               (vreset! pv input)
               (if (= prior input)
                 result
                 (rf result input))))))))
-  ;;use lazier/sequence - Ambrose
-  ([coll] (sequence (dedupe) coll)))
+    ;;use lazier/sequence - Ambrose
+    ([coll] (sequence (dedupe) coll))))

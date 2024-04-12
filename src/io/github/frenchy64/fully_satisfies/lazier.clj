@@ -60,15 +60,13 @@
     (count coll)
     (if (pos? n)
       (loop [i 1 s (seq coll)]
-        ;; i-1<=(count coll)
         (if s
-          ;; i<=(count coll)
           (if (< i n)
-            ;; restablish i-1<=(count coll)
             (recur (inc i) (next s))
-            ;; i<=(count coll)
+            ;; out of fuel, return count so far
             i)
-          ;; i-1==(count coll)
+          ;; end of coll, i is count of coll is s is seq.
+          ;; back off one since it's nil.
           (dec i)))
       0)))
 

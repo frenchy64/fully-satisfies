@@ -123,10 +123,11 @@
    :added "1.0"
    :static true}
  last (fn ^:static last [s]
-        (let [s (seq s)] ;; call seq at top - Ambrose
-          (if (next s)
-            (recur (next s))
-            (first s)))))
+        (loop [s (seq s)]  ;; call seq at top - Ambrose
+          (let [n (next s)]
+            (if n
+              (recur n) ;; call next only once - Ambrose
+              (first s))))))
 
 (def 
  ^{:arglists '([coll])

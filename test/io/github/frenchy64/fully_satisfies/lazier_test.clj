@@ -87,3 +87,21 @@
     (let [realized (atom #{})]
       (seq (lazier/dedupe (map #(swap! realized conj %) (lazy-range))))
       (is (= (into (sorted-set) (range 32)) @realized)))))
+
+(deftest lazier-bounded-count-test
+  (testing "bounded-count 0"
+    (let [realized (atom #{})]
+      (is (= 0 (bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= #{0} @realized))))
+  (testing "lazier/bounded-count 0"
+    (let [realized (atom #{})]
+      (is (= 0 (lazier/bounded-count 0 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= #{} @realized))))
+  (testing "bounded-count 10"
+    (let [realized (atom #{})]
+      (is (= 10 (bounded-count 10 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= (into (sorted-set) (range 11)) @realized))))
+  (testing "lazier/bounded-count 10"
+    (let [realized (atom #{})]
+      (is (= 10 (lazier/bounded-count 10 (map #(swap! realized conj %) (lazy-range)))))
+      (is (= (into (sorted-set) (range 10)) @realized)))))

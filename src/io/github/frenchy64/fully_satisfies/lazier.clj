@@ -64,7 +64,7 @@
   (if (counted? coll)
     (count coll)
     (if (pos? n) ;; don't force seq if n==0 - Ambrose
-      (loop [i 0 s (seq coll)]
+      (loop [i 1 s (seq coll)] ;; start i at 1 to skip extra next - Ambrose
         (if (and s (< i n))
           (recur (inc i) (next s))
           i))

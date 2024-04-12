@@ -6,7 +6,9 @@
 ;;TODO unit test
 (defn every?
   "Returns true if (pred x) is logical true for every x in coll, else
-  false."
+  false.
+  
+  safer/every? additionally is thread-safe for mutable collections."
   {:tag Boolean
    :added "1.0"
    :static true}
@@ -21,13 +23,17 @@
 (def
  ^{:tag Boolean
    :doc "Returns false if (pred x) is logical true for every x in
-  coll, else true."
+  coll, else true.
+        
+  safer/not-every? additionally is thread-safe for mutable collections."
    :arglists '([pred coll])
    :added "1.0"}
  not-every? (comp not every?)) ;; use safer/every? - Ambrose
 
 (defn drop-last
-  "Return a lazy sequence of all but the last n (default 1) items in coll"
+  "Return a lazy sequence of all but the last n (default 1) items in coll
+  
+  safer/drop-last additionally is thread-safe for mutable collections."
   {:added "1.0"
    :static true}
   ([coll] (drop-last 1 coll))
@@ -36,7 +42,9 @@
 
 (defn take-last
   "Returns a seq of the last n items in coll.  Depending on the type
-  of coll may be no better than linear time.  For vectors, see also subvec."
+  of coll may be no better than linear time.  For vectors, see also subvec.
+  
+  safer/drop-last additionally is thread-safe for mutable collections."
   {:added "1.1"
    :static true}
   [n coll]
@@ -47,7 +55,9 @@
         s))))
 
 (defn split-at
-  "Returns a vector of [(take n coll) (drop n coll)]"
+  "Returns a vector of [(take n coll) (drop n coll)]
+  
+  safer/split-at additionally is thread-safe for mutable collections."
   {:added "1.0"
    :static true}
   [n coll]
@@ -55,7 +65,9 @@
     [(take n coll) (drop n coll)]))
 
 (defn split-with
-  "Returns a vector of [(take-while pred coll) (drop-while pred coll)]"
+  "Returns a vector of [(take-while pred coll) (drop-while pred coll)]
+  
+  safer/split-with additionally is thread-safe for mutable collections."
   {:added "1.0"
    :static true}
   [pred coll]
@@ -67,7 +79,9 @@
   supplied, uses compare.  comparator must implement
   java.util.Comparator.  Guaranteed to be stable: equal elements will
   not be reordered.  If coll is a Java array, it will be modified.  To
-  avoid this, sort a copy of the array."
+  avoid this, sort a copy of the array.
+  
+  safer/sort additionally is thread-safe for mutable collections."
   {:added "1.0"
    :static true}
   ([coll]
@@ -86,7 +100,9 @@
   supplied, uses compare.  comparator must implement
   java.util.Comparator.  Guaranteed to be stable: equal elements will
   not be reordered.  If coll is a Java array, it will be modified.  To
-  avoid this, sort a copy of the array."
+  avoid this, sort a copy of the array.
+  
+  safer/sort-by additionally is thread-safe for mutable collections."
   {:added "1.0"
    :static true}
   ([keyfn coll]
@@ -96,7 +112,9 @@
    (sort (fn [x y] (. comp (compare (keyfn x) (keyfn y)))) coll)))
 
 (defn splitv-at
-  "Returns a vector of [(into [] (take n) coll) (drop n coll)]"
+  "Returns a vector of [(into [] (take n) coll) (drop n coll)]
+  
+  safer/splitv-at additionally is thread-safe for mutable collections."
   {:added "1.12"}
   [n coll]
   (let [coll (seq coll)] ;; bind seq - Ambrose
@@ -105,7 +123,9 @@
 (defn partitionv-all
   "Returns a lazy sequence of vector partitions, but may include
   partitions with fewer than n items at the end.
-  Returns a stateful transducer when no collection is provided."
+  Returns a stateful transducer when no collection is provided.
+  
+  safer/partitionv-all additionally is thread-safe for mutable collections."
   {:added "1.12"}
   ([n]
    (partition-all n))
@@ -119,38 +139,39 @@
 
 (def 
  ^{:arglists '([coll])
-   :doc "Return the last item in coll, in linear time"
+   :doc "Return the last item in coll, in linear time
+
+        safer/last additionally:
+        - is thread-safe for mutable collections
+        - has an extra call to seq but calls next once every
+          step instead of twice."
    :added "1.0"
    :static true}
  last (fn ^:static last [s]
         (loop [s (seq s)]  ;; call seq at top - Ambrose
           (let [n (next s)]
             (if n
-              (recur n) ;; call next only once - Ambrose
+              (recur n) ;; reuse next - Ambrose
               (first s))))))
 
 (def 
  ^{:arglists '([coll])
-   :doc "Return a seq of all but the last item in coll, in linear time"
-   :added "1.0"
-   :static true}
- butlast (fn ^:static butlast [s]
-           (loop [ret [] s s]
-             (if (next s)
-               (recur (conj ret (first s)) (next s))
-               (seq ret)))))
-
-(def 
- ^{:arglists '([coll])
-   :doc "Return a seq of all but the last item in coll, in linear time"
+   :doc "Return a seq of all but the last item in coll, in linear time
+        
+        safer/butlast additionally:
+        - is threadsafe for mutable collections.
+        - "
    :added "1.0"
    :static true}
  butlast (fn ^:static butlast [s]
            ;; initialize loop with (seq s) - Ambrose
-           (loop [ret [] s (seq s)]
-             (if (next s)
-               (recur (conj ret (first s)) (next s))
-               (seq ret)))))
+           (let [s (seq s)]  ;; call seq at top - Ambrose
+             (when s ;; short-circuit - Ambrose
+               (loop [ret [] s s]
+                 (let [n (next s)]
+                   (if n
+                     (recur (conj ret (first s)) n) ;; reuse next - Ambrose
+                     (seq ret))))))))
 
 #_ ;; prone to races between nth and count, but not obvious how to fix
 (defn rand-nth

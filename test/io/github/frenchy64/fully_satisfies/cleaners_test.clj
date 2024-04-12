@@ -227,6 +227,26 @@
         _ (is-live #{} live)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; reduce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest reduce-head-holding-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
+                              {:n 20
+                               :i->v (fn [_] (volatile! (Object.)))})]
+    (reduce (fn [i vol]
+              (is-live #{i} live)
+              (vreset! vol nil)
+              ;; the Object impl of internal-reduce holds onto the
+              ;; head of the seq while calling the reducing function.
+              ;; this is because we need to wait to see if we return
+              ;; reduced before deciding whether to call `next`. perhaps
+              ;; we should call `rest` before calling the function?
+              (is-live #{i} live)
+              (inc i))
+            0 lseq)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; sequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

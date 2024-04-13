@@ -50,6 +50,8 @@
   Another caveat is that the functions here are perhaps more useful as
   validation of the leaky-seq-detection framework and for pedalogical purposes about sequences
   than as significant bump in real-world expressivity.
+  See the tests for how these implementations were verified:
+    io.github.frenchy64.fully-satisfies.leaky-seq-detection-test
  
   The author of this namespace can only speculate why the original functions were written this way.
   Perhaps the idea of a fn releasing a strong reference to one of its arguments was too rare to risk

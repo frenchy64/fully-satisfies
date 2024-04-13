@@ -67,12 +67,12 @@
       (is-live #{} live))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; map / keep / keep-indexed
+;; map / map-indexed / keep / keep-indexed
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9
   (deftest map-does-not-chunk-lazy-seq-test
-    (doseq [map [#'map #'keep #'keep-indexed]]
+    (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
       (testing map
         (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
               head-holder (atom (map vector lseq))]
@@ -90,7 +90,7 @@
 
 (when-jdk9
   (deftest map-chunks-chunked-seq-test
-    (doseq [map [#'map #'keep #'keep-indexed]]
+    (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
       (testing map
         (let [{:keys [live lseq]} (head-hold-detecting-chunked-seq)
               head-holder (atom (map vector lseq))]
@@ -112,7 +112,7 @@
                 (is-live #{} live)))))))))
 
 (deftest map-head-holding-test
-  (doseq [map [#'map #'keep #'keep-indexed]]
+  (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
             c (atom (map (constantly [nil]) lseq))
@@ -150,7 +150,7 @@
             _ (is-live #{} live)]))))
 
 (deftest map-head-holding-during-f-test
-  (doseq [map [#'map #'keep #'keep-indexed]]
+  (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
             idx (atom -1)
@@ -171,7 +171,8 @@
         (is (= 5 @idx))))))
 
 (deftest head-releasing-map-head-holding-during-f-test
-  (doseq [map [#'head-releasing/map #'head-releasing/keep #'head-releasing/keep-indexed]]
+  (doseq [map [#'head-releasing/map #'head-releasing/map-indexed
+               #'head-releasing/keep #'head-releasing/keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
             idx (atom -1)

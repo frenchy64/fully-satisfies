@@ -14,3 +14,25 @@
     ;; right
     (is (= [[1] [:clojure.core/none] [3] [:clojure.core/none]]
            (into [] (uniform/partition-by identity) [1 :clojure.core/none 3 :clojure.core/none])))))
+
+(deftest halt-when-uniform-test
+  ;; wrong
+  (is (= :should-be-wrapped
+         (into () (comp (halt-when (fn [_] false))
+                        (fn [rf]
+                          (fn
+                            ([] (rf))
+                            ([result] (rf result))
+                            ([result input]
+                             (reduced {:clojure.core/halt :should-be-wrapped})))))
+               [1])))
+  ;; right
+  (is (= {:clojure.core/halt :should-be-wrapped}
+         (into () (comp (uniform/halt-when (fn [_] false))
+                        (fn [rf]
+                          (fn
+                            ([] (rf))
+                            ([result] (rf result))
+                            ([result input]
+                             (reduced {:clojure.core/halt :should-be-wrapped})))))
+               [1]))))

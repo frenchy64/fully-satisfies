@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."
-  (:refer-clojure :exclude [map every? not-every? some not-any? mapcat keep]))
+  (:refer-clojure :exclude [map every? not-every? some not-any? mapcat keep keep-indexed]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more
@@ -14,7 +14,7 @@
   (loop [s (seq s)
          val val]
     (if s
-      (let [r (rest s) ;; release head of seq so f can own first
+      (let [r (rest s) ;; release head of seq so f can own first - Ambrose
             ret (f val (first s))]
         (if (reduced? ret)
           @ret
@@ -159,6 +159,45 @@
           (if (nil? x)
             (keep f r)
             (cons x (keep f r)))))))))
+
+(defn keep-indexed
+  "Returns a lazy sequence of the non-nil results of (f index item). Note,
+  this means false return values will be included.  f must be free of
+  side-effects.  Returns a stateful transducer when no collection is
+  provided."
+  {:added "1.2"
+   :static true}
+  ([f]
+   (fn [rf]
+     (let [iv (volatile! -1)]
+       (fn
+         ([] (rf))
+         ([result] (rf result))
+         ([result input]
+            (let [i (vswap! iv inc)
+                  v (f i input)]
+              (if (nil? v)
+                result
+                (rf result v))))))))
+  ([f coll]
+     (letfn [(keepi [idx coll]
+               (lazy-seq
+                (when-let [s (seq coll)]
+                  (if (chunked-seq? s)
+                    (let [c (chunk-first s)
+                          size (count c)
+                          b (chunk-buffer size)]
+                      (dotimes [i size]
+                        (let [x (f (+ idx i) (.nth c i))]
+                          (when-not (nil? x)
+                            (chunk-append b x))))
+                      (chunk-cons (chunk b) (keepi (+ idx size) (chunk-rest s))))
+                    (let [r (rest s) ;; release a strong reference to (first coll) - Ambrose
+                          x (f idx (first s))]
+                      (if (nil? x)
+                        (keepi (inc idx) r)
+                        (cons x (keepi (inc idx) r))))))))]
+       (keepi 0 coll))))
 
 #_
 (defn mapcat

@@ -67,12 +67,12 @@
       (is-live #{} live))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; map / keep
+;; map / keep / keep-indexed
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (when-jdk9
   (deftest map-does-not-chunk-lazy-seq-test
-    (doseq [map [#'map #'keep]]
+    (doseq [map [#'map #'keep #'keep-indexed]]
       (testing map
         (let [{:keys [live lseq]} (head-hold-detecting-lazy-seq)
               head-holder (atom (map vector lseq))]
@@ -90,7 +90,7 @@
 
 (when-jdk9
   (deftest map-chunks-chunked-seq-test
-    (doseq [map [#'map #'keep]]
+    (doseq [map [#'map #'keep #'keep-indexed]]
       (testing map
         (let [{:keys [live lseq]} (head-hold-detecting-chunked-seq)
               head-holder (atom (map vector lseq))]
@@ -112,10 +112,10 @@
                 (is-live #{} live)))))))))
 
 (deftest map-head-holding-test
-  (doseq [map [#'map #'keep]]
+  (doseq [map [#'map #'keep #'keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
-            c (atom (map #(do % [nil]) lseq))
+            c (atom (map (constantly [nil]) lseq))
             _ (is-live #{} live)
             _ (swap! c seq)
             _ (is-live #{} live)
@@ -125,7 +125,7 @@
             _ (reset! c nil)
             _ (is-live #{} live)])
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
-            c (atom (map #(do %) lseq))
+            c (atom (map (fn ([v] v) ([_ v] v)) lseq))
             ;; c=(...)
             _ (testing "init"
                 (is-live #{} live))
@@ -150,39 +150,42 @@
             _ (is-live #{} live)]))))
 
 (deftest map-head-holding-during-f-test
-  (doseq [map [#'map #'keep]]
+  (doseq [map [#'map #'keep #'keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
             idx (atom -1)
-            c (map (fn [v]
-                     (let [idx (swap! idx inc)
-                           ;; not garbage collected because we have a strong
-                           ;; reference below
-                           _ (is-live #{idx} live)
-                           _ (with-out-str (prn v))
-                           ;; not garbage collected because map holds a strong
-                           ;; reference to v because it calls rest after the
-                           ;; fn returns.
-                           _ (is-live #{idx} live)]
-                       [nil]))
+            c (map (fn rec
+                     ([_ v] (rec v))
+                     ([v] (let [idx (swap! idx inc)
+                                ;; not garbage collected because we have a strong
+                                ;; reference below
+                                _ (is-live #{idx} live)
+                                _ (with-out-str (prn v))
+                                ;; not garbage collected because map holds a strong
+                                ;; reference to v because it calls rest after the
+                                ;; fn returns.
+                                _ (is-live #{idx} live)]
+                            [nil])))
                    lseq)]
         (dorun 5 c)
         (is (= 5 @idx))))))
 
 (deftest head-releasing-map-head-holding-during-f-test
-  (doseq [map [#'head-releasing/map #'head-releasing/keep]]
+  (doseq [map [#'head-releasing/map #'head-releasing/keep #'head-releasing/keep-indexed]]
     (testing map
       (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
             idx (atom -1)
-            c (map (fn [v]
-                     (let [idx (swap! idx inc)
-                           ;; not garbage collected because we have a strong
-                           ;; reference below
-                           _ (is-live #{idx} live)
-                           _ (with-out-str (prn v))
-                           ;; garbage collected!
-                           _ (is-live #{} live)]
-                       [nil]))
+            c (map (fn rec
+                     ([_ v] (rec v))
+                     ([v]
+                      (let [idx (swap! idx inc)
+                            ;; not garbage collected because we have a strong
+                            ;; reference below
+                            _ (is-live #{idx} live)
+                            _ (with-out-str (prn v))
+                            ;; garbage collected!
+                            _ (is-live #{} live)]
+                        [nil])))
                    lseq)]
         (dorun 5 c)
         (is (= 5 @idx))))))

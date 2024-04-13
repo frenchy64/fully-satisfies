@@ -1,7 +1,28 @@
 ;;FIXME unit test semantics of all these functions
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
-  that release the head of seqs above all other concerns."
+  that release the head of seqs earlier, enabling lower peak memory
+  usage in some cases.
+
+  For example, many higher-order functions in this namespace release strong
+  references to arguments before calling their function arguments.
+  Realizing the following example would be prone to failure with an OutOfMemoryError using
+  clojure.core/map because map retains a strong reference to takes-75-percent-of-heap
+  when calling its function argument.
+
+  (map (fn [takes-75-percent-of-heap]
+         (if (< (rand) 0.5)
+           takes-75-percent-of-heap
+           (generate-another-value-taking-75-percent-of-heap)))
+       [takes-75-percent-of-heap])
+
+  In contrast, using head-releasing/map, the garbage collector can reclaim takes-75-percent-of-heap
+  while calculating (generate-another-value-taking-75-percent-of-heap) because
+  head-releasing/map does not strongly reference takes-75-percent-of-heap at that point.
+  
+  The basic implementation trick to achieving this is to call (rest s) on the seq currently
+  being processed _before_ calling (f (first f)), so the strong reference to (first f)
+  is transferred from the higher-order function to f during the call to f."
   (:refer-clojure :exclude [map every? not-every? some not-any? mapcat keep keep-indexed
                             map-indexed]))
 
@@ -10,8 +31,7 @@
   specialized implementation.
   
   Additionally, head-releasing/naive-seq-reduce does not retain
-  a strong reference to the element of s being passed to f while
-  calling f."
+  a strong reference to the arguments of f when it is called."
   [s f val]
   (loop [s (seq s)
          val val]
@@ -29,8 +49,7 @@
   
   head-releasing/every? is additionally:
   - thread-safe for mutable collections
-  - does not hold strong reference to coll element
-    when passing to pred."
+  - does not hold strong reference to argument of pred when it is called."
   {:tag Boolean
    :added "1.0"
    :static true}
@@ -46,7 +65,10 @@
 (def
  ^{:tag Boolean
    :doc "Returns false if (pred x) is logical true for every x in
-  coll, else true."
+  coll, else true.
+
+  Additionally, head-releasing/not-every? does not hold a strong reference
+  to the argument of pred when it is called."
    :arglists '([pred coll])
    :added "1.0"}
  not-every? (comp not every?)) ;; use head-releasing/every - Ambrose
@@ -57,7 +79,10 @@
   set of second items in each coll, until any one of the colls is
   exhausted.  Any remaining items in other colls are ignored. Function
   f should accept number-of-colls arguments. Returns a transducer when
-  no collection is provided."
+  no collection is provided.
+  
+  Additionally, head-releasing/map does not hold a strong reference
+  to the arguments of f when it is called (unless a single chunked seq coll is provided)."
   {:added "1.0"
    :static true}
   ([f]
@@ -111,7 +136,10 @@
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
   this will return :fred if :fred is in the sequence, otherwise nil:
-  (some #{:fred} coll)"
+  (some #{:fred} coll)
+  
+  Additionally, head-releasing/some does not hold a strong reference
+  to the argument of pred when it is called."
   {:added "1.0"
    :static true}
   [pred coll]
@@ -123,7 +151,10 @@
 (def
  ^{:tag Boolean
    :doc "Returns false if (pred x) is logical true for any x in coll,
-  else true."
+  else true.
+        
+  Additionally, head-releasing/not-any? does not hold a strong reference
+  to the argument of pred when it is called."
    :arglists '([pred coll])
    :added "1.0"}
  not-any? (comp not some)) ;; use head-releasing/some - Ambrose
@@ -133,7 +164,10 @@
   and the first item of coll, followed by applying f to 1 and the second
   item in coll, etc, until coll is exhausted. Thus function f should
   accept 2 arguments, index and item. Returns a stateful transducer when
-  no collection is provided."
+  no collection is provided.
+ 
+  Additionally, head-releasing/map-indexed does not hold a strong reference
+  to the argument of f when it is called (unless a single chunked seq coll is provided)."
   {:added "1.2"
    :static true}
   ([f]
@@ -162,7 +196,10 @@
 (defn keep
   "Returns a lazy sequence of the non-nil results of (f item). Note,
   this means false return values will be included.  f must be free of
-  side-effects.  Returns a transducer when no collection is provided."
+  side-effects.  Returns a transducer when no collection is provided.
+  
+  Additionally, head-releasing/keep does not hold a strong reference
+  to the argument of f when it is called (unless a single chunked seq coll is provided)."
   {:added "1.2"
    :static true}
   ([f]
@@ -197,7 +234,10 @@
   "Returns a lazy sequence of the non-nil results of (f index item). Note,
   this means false return values will be included.  f must be free of
   side-effects.  Returns a stateful transducer when no collection is
-  provided."
+  provided.
+  
+  Additionally, head-releasing/keep-indexed does not hold a strong reference
+  to the argument of f when it is called (unless a single chunked seq coll is provided)."
   {:added "1.2"
    :static true}
   ([f]
@@ -235,7 +275,10 @@
 (defn mapcat
   "Returns the result of applying concat to the result of applying map
   to f and colls.  Thus function f should return a collection. Returns
-  a transducer when no collections are provided"
+  a transducer when no collections are provided.
+  
+  Additionally, head-releasing/mapcat does not hold strong references to
+  the arguments of f when it is called (unless a single chunked seq coll is provided)."
   {:added "1.0"
    :static true}
   ([f] (comp (map f) cat))

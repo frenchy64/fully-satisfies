@@ -17,7 +17,7 @@
      new value.  Returns a lazy seq of partitions.  Returns a stateful
      transducer when no collection is provided.
     
-     Additionally, the cornerless/partition-by transducer behaves uniformly for
+     Additionally, the uniform/partition-by transducer behaves uniformly for
      all values (including :clojure.core/none)."
     {:added "1.2"
      :static true}
@@ -58,7 +58,6 @@
                 run (cons fst (take-while #(= fv (f %)) (next s)))]
             (cons run (partition-by f (lazy-seq (drop (count run) s))))))))))
 
-;;TODO figure out if this corner case is possible
 (let [halt (Object.)]
   (defn halt-when
     "Returns a transducer that ends transduction when pred returns true
@@ -70,7 +69,7 @@
     returned. If the predicate never returns true the transduction is
     unaffected.
     
-    cornerless/halt-when also works uniformly for all values (including
+    uniform/halt-when also works uniformly for all values (including
     returning a map with key :clojure.core/halt)."
     {:added "1.9"}
     ([pred] (halt-when pred nil))

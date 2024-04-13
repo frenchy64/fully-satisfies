@@ -30,7 +30,18 @@
   
   The basic implementation trick to achieving this is to call (rest s) on the seq currently
   being processed _before_ calling (f (first f)), so the strong reference to (first f)
-  is transferred from the higher-order function to f during the call to f."
+  is transferred from the higher-order function to f during the call to f.
+  
+  There are potential caveats to this approach: https://clojure.org/reference/lazy#_extension_iseqs
+  If the underlying ISeq implementation defines rest in terms of next as in the article, then the
+  functions in this namespace will force two seq elements into memory simultaneously.
+  For example, the call below will throw an OutOfMemoryError before the fn is called because both
+  elements of the seq will be realized.
+
+  (map (fn [takes-75-percent-of-heap] nil)
+       (lazy-seq-where-rest-calls-next
+         (cons (->takes-75-percent-of-heap)
+               (lazy-seq [(->takes-75-percent-of-heap)]))))"
   (:refer-clojure :exclude [every? keep keep-indexed map map-indexed mapcat not-any? not-every? some]))
 
 (defn naive-seq-reduce

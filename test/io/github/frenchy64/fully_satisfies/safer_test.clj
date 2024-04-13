@@ -6,6 +6,7 @@
 
 (deftest split-at-mutation-test
   (let [up-down (atom true)
+        init! #(reset! up-down true)
         ed (eduction (map (fn [i]
                             (when (zero? i)
                               (swap! up-down not))
@@ -13,92 +14,163 @@
                               (- 9 i)
                               i)))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              [9 8 7 6 5 4 3 2 1 0]
+              [0 1 2 3 4 5 6 7 8 9]
+              [9 8 7 6 5 4 3 2 1 0]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [[0 1 2 3 4] [4 3 2 1 0]] (split-at 5 ed)))
-    (reset! up-down true)
+    (init!)
     (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/split-at 5 ed)))))
 
 (deftest split-with-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (map (fn [i]
                             (when (zero? i)
                               (swap! t-f not))
                             @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[true true true true true true true true true true]
+              [false false false false false false false false false false]
+              [true true true true true true true true true true]
+              [false false false false false false false false false false]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [[true true true true true true true true true true]
             [false false false false false false false false false false]]
            (split-with true? ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [[true true true true true true true true true true] []]
            (safer/split-with true? ed)))))
 
 (deftest every?-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (map (fn [i]
                             (when (zero? i)
                               (swap! t-f not))
                             @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[true true true true true true true true true true]
+              [false false false false false false false false false false]
+              [true true true true true true true true true true]
+              [false false false false false false false false false false]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (not (every? identity ed)))
-    (reset! t-f false)
+    (init!)
     (is (safer/every? identity ed))))
 
 (deftest not-every?-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (map (fn [i]
                             (when (zero? i)
                               (swap! t-f not))
                             @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[true true true true true true true true true true]
+              [false false false false false false false false false false]
+              [true true true true true true true true true true]
+              [false false false false false false false false false false]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (not-every? identity ed))
-    (reset! t-f false)
+    (init!)
     (is (not (safer/not-every? identity ed)))))
 
 (deftest drop-last-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (filter (fn [i]
                                (when (zero? i)
                                  (swap! t-f not))
                                @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              []
+              [0 1 2 3 4 5 6 7 8 9]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [] (drop-last ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [0 1 2 3 4 5 6 7 8] (safer/drop-last ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [] (drop-last 5 ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [0 1 2 3 4] (safer/drop-last 5 ed)))))
 
 (deftest take-last-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (filter (fn [i]
                                (when (zero? i)
                                  (swap! t-f not))
                                @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              []
+              [0 1 2 3 4 5 6 7 8 9]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [0] (take-last 5 ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [5 6 7 8 9] (safer/take-last 5 ed)))))
 
 (deftest sort-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (filter (fn [i]
                                (when (zero? i)
                                  (swap! t-f not))
                                @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              []
+              [0 1 2 3 4 5 6 7 8 9]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (thrown? NullPointerException (sort ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [] (safer/sort ed)))))
 
 (deftest sort-by-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (filter (fn [i]
                                (when (zero? i)
                                  (swap! t-f not))
                                @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              []
+              [0 1 2 3 4 5 6 7 8 9]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (thrown? NullPointerException (sort-by identity ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [] (safer/sort-by identity ed)))))
 
 (defn splitv-at
@@ -109,6 +181,7 @@
 
 (deftest splitv-at-mutation-test
   (let [up-down (atom true)
+        init! #(reset! up-down true)
         ed (eduction (map (fn [i]
                             (when (zero? i)
                               (swap! up-down not))
@@ -116,8 +189,16 @@
                               (- 9 i)
                               i)))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              [9 8 7 6 5 4 3 2 1 0]
+              [0 1 2 3 4 5 6 7 8 9]
+              [9 8 7 6 5 4 3 2 1 0]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [[0 1 2 3 4] [4 3 2 1 0]] (splitv-at 5 ed)))
-    (reset! up-down true)
+    (init!)
     (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/splitv-at 5 ed)))))
 
 (defn partitionv-all
@@ -135,13 +216,44 @@
        (let [seg (into [] (take n) coll)]
          (cons seg (partitionv-all n step (drop step s))))))))
 
-(deftest partitionv-all-at-mutation-test
+(deftest partitionv-all-mutation-test
   (let [t-f (atom false)
+        init! #(reset! t-f false)
         ed (eduction (filter (fn [i]
                                (when (zero? i)
                                  (swap! t-f not))
                                @t-f))
                      (range 10))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1 2 3 4 5 6 7 8 9]
+              []
+              [0 1 2 3 4 5 6 7 8 9]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
     (is (= [[]] (partitionv-all 5 ed)))
-    (reset! t-f false)
+    (init!)
     (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/partitionv-all 5 ed)))))
+
+(deftest last-mutation-test
+  (let [t-f (atom false)
+        init! #(reset! t-f false)
+        ed (eduction (filter (fn [i]
+                               (when (zero? i)
+                                 (swap! t-f not))
+                               (if @t-f
+                                 (< i 2)
+                                 (< i 1))))
+                     (range 3))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1]
+              [0]
+              [0 1]
+              [0]]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
+    (is (= nil (last ed)))
+    (init!)
+    (is (= 1 (safer/last ed)))))

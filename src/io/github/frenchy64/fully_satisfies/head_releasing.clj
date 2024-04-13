@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."
-  (:refer-clojure :exclude [map every? not-every? some not-any?]))
+  (:refer-clojure :exclude [map every? not-every? some not-any? mapcat keep]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more
@@ -20,6 +20,34 @@
           @ret
           (recur (seq r) ret)))
       val)))
+
+(defn every?
+  "Returns true if (pred x) is logical true for every x in coll, else
+  false.
+  
+  head-releasing/every? is additionally:
+  - thread-safe for mutable collections
+  - does not hold strong reference to coll element
+    when passing to pred."
+  {:tag Boolean
+   :added "1.0"
+   :static true}
+  [pred coll]
+  ;; reuses result of `seq` - Ambrose
+  (if-let [coll (seq coll)]
+    (let [r (rest coll)] ;; release a strong reference to (first coll) - Ambrose
+      (if (pred (first coll))
+        (recur pred r)
+        false))
+    true))
+
+(def
+ ^{:tag Boolean
+   :doc "Returns false if (pred x) is logical true for every x in
+  coll, else true."
+   :arglists '([pred coll])
+   :added "1.0"}
+ not-every? (comp not every?)) ;; use head-releasing/every - Ambrose
 
 (defn map
   "Returns a lazy sequence consisting of the result of applying f to
@@ -77,34 +105,6 @@
                         (cons (map first ss) (step rs)))))))]
      (map #(apply f %) (step (conj colls c3 c2 c1))))))
 
-(defn every?
-  "Returns true if (pred x) is logical true for every x in coll, else
-  false.
-  
-  head-releasing/every? is additionally:
-  - thread-safe for mutable collections
-  - does not hold strong reference to coll element
-    when passing to pred."
-  {:tag Boolean
-   :added "1.0"
-   :static true}
-  [pred coll]
-  ;; reuses result of `seq` - Ambrose
-  (if-let [coll (seq coll)]
-    (let [r (rest coll)] ;; release a strong reference to (first coll) - Ambrose
-      (if (pred (first coll))
-        (recur pred r)
-        false))
-    true))
-
-(def
- ^{:tag Boolean
-   :doc "Returns false if (pred x) is logical true for every x in
-  coll, else true."
-   :arglists '([pred coll])
-   :added "1.0"}
- not-every? (comp not every?)) ;; use head-releasing/every - Ambrose
-
 (defn some
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
@@ -125,3 +125,49 @@
    :arglists '([pred coll])
    :added "1.0"}
  not-any? (comp not some)) ;; use head-releasing/some - Ambrose
+
+(defn keep
+  "Returns a lazy sequence of the non-nil results of (f item). Note,
+  this means false return values will be included.  f must be free of
+  side-effects.  Returns a transducer when no collection is provided."
+  {:added "1.2"
+   :static true}
+  ([f]
+   (fn [rf]
+     (fn
+       ([] (rf))
+       ([result] (rf result))
+       ([result input]
+          (let [v (f input)]
+            (if (nil? v)
+              result
+              (rf result v)))))))
+  ([f coll]
+   (lazy-seq
+    (when-let [s (seq coll)]
+      (if (chunked-seq? s)
+        (let [c (chunk-first s)
+              size (count c)
+              b (chunk-buffer size)]
+          (dotimes [i size]
+            (let [x (f (.nth c i))]
+              (when-not (nil? x)
+                (chunk-append b x))))
+          (chunk-cons (chunk b) (keep f (chunk-rest s))))
+        (let [r (rest s) ;; release strong reference to (first s) - Ambrose
+              x (f (first s))]
+          (if (nil? x)
+            (keep f r)
+            (cons x (keep f r)))))))))
+
+#_
+(defn mapcat
+  "Returns the result of applying concat to the result of applying map
+  to f and colls.  Thus function f should return a collection. Returns
+  a transducer when no collections are provided"
+  {:added "1.0"
+   :static true}
+  ([f] (comp (map f) cat))
+  ([f & colls]
+   ;; use head-releasing/map - Ambrose
+   (apply concat (apply map f colls))))

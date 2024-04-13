@@ -254,7 +254,7 @@
               [0]]
              (repeatedly 4 #(vec ed)))))
     (init!)
-    (is (= nil (last ed)))
+    (is (nil? (last ed)))
     (init!)
     (is (= 1 (safer/last ed)))))
 

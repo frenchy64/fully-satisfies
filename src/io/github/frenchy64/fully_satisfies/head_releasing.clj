@@ -31,8 +31,7 @@
   The basic implementation trick to achieving this is to call (rest s) on the seq currently
   being processed _before_ calling (f (first f)), so the strong reference to (first f)
   is transferred from the higher-order function to f during the call to f."
-  (:refer-clojure :exclude [map every? not-every? some not-any? mapcat keep keep-indexed
-                            map-indexed]))
+  (:refer-clojure :exclude [every? keep keep-indexed map map-indexed mapcat not-any? not-every? some]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more

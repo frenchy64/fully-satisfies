@@ -1,4 +1,8 @@
 # Next - TBD
+- add framework to detect memory leaks due to holding onto the head of seqs: [io.github.frenchy64.fully-satisfies.leaky-seq-detection](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.leaky-seq-detection.html)
+- add safer variants of clojure.core functions in the presence of mutable collections: [io.github.frenchy64.fully-satisfies.safer](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safer.html)
+- add lazier variants of clojure.core functions: [io.github.frenchy64.fully-satisfies.lazier](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.lazier.html)
+- add uniformly-behaving variants of clojure.core functions: [io.github.frenchy64.fully-satisfies.uniform](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uniform.html)
 
 # 1.9.0 - 27th September 2022
 - add spec for `reify` arguments: `:io.github.frenchy64.fully-satisfies.reify-spec/reify-args`

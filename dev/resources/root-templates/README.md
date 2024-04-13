@@ -21,6 +21,7 @@ Utilities for Clojure.
 - [Safer](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safer.html) variants of clojure.core functions that improve thread-safety and general robustness when passed mutating collections. Includes: `butlast`, `drop-last`, `every?`, `last`, `not-every?`, `nthrest`, `partitionv-all`, `sort`, `sort-by`, `split-at`, `split-with`, `splitv-at`, `take-last`.
 - [Lazier](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.lazier.html) variants of clojure.core functions that are slightly lazier when processing and/or returning lazy seqs. Includes: `bounded-count`, `cycle`, `dedupe`, `iterator-seq`, `sequence`.
 - [Uniformly generalized](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.uniform.html) variants of clojure.core functions such that they work consistently for all values. Includes: `partition-by`, `halt-when`.
+- [Head-releasing](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.head-releasing.html) variants of clojure.core functions that release the head of seqs earlier have thus have improved memory usage characteristics. Includes: `every?`, `keep`, `keep-indexed`, `map`, `map-indexed`, `mapcat`, `naive-seq-reduce`, `not-any?`, `not-every?`, `some`.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 

@@ -1,4 +1,4 @@
-(defproject io.github.frenchy64/fully-satisfies "1.10.0-SNAPSHOT"
+(defproject io.github.frenchy64/fully-satisfies "1.10.0"
   :description "A variant of clojure.core/satisfies? that checks all methods are implemented."
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}

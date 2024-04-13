@@ -52,22 +52,22 @@
 (deftest every?-mutation-test
   (let [t-f (atom false)
         init! #(reset! t-f false)
-        ed (eduction (map (fn [i]
-                            (when (zero? i)
-                              (swap! t-f not))
-                            @t-f))
-                     (range 10))]
+        ed (eduction (filter (fn [i]
+                               (when (= 1 i)
+                                 (swap! t-f not))
+                               @t-f))
+                     (range 1 11))]
     (testing "eduction alternates"
       (init!)
-      (is (= [[true true true true true true true true true true]
-              [false false false false false false false false false false]
-              [true true true true true true true true true true]
-              [false false false false false false false false false false]]
+      (is (= [[1 2 3 4 5 6 7 8 9 10]
+              []
+              [1 2 3 4 5 6 7 8 9 10]
+              []]
              (repeatedly 4 #(vec ed)))))
     (init!)
-    (is (not (every? identity ed)))
+    (is (thrown? NullPointerException (every? pos? ed)))
     (init!)
-    (is (safer/every? identity ed))))
+    (is (safer/every? pos? ed))))
 
 (deftest not-every?-mutation-test
   (let [t-f (atom false)

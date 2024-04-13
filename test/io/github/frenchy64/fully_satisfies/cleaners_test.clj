@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.cleaners-test
   "Goal: use Java Cleaners to test for memory leaks"
   (:require [clojure.test :refer [is]]
-            [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
+            [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :as test-ctx :refer [testing]]
             [io.github.frenchy64.fully-satisfies.lazier :as lazier]
             [io.github.frenchy64.fully-satisfies.head-releasing :as head-releasing]))
 
@@ -9,6 +9,10 @@
   (when (try (Class/forName "java.lang.ref.Cleaner")
              (catch Throwable _))
     `(do ~@body)))
+
+(defmacro ^:private deftest [& args]
+  `(when-jdk9
+     (test-ctx/deftest ~@args)))
 
 (when-jdk9
   (require '[io.github.frenchy64.fully-satisfies.cleaners :refer [register-cleaner! try-forcing-cleaners!
@@ -169,6 +173,41 @@
                     _ (is-live #{} live)]))
             lseq)]
     (dorun 5 c)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; every?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest every?-head-holding-during-pred-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)]
+    (every? (fn [v]
+              (let [idx (swap! idx inc)
+                    ;; not garbage collected because we have a strong
+                    ;; reference below
+                    _ (is-live #{idx} live)
+                    _ (with-out-str (prn v))
+                    ;; not garbage collected because map holds a strong
+                    ;; reference to v because it calls rest after the
+                    ;; fn returns.
+                    _ (is-live #{idx} live)]
+                (< idx 5)))
+            lseq)))
+
+(deftest head-releasing-every?-head-holding-during-pred-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)]
+    (head-releasing/every?
+      (fn [v]
+        (let [idx (swap! idx inc)
+              ;; not garbage collected because we have a strong
+              ;; reference below
+              _ (is-live #{idx} live)
+              _ (with-out-str (prn v))
+              ;; garbage collected!
+              _ (is-live #{} live)]
+          (< idx 5)))
+      lseq)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter

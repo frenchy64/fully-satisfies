@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."
-  (:refer-clojure :exclude [map]))
+  (:refer-clojure :exclude [map every?]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more
@@ -47,7 +47,7 @@
               size (int (count c))
               b (chunk-buffer size)]
           (dotimes [i size]
-              (chunk-append b (f (.nth c i))))
+            (chunk-append b (f (.nth c i))))
           (chunk-cons (chunk b) (map f (chunk-rest s))))
         (let [r (rest s)] ;; release a strong reference to (first s) - Ambrose
           (cons (f (first s)) (map f r)))))))
@@ -76,3 +76,23 @@
                       (let [rs (doall (map rest ss))]
                         (cons (map first ss) (step rs)))))))]
      (map #(apply f %) (step (conj colls c3 c2 c1))))))
+
+(defn every?
+  "Returns true if (pred x) is logical true for every x in coll, else
+  false.
+  
+  head-releasing/every? is additionally:
+  - thread-safe for mutable collections
+  - does not hold strong reference to coll element
+    when passing to pred."
+  {:tag Boolean
+   :added "1.0"
+   :static true}
+  [pred coll]
+  ;; reuses result of `seq` - Ambrose
+  (if-let [coll (seq coll)]
+    (let [r (rest coll)] ;; release a strong reference to (first coll)
+      (if (pred (first coll))
+        (recur pred r)
+        false))
+    true))

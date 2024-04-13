@@ -361,6 +361,48 @@
         _ (is-live #{} live)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; take-last
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest take-last-head-holding-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
+                              {:n 10})
+        c (atom (take-last 6 lseq))
+        _ (is-live (into (sorted-set) (range 4 10)) live)
+        _ (swap! c seq)
+        _ (is-live (into (sorted-set) (range 4 10)) live)
+        _ (swap! c next)
+        _ (is-live (into (sorted-set) (range 5 10)) live)
+        ;; hold onto c
+        _ (reset! c nil)
+        _ (is-live #{} live)])
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
+                              {:n 10})
+        c (atom (take-last 6 lseq))
+        ;; c=(...)
+        _ (testing "init"
+            (is-live (into (sorted-set) (range 4 10)) live))
+        _ (swap! c seq)
+        ;; c=(0 1 2 3 4 5 6)
+        _ (testing "seq"
+            (is-live (into (sorted-set) (range 4 10)) live))
+        _ (next @c)
+        ;; c=(0 1 2 3 4 5 6 7)
+        _ (testing "next!"
+            (is-live (into (sorted-set) (range 4 10)) live))
+        _ (swap! c next)
+        ;; c=(1 2 3 4 5 6 7)
+        _ (testing "swap next"
+            (is-live (into (sorted-set) (range 5 10)) live))
+        _ (swap! c next)
+        ;; c=(2 3 4 5 6 7 8)
+        _ (testing "swap nnext"
+            (is-live (into (sorted-set) (range 6 10)) live))
+        _ (reset! c nil)
+        ;; c=nil
+        _ (is-live #{} live)]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; drop-last
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

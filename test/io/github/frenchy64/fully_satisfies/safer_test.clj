@@ -1,5 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.safer-test
-  (:refer-clojure :exclude [splitv-at])
+  (:refer-clojure :exclude [splitv-at partitionv-all])
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.safer :as safer]))
@@ -119,3 +119,29 @@
     (is (= [[0 1 2 3 4] [4 3 2 1 0]] (splitv-at 5 ed)))
     (reset! up-down true)
     (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/splitv-at 5 ed)))))
+
+(defn partitionv-all
+  "Returns a lazy sequence of vector partitions, but may include
+  partitions with fewer than n items at the end.
+  Returns a stateful transducer when no collection is provided."
+  {:added "1.12"}
+  ([n]
+   (partition-all n))
+  ([n coll]
+   (partitionv-all n n coll))
+  ([n step coll]
+   (lazy-seq
+     (when-let [s (seq coll)]
+       (let [seg (into [] (take n) coll)]
+         (cons seg (partitionv-all n step (drop step s))))))))
+
+(deftest partitionv-all-at-mutation-test
+  (let [t-f (atom false)
+        ed (eduction (filter (fn [i]
+                               (when (zero? i)
+                                 (swap! t-f not))
+                               @t-f))
+                     (range 10))]
+    (is (= [[]] (partitionv-all 5 ed)))
+    (reset! t-f false)
+    (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/partitionv-all 5 ed)))))

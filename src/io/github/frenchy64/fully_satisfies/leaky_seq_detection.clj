@@ -11,6 +11,8 @@
   collection is calculating whether references are reachable.
   We use this insight to force garbage collection (and hence, cleaners)
   to run, by inducing an OutOfMemoryError in try-forcing-cleaners!.
+  Note that an OutOfMemoryError can leave the JVM in a bad state, so
+  this strategy is best isolated away from other tests.
   
   Tying these ideas together are reference-counting seqs and the is-strong
   testing macro. ref-counting-lazy-seq returns a lazy seq

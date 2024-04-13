@@ -1,4 +1,9 @@
-# Next - TBD
+# 1.10.1-SNAPSHOT - TBD
+- improve documentation and methodology for code in 1.10.0
+- add `io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true` Java property to try harder to catch false-positive strong references.
+- alias `dedupe` in `io.github.frenchy64.fully-satisfies.uniform` since it is both lazier and behaves more uniformly.
+
+# 1.10.0 - April 12th 2024
 - [Leaky-seq detection testing framework](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.leaky-seq-detection.html) for detecting memory leaks caused by holding onto the head of sequences. An [example test suite](https://github.com/frenchy64/fully-satisfies/blob/main/test/io/github/frenchy64/fully_satisfies/leaky_seq_detection_test.clj) is provided exposing issues with clojure.core functions and verifying fixes to them.
 - [Safer](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safer.html) variants of clojure.core functions that improve thread-safety and general robustness when passed mutating collections. Includes: `butlast`, `drop-last`, `every?`, `last`, `not-every?`, `nthrest`, `partitionv-all`, `sort`, `sort-by`, `split-at`, `split-with`, `splitv-at`, `take-last`. Includes a [test suite](https://github.com/frenchy64/fully-satisfies/blob/main/test/io/github/frenchy64/fully_satisfies/safer_test.clj) demonstrating the differences and improvements.
 - [Lazier](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.lazier.html) variants of clojure.core functions that are slightly lazier when processing and/or returning lazy seqs. Includes: `bounded-count`, `cycle`, `dedupe`, `iterator-seq`, `sequence`. Includes a [test suite](https://github.com/frenchy64/fully-satisfies/blob/main/test/io/github/frenchy64/fully_satisfies/lazier_test.clj) demonstrating the differences and improvements.

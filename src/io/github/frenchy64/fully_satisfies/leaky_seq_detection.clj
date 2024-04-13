@@ -183,12 +183,19 @@
 (when-jdk9
   (defn is-strong
     "Asserts that there are strong references to the expected set of indexes
-    into the ref-counting seq associated with strong."
+    into the ref-counting seq associated with strong by yielding OutOfMemoryError's
+    via [[try-forcing-cleaners!]].
+    
+    Short-circuits if expected set equals actual set.
+
+    Setting the system property:
+      io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true
+    will prevent short-circuiting in order to detect false-positives (see also leaky-seq-detection's docstring)."
     [expected strong]
     (let [f (if (= "true"
                    (System/getProperty
                      "io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection"))
-              (constantly false)
+              #(do false)
               #(= expected @strong))]
       (loop [tries 100]
         (when (and (pos? tries)

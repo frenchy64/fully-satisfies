@@ -107,7 +107,7 @@
                   (recur (conj c (make-array Object (- Integer/MAX_VALUE 100))))))
               (catch OutOfMemoryError e
                 (let [msg (ex-message e)]
-                  ;; is this is too specific, we at least don't want: Requested array size exceeds VM limit.
+                  ;; if this is too specific, we at least don't want: Requested array size exceeds VM limit.
                   ;; seems unlikely to force garbage collection.
                   (assert (= "Java heap space" msg)
                           msg))

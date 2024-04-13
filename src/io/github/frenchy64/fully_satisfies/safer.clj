@@ -29,6 +29,8 @@
                        (range 10))]
       (is (= [[0 1 2 3 4] [4 3 2 1 0]] (split-at 5 ed)))
       (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/split-at 5 ed)))))
+  
+  See io.github.frenchy64.fully-satisfies.safer-test for more details.
 
   The basic trick here is strategically calling seq earlier on the collection argument."
   (:refer-clojure :exclude [butlast drop-last every? last not-every? nthrest partitionv-all

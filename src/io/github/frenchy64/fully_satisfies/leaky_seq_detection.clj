@@ -1,4 +1,4 @@
-(ns io.github.frenchy64.fully-satisfies.head-hold-detection
+(ns io.github.frenchy64.fully-satisfies.leaky-seq-detection
   "A framework to detect memory leaks via holding the head of sequences.
 
   The java.lang.ref.Cleaner class (JDK9+) provides hooks into garbage

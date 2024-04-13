@@ -1,3 +1,4 @@
+;;FIXME unit test semantics of all these functions
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."

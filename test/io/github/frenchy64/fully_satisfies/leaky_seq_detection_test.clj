@@ -1,4 +1,4 @@
-(ns io.github.frenchy64.fully-satisfies.head-hold-detection-test
+(ns io.github.frenchy64.fully-satisfies.leaky-seq-detection-test
   "Goal: use Java Cleaners to test for memory leaks"
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :as test-ctx :refer [testing]]

@@ -3,7 +3,7 @@
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :url "https://github.com/frenchy64/fully-satisfies"
-  :dependencies [[org.clojure/clojure "1.11.1"]]
+  :dependencies [[org.clojure/clojure "1.11.2"]]
   :java-source-paths ["java"]
   :profiles {:bench
              {:source-paths ["scripts"]
@@ -13,7 +13,8 @@
               :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
-             :dev {:dependencies [[org.clojure/test.check "1.1.0"]
+             :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests
+                   :dependencies [[org.clojure/test.check "1.1.0"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]

@@ -7,10 +7,11 @@ on:
   pull_request:
 
 env:
-  BABASHKA_VERSION: "0.6.1"
+  BABASHKA_VERSION: "0.10.163"
 
 jobs:
   test:
+    timeout-minutes: 5
     strategy:
       matrix:
         jdk: ['8', '11', '17', '21', '22']

@@ -16,9 +16,10 @@
 
 (when-jdk9
   (require '[io.github.frenchy64.fully-satisfies.leaky-seq-detection
-             :refer [register-cleaner! try-forcing-cleaners!
-                     head-hold-detecting-lazy-seq
-                     head-hold-detecting-chunked-seq
+             :refer [register-cleaner!
+                     try-forcing-cleaners!
+                     ref-counting-lazy-seq
+                     ref-counting-chunked-seq
                      is-strong]]))
 
 (when-jdk9
@@ -33,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest example-cleaners-test
-  (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq
                               {:n 10}) ;; seq of fresh Object's, length 10
         ;; lseq=(...)
         _ (is-strong #{} strong) ;; no elements currently in memory
@@ -66,7 +67,7 @@
 
 (when-jdk9
   (deftest reduce2-processes-sequentially-after-first-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           times (atom 0)]
       (reduce (fn [_ _]
                 (let [t (swap! times inc)]
@@ -79,7 +80,7 @@
 
 (when-jdk9
   (deftest reduce3-processes-sequentially-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)]
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)]
       (reduce (fn [i _]
                 (is-strong #{i} strong)
                 (inc i))
@@ -92,7 +93,7 @@
 
 (when-jdk9
   (deftest head-holding-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           head-holder (volatile! (doall (take 10 lseq)))]
       (is-strong (into #{} (range 10))
                strong)
@@ -107,7 +108,7 @@
   (deftest map-does-not-chunk-lazy-seq-test
     (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
       (testing map
-        (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
               head-holder (atom (map vector lseq))]
           (when (testing "initial call to map is lazy"
                   (is-strong #{} strong))
@@ -125,29 +126,31 @@
   (deftest map-chunks-chunked-seq-test
     (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
       (testing map
-        (let [{:keys [strong lseq]} (head-hold-detecting-chunked-seq)
+        (let [{:keys [strong lseq]} (ref-counting-chunked-seq)
               head-holder (atom (map vector lseq))]
           (when (testing "initial call to map is lazy"
                   (is-strong #{} strong))
-            (when (every?
-                    (fn [i]
-                      (swap! head-holder next)
-                      (testing (str i " nexts holds 32 elements")
-                        ;; map holds onto each chunk until the entire chunk
-                        ;; is processed. this is because a chunk is an ArrayChunk
-                        ;; which is backed by an array, and next just moves the start
-                        ;; index forward. Since the array is shared between immutable
-                        ;; seqs, it cannot be mutated.
-                        (is-strong (into (sorted-set) (range 32)) strong)))
-                    (range 32))
-              (reset! head-holder nil)
-              (testing "release hold"
-                (is-strong #{} strong)))))))))
+            (let [first-chunk (into (sorted-set) (range 32))
+                  second-chunk (into (sorted-set) (range 32 64))]
+              (when (every?
+                      (fn [i]
+                        (swap! head-holder next)
+                        (testing (str i " nexts holds 32 elements")
+                          ;; map holds onto each chunk until the entire chunk
+                          ;; is processed. this is because a chunk is an ArrayChunk
+                          ;; which is backed by an array, and next just moves the start
+                          ;; index forward. Since the array is shared between immutable
+                          ;; seqs, it cannot be mutated.
+                          (is-strong (if (< i 31) first-chunk second-chunk) strong)))
+                      (range 33))
+                (reset! head-holder nil)
+                (testing "release hold"
+                  (is-strong #{} strong))))))))))
 
 (deftest map-head-holding-test
   (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
     (testing map
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             c (atom (map (constantly [nil]) lseq))
             _ (is-strong #{} strong)
             _ (swap! c seq)
@@ -157,7 +160,7 @@
             ;; hold onto c
             _ (reset! c nil)
             _ (is-strong #{} strong)])
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             c (atom (map (fn ([v] v) ([_ v] v)) lseq))
             ;; c=(...)
             _ (testing "init"
@@ -185,7 +188,7 @@
 (deftest map-head-holding-during-f-test
   (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
     (testing map
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             idx (atom -1)
             c (map (fn rec
                      ([_ v] (rec v))
@@ -207,7 +210,7 @@
   (doseq [map [#'head-releasing/map #'head-releasing/map-indexed
                #'head-releasing/keep #'head-releasing/keep-indexed]]
     (testing map
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             idx (atom -1)
             c (map (fn rec
                      ([_ v] (rec v))
@@ -231,7 +234,7 @@
 (deftest every?-head-holding-during-pred-test
   (doseq [every? [#'every? #'not-every?]]
     (testing every?
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             idx (atom -1)]
         (every? (fn [v]
                   (let [idx (swap! idx inc)
@@ -249,7 +252,7 @@
 
 (deftest head-releasing-every?-head-holding-during-pred-test
   (doseq [every? [#'head-releasing/every? #'head-releasing/not-every?]]
-    (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+    (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
           idx (atom -1)]
       (every?
         (fn [v]
@@ -271,7 +274,7 @@
 (deftest some-head-holding-during-pred-test
   (doseq [some [#'some #'not-any?]]
     (testing some
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             idx (atom -1)]
         (some (fn [v]
                 (let [idx (swap! idx inc)
@@ -291,7 +294,7 @@
 (deftest head-releasing-some-head-holding-during-pred-test
   (doseq [some [#'head-releasing/some #'head-releasing/not-any?]]
     (testing some
-      (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq)
+      (let [{:keys [lseq strong]} (ref-counting-lazy-seq)
             idx (atom -1)]
         (some
           (fn [v]
@@ -314,7 +317,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest filter-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 100})
         c (atom (filter #(do % []) lseq))
         _ (is-strong #{} strong)
@@ -325,7 +328,7 @@
         ;; hold onto c
         _ (reset! c nil)
         _ (is-strong #{} strong)])
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 100})
         c (atom (filter #(do % []) lseq))
         ;; c=(...)
@@ -356,7 +359,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest remove-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 100})
         c (atom (remove #(do % nil) lseq))
         _ (is-strong #{} strong)
@@ -367,7 +370,7 @@
         ;; hold onto c
         _ (reset! c nil)
         _ (is-strong #{} strong)])
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 100})
         c (atom (remove #(do % nil) lseq))
         ;; c=(...)
@@ -398,7 +401,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest take-last-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 10})
         c (atom (take-last 6 lseq))
         _ (is-strong (into (sorted-set) (range 4 10)) strong)
@@ -409,7 +412,7 @@
         ;; hold onto c
         _ (reset! c nil)
         _ (is-strong #{} strong)])
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 10})
         c (atom (take-last 6 lseq))
         ;; c=(...)
@@ -440,7 +443,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest drop-last-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 10})
         c (atom (drop-last 6 lseq))
         _ (is-strong #{} strong)
@@ -451,7 +454,7 @@
         ;; hold onto c
         _ (reset! c nil)
         _ (is-strong #{} strong)])
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 10})
         c (atom (drop-last 6 lseq))
         ;; c=(...)
@@ -486,7 +489,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest reduce-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 20
                                :i->v (fn [_] (volatile! (Object.)))})]
     (reduce (fn [i vol]
@@ -506,7 +509,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest naive-seq-reduce-head-holding-test
-  (let [{:keys [lseq strong]} (head-hold-detecting-lazy-seq
+  (let [{:keys [lseq strong]} (ref-counting-lazy-seq
                               {:n 20
                                :i->v (fn [_] (volatile! (Object.)))})]
     (head-releasing/naive-seq-reduce
@@ -524,7 +527,7 @@
 
 (when-jdk9
   (deftest sequence-chunks-lazy-seq-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           head-holder (atom (sequence (map identity) lseq))]
       (when (testing "initial call to sequence realizes one element"
               ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
@@ -580,7 +583,7 @@
 
 (when-jdk9
   (deftest lazier-sequence-chunks-lazy-seq-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           head-holder (atom (lazier/sequence (map identity) lseq))]
       (when (testing "initial call to sequence realizes no elements"
               (is-strong #{} strong))
@@ -635,7 +638,7 @@
                    ;#'seque
                    ]]
       (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
               head-holder (volatile! (doto (seque 5 lseq)
                                        seq))]
           (first @head-holder)
@@ -649,7 +652,7 @@
                    ;#'seque
                    ]]
       (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
               len 20
               buffer-size 5]
           (reduce (fn [i _]
@@ -669,7 +672,7 @@
                    ;#'seque
                    ]]
       (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq)
+        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
               len 20
               buffer-size 5]
           (loop [i 0

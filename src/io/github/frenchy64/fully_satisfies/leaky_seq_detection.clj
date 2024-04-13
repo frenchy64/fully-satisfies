@@ -13,7 +13,7 @@
   to run, by inducing an OutOfMemoryError in try-forcing-cleaners!.
   
   Tying these ideas together are head-holding seqs and the is-strong
-  testing macro. head-hold-detecting-lazy-seq returns a lazy seq
+  testing macro. ref-counting-lazy-seq returns a lazy seq
   and an atom of all elements of the seq currently with strong references.
   This seq can now be passed to a sequence-processing function you would
   like to test for memory leaks.
@@ -25,7 +25,7 @@
   of a lazy seq at particular points.
   
   (deftest example-cleaners-test
-    (let [{:keys [strong lseq]} (head-hold-detecting-lazy-seq
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq
                                   {:n 10}) ;; seq of fresh Object's, length 10
           ;; lseq=(...)
           _ (is-strong #{} strong) ;; no elements currently in memory
@@ -86,7 +86,7 @@
      (f))))
 
 (when-jdk9
-  (defn head-hold-detecting-lazy-seq
+  (defn ref-counting-lazy-seq
     "Returns a map with entries:
     - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
       the result of (i->v {:i <index>}) when provided. Returning :end key from i->v arg also ends the sequence.
@@ -94,7 +94,7 @@
     
     For the most precise results, each element returned by i->v should be distinct according to identical?
     from all other values in the current JVM environment."
-    ([] (head-hold-detecting-lazy-seq nil))
+    ([] (ref-counting-lazy-seq nil))
     ([{:keys [i->v n]
        :or {i->v (fn [{:keys [i end]}] (Object.))
             n ##Inf}}]
@@ -112,22 +112,37 @@
         :strong strong}))))
 
 (when-jdk9
-  (defn head-hold-detecting-chunked-seq
-    "Each element must be distinct according to identical?."
-    ([] (head-hold-detecting-chunked-seq nil))
-    ([{:keys [i->v chunk-size]
-       :or {i->v (fn [i] (Object.))
+  (defn ref-counting-chunked-seq
+    "Returns a map with entries:
+    - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
+      the result of (i->v {:i <index>}) when provided. Returning :end key from i->v arg also ends the sequence.
+    - :strong, an atom containing a set of indicies whose values are (likely) currently strong references.
+    
+    For the most precise results, each element returned by i->v should be distinct according to identical?
+    from all other values in the current JVM environment."
+    ([] (ref-counting-chunked-seq nil))
+    ([{:keys [i->v chunk-size n]
+       :or {i->v (fn [{:keys [i end]}] (Object.))
+            n ##Inf
             chunk-size 32}}]
      (let [strong (atom #{})
            rec (fn rec [i]
                  (lazy-seq
-                   (let [b (chunk-buffer chunk-size)]
-                     (dotimes [i chunk-size]
-                       (let [v (i->v i)]
-                         (swap! strong conj i)
-                         (register-cleaner! v #(swap! strong disj i))
-                         (chunk-append b v)))
-                     (chunk-cons (chunk b) (rec (inc i))))))]
+                   (when (< i n)
+                     (let [chunk-size (cond-> chunk-size
+                                        (not= ##Inf n)
+                                        (min (- n i)))
+                           b (chunk-buffer chunk-size)]
+                       (run! (fn [i]
+                               (let [end (Object.)
+                                     v (i->v {:i i :end end})]
+                                 (if (identical? v end)
+                                   (reduced nil)
+                                   (do (swap! strong conj i)
+                                       (register-cleaner! v #(swap! strong disj i))
+                                       (chunk-append b v)))))
+                             (range i (+ i chunk-size)))
+                       (chunk-cons (chunk b) (rec (+ i chunk-size)))))))]
        {:lseq (rec 0)
         :strong strong}))))
 

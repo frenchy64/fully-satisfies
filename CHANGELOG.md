@@ -1,6 +1,6 @@
 # NEXT - TBD
 
-# 1.10.2 - April 13th 2024
+# 1.10.3 - April 13th 2024
 - improve documentation and methodology for code in 1.10.0
 - add `io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true` Java property to try harder to catch false-positive strong references.
 - alias `dedupe` in `io.github.frenchy64.fully-satisfies.uniform` since it is both lazier and behaves more uniformly.

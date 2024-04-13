@@ -11,10 +11,9 @@
   (loop [s (seq s)
          val val]
     (if s
-      (let [sf (first s)
-            s (rest s) ;; release head of seq so f can own sf
-            ret (f val sf)]
+      (let [r (rest s) ;; release head of seq so f can own sf
+            ret (f val (first s))]
         (if (reduced? ret)
           @ret
-          (recur s ret)))
+          (recur (seq r) ret)))
       val)))

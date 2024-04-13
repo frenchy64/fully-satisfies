@@ -2,7 +2,8 @@
   "Goal: use Java Cleaners to test for memory leaks"
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
-            [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
+            [io.github.frenchy64.fully-satisfies.lazier :as lazier]
+            [io.github.frenchy64.fully-satisfies.head-releasing :as head-releasing]))
 
 (defmacro ^:private when-jdk9 [& body]
   (when (try (Class/forName "java.lang.ref.Cleaner")
@@ -245,6 +246,23 @@
               (is-live #{i} live)
               (inc i))
             0 lseq)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; naive-seq-reduce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest naive-seq-reduce-head-holding-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
+                              {:n 20
+                               :i->v (fn [_] (volatile! (Object.)))})]
+    (head-releasing/naive-seq-reduce
+      lseq
+      (fn [i vol]
+        (is-live #{i} live)
+        (vreset! vol nil)
+        (is-live #{} live)
+        (inc i))
+      0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; sequence

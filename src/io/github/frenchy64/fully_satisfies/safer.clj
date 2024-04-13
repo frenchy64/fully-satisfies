@@ -71,7 +71,7 @@
    :static true}
   ([coll] (drop-last 1 coll))
   ([n coll] (let [coll (cond-> coll
-                         (not (coll? coll)) (seq coll))] ;; bind a sequence - Ambrose
+                         (not (coll? coll)) seq)] ;; bind a sequence - Ambrose
               (map (fn [x _] x) coll (drop n coll)))))
 
 (defn take-last

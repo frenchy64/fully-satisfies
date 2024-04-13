@@ -12,7 +12,7 @@
   We use this insight to force garbage collection (and hence, cleaners)
   to run, by inducing an OutOfMemoryError in try-forcing-cleaners!.
   
-  Tying these ideas together are head-holding seqs and the is-strong
+  Tying these ideas together are reference-counting seqs and the is-strong
   testing macro. ref-counting-lazy-seq returns a lazy seq
   and an atom of all elements of the seq currently with strong references.
   This seq can now be passed to a sequence-processing function you would
@@ -51,8 +51,9 @@
           ;; lseq=nil
           _ (is-strong #{} strong) ;; lseq is entirely garbage collected
           ]))
-
-  "
+  
+  See io.github.frenchy64.fully-satisfies.leaky-seq-detection-test for real-world
+  examples of finding memory leaks in Clojure functions, and then verifying fixes for them."
   (:require [clojure.test :refer [is]]))
 
 (defmacro ^:private when-jdk9 [& body]

@@ -30,8 +30,8 @@
   will likely print the actual set of strongly referenced indexes, from which you can
   source the expected strong references (from the result itself or a subset).
   But false-positives are possible if an overly broad superset of the actual strong references are provided,
-  since is-strong may short-circuit its search earlier than the cleaners can run since.
-  Such results can lead to false conclusions about how lazy a function is, especially
+  since is-strong may short-circuit its search earlier than the cleaners can run.
+  Such results can lead to false conclusions about how lazy a function actually is, especially
   if you have a pre-conceived notion of the results! The JVM property
     io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true
   will more aggressively search for such false-positives, which may be suitable for a cron CI job.

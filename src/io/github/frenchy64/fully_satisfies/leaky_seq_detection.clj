@@ -11,8 +11,14 @@
   collection is calculating whether references are reachable.
   We use this insight to force garbage collection (and hence, cleaners)
   to run, by inducing an OutOfMemoryError in try-forcing-cleaners!.
+
   Note that an OutOfMemoryError can leave the JVM in a bad state, so
-  this strategy is best isolated away from other tests.
+  this strategy is best isolated away from other tests. It is unclear
+  whether this helps mitigate any such issues or has any affect whatsoever,
+  but try-forcing-cleaners! requests large blocks of memory at a time
+  in the hope that when the JVM does refuse to allocate more memory,
+  there is a better chance that sufficient memory will be left over for
+  normal execution. Suggestions welcome for better strategies.
   
   Tying these ideas together are reference-counting seqs and the is-strong
   testing macro. ref-counting-lazy-seq returns a lazy seq
@@ -97,8 +103,14 @@
     ([f] (try (loop [c []]
                 (System/gc)
                 (when-not (f)
-                  (recur (conj c (make-array Double/TYPE (dec Integer/MAX_VALUE))))))
-              (catch OutOfMemoryError _
+                  ;; https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
+                  (recur (conj c (make-array Object (- Integer/MAX_VALUE 100))))))
+              (catch OutOfMemoryError e
+                (let [msg (ex-message e)]
+                  ;; is this is too specific, we at least don't want: Requested array size exceeds VM limit.
+                  ;; seems unlikely to force garbage collection.
+                  (assert (= "Java heap space" msg)
+                          msg))
                 #_(println "OOM")))
      (f))))
 

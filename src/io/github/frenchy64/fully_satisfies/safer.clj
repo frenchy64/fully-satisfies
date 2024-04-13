@@ -1,4 +1,36 @@
+;   Copyright (c) Rich Hickey. All rights reserved.
+;   The use and distribution terms for this software are covered by the
+;   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;   which can be found in the file epl-v10.html at the root of this distribution.
+;   By using this software in any fashion, you are agreeing to be bound by
+;   the terms of this license.
+;   You must not remove this notice, or any other, from this software.
+
 (ns io.github.frenchy64.fully-satisfies.safer
+  "Variants of clojure.core functions that improve thread-safety and general robustness
+  when passed mutating collections. Ignores the case of mutating array-backed
+  seqs like the rest of Clojure.
+  
+  For example, clojure.core/split-at could disagree on the take/drop parts of
+  the collection if the coll is mutated between realizing the splits.
+  Here, any one call to the eduction alternates between [0 1 2 3 4 5 6 7 8 9] and
+  [9 8 7 6 5 4 3 2 1 0]. However, split-at incorrectly splits the eduction as
+  [[0 1 2 3 4] [4 3 2 1 0]], and safer/split-at correctly splits it as
+  [[0 1 2 3 4] [5 6 7 8 9]].
+
+  (deftest split-at-mutation-test
+    (let [up-down (atom true)
+          ed (eduction (map (fn [i]
+                              (when (zero? i)
+                                (swap! up-down not))
+                              (if @up-down
+                                (- 9 i)
+                                i)))
+                       (range 10))]
+      (is (= [[0 1 2 3 4] [4 3 2 1 0]] (split-at 5 ed)))
+      (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/split-at 5 ed)))))
+
+  The basic trick here is strategically calling seq earlier on the collection argument."
   (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last
                             sort-by splitv-at partitionv-all last not-every?])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
@@ -39,7 +71,7 @@
    :static true}
   ([coll] (drop-last 1 coll))
   ([n coll] (let [coll (cond-> coll
-                         (not (coll? coll)) seq coll)] ;; bind a sequence - Ambrose
+                         (not (coll? coll)) (seq coll))] ;; bind a sequence - Ambrose
               (map (fn [x _] x) coll (drop n coll)))))
 
 (defn take-last
@@ -59,8 +91,8 @@
 (defn split-at
   "Returns a vector of [(take n coll) (drop n coll)]
   
-  safer/split-at additionally is thread-safe for mutable collections,
-  at the cost of a call to seq."
+  safer/split-at additionally is thread-safe for mutable collections
+  and generally robust against a mutating coll at the cost of a call to seq."
   {:added "1.0"
    :static true}
   [n coll]
@@ -71,7 +103,7 @@
   "Returns a vector of [(take-while pred coll) (drop-while pred coll)]
   
   safer/split-with additionally is thread-safe for mutable collections,
-  at the cost of a call to seq."
+  and generally robust against a mutating coll at the cost of a call to seq."
   {:added "1.0"
    :static true}
   [pred coll]
@@ -118,7 +150,8 @@
 (defn splitv-at
   "Returns a vector of [(into [] (take n) coll) (drop n coll)]
   
-  safer/splitv-at additionally is thread-safe for mutable collections."
+  safer/splitv-at additionally is thread-safe for mutable collections
+  and generally robust against a mutating coll."
   {:added "1.12"}
   [n coll]
   (let [coll (cond-> coll
@@ -130,7 +163,8 @@
   partitions with fewer than n items at the end.
   Returns a stateful transducer when no collection is provided.
   
-  safer/partitionv-all additionally is thread-safe for mutable collections."
+  safer/partitionv-all additionally is thread-safe for mutable collections
+  and generally robust against a mutating coll."
   {:added "1.12"}
   ([n]
    (partition-all n))
@@ -155,7 +189,7 @@
         (when-let [s (seq s)]   ;; call seq at top and short circuit - Ambrose
           (loop [s s]
             (if-let [n (next s)]
-              (recur n) ;; reuse next - Ambrose
+              (recur n) ;; reuse next (might be a bad idea, cache locality?) - Ambrose
               (first s))))))
 
 (def 

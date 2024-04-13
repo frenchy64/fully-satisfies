@@ -1,9 +1,11 @@
 # NEXT - TBD
 
-# 1.10.3 - April 13th 2024
+# 1.10.4 - April 13th 2024
 - improve documentation and methodology for code in 1.10.0
 - add `io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true` Java property to try harder to catch false-positive strong references.
 - alias `dedupe` in `io.github.frenchy64.fully-satisfies.uniform` since it is both lazier and behaves more uniformly.
+- don't trigger `Requested array size exceeds VM limit` in `try-forcing-cleaners!`
+- allocate arrays of Objects instead of doubles in `try-forcing-cleaners!`
 
 # 1.10.0 - April 12th 2024
 - [Leaky-seq detection testing framework](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.leaky-seq-detection.html) for detecting memory leaks caused by holding onto the head of sequences. An [example test suite](https://github.com/frenchy64/fully-satisfies/blob/main/test/io/github/frenchy64/fully_satisfies/leaky_seq_detection_test.clj) is provided exposing issues with clojure.core functions and verifying fixes to them.

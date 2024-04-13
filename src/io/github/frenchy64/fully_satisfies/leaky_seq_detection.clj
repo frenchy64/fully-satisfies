@@ -115,8 +115,9 @@
 (when-jdk9
   (defn ref-counting-chunked-seq
     "Returns a map with entries:
-    - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
-      the result of (i->v {:i <index> :end eos}) when provided. Returning :end key from i->v arg also ends the sequence.
+    - :lseq, a lazily chunked sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
+      the result of (i->v {:i <index> :end eos}) when provided. Chunks are of size chunk-size (default 32).
+      Returning :end key from i->v arg also ends the sequence.
     - :strong, an atom containing a set of indicies whose values are (likely) currently strong references.
     
     For the most precise results, each element returned by i->v should be distinct according to identical?

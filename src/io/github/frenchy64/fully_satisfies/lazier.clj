@@ -9,7 +9,7 @@
 (ns io.github.frenchy64.fully-satisfies.lazier
   "Variants of clojure.core functions that are slightly lazier when
   processing and/or returning lazy seqs."
-  (:refer-clojure :exclude [cycle sequence bounded-count iterator-seq dedupe]))
+  (:refer-clojure :exclude [bounded-count cycle dedupe iterator-seq sequence]))
 
 ;;TODO unit test
 ;; fix comma in docstring after "(sequence nil) yields ()" - Ambrose

@@ -31,8 +31,7 @@
       (is (= [[0 1 2 3 4] [5 6 7 8 9]] (safer/split-at 5 ed)))))
 
   The basic trick here is strategically calling seq earlier on the collection argument."
-  (:refer-clojure :exclude [butlast every? split-at split-with take-last nthrest sort drop-last
-                            sort-by splitv-at partitionv-all last not-every?])
+  (:refer-clojure :exclude [butlast drop-last every? last not-every? nthrest partitionv-all sort sort-by split-at split-with splitv-at take-last])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 ;;TODO unit test

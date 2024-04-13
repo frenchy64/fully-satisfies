@@ -12,14 +12,16 @@
  
   We agree that 'Robust programs should not mutate arrays or Iterables that have seqs on them.'
   https://clojure.org/reference/sequences
-  Eductions inhabit a middle ground. They are designed to be walked from first to last like seqs,
-  but each element is recomputed when 
+  Eductions inhabit a middle ground and might be the most practical application of this namespace.
+  They are designed to be walked from first to last like seqs, but each element is recomputed
+  instead of being cached like persistent seqs. This becomes problematic if a sequence function
+  walks its argument multiple times without first binding a seq.
   
   For example, clojure.core/split-at could disagree on the take/drop parts of
   the collection if the coll is mutated between realizing the splits.
   Here, any one call to the eduction alternates between [0 1 2 3 4 5 6 7 8 9] and
   [9 8 7 6 5 4 3 2 1 0]. However, split-at incorrectly splits the eduction as
-  [[0 1 2 3 4] [4 3 2 1 0]], and safer/split-at correctly splits it as
+  [[0 1 2 3 4] [4 3 2 1 0]], and safer/split-at returns one of the two correct splits:
   [[0 1 2 3 4] [5 6 7 8 9]].
 
   (deftest split-at-mutation-test
@@ -215,7 +217,7 @@
                  (recur (conj ret (first s)) n) ;; reuse next - Ambrose
                  (seq ret))))))
 
-#_ ;; prone to races between nth and count, but not obvious how to fix
+#_ ;; prone to races between nth and count, but not obvious how to fix. IndexedSeq comes to mind - Ambrose
 (defn rand-nth
   "Return a random element of the (sequential) collection. Will have
   the same performance characteristics as nth for the given

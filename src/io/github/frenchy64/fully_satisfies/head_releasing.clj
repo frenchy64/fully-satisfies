@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."
-  (:refer-clojure :exclude [map every? not-every?]))
+  (:refer-clojure :exclude [map every? not-every? some not-any?]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more
@@ -104,3 +104,24 @@
    :arglists '([pred coll])
    :added "1.0"}
  not-every? (comp not every?)) ;; use head-releasing/every - Ambrose
+
+(defn some
+  "Returns the first logical true value of (pred x) for any x in coll,
+  else nil.  One common idiom is to use a set as pred, for example
+  this will return :fred if :fred is in the sequence, otherwise nil:
+  (some #{:fred} coll)"
+  {:added "1.0"
+   :static true}
+  [pred coll]
+  (when-let [s (seq coll)]
+    (let [r (rest s)] ;; release strong reference to (first s) - Ambrose
+      (or (pred (first s))
+          (recur pred r)))))
+
+(def
+ ^{:tag Boolean
+   :doc "Returns false if (pred x) is logical true for any x in coll,
+  else true."
+   :arglists '([pred coll])
+   :added "1.0"}
+ not-any? (comp not some)) ;; use head-releasing/some - Ambrose

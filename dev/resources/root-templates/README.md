@@ -4,7 +4,7 @@
 Utilities for Clojure.
 
 - [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol (considering direct, extended, and metadata methods).
-- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
+- [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.partially-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
 - [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
 - [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a zero-arity.
 - [never?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.never.html#var-never.3F) -- a predicate `never?` that always returns false.
@@ -16,6 +16,7 @@ Utilities for Clojure.
 - non-overflowing [vector](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vector), [vec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.vector-overflow.html#var-vec) -- a vector implementation that [consistently handles integer overflow cases](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs), resolving [a known general attack vector](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11084#a11084) caused by [undefined behavior](https://ask.clojure.org/index.php/11080/get-find-assoc-vectors-overflows-key-when-passed-large-longs?show=11081#a11081).
 - [latest protocol ops](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.latest-protocol.html) -- implementations of `satisfies?`, `find-protocol-impl`, `find-protocol-method`, `extends?`, `extenders` that look up the latest version of the protocol [such that they have the same behavior with partial](https://clojure.atlassian.net/browse/CLJ-2094).
 - non-leaky [clojure.core](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.core.html), [clojure.test](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.non-leaky-macros.clojure.test.html) macros -- versions of the following macros that don't leak implementation details (eg., recur targets, pre/post, try/catch syntax): `locking` ([upstream report](https://clojure.atlassian.net/browse/CLJ-2573)), `binding`, `with-bindings`, `sync`, `with-local-vars`, `with-in-str`, `dosync`, `with-precision`, `with-loading-context`, `with-redefs`, `delay`, `vswap!`, `lazy-seq`, `lazy-cat`, `future`, `pvalues`, `clojure.test/{deftest,deftest-,testing,with-test,with-test-out}`, `clojure.java.shell/with-sh-{dir,env}`, `clojure.test.tap/with-tap-output`, `clojure.pprint/with-pprint-dispatch`, `clojure.core.async/thread`, `clojure.core.logic.pldb/with-{db,dbs}`, `clojure.tools.trace/dotrace`, `clojure.test.check.properties/for-all`, `clojure.test.check.generators/let`, `clojure.java.jmx/with-connection`, `clojure.core.match.debug/with-recur`
+- [`::reify-args`](https://github.com/frenchy64/fully-satisfies/blob/main/src/io/github/frenchy64/fully_satisfies/reify_spec.clj), a [spec for clojure.core/reify](https://clojure.atlassian.net/browse/CLJ-2661). Use [register-reify-spec](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.reify-spec.html#var-register-reify-spec) to add to spec's registry.
 
 [Latest API documentation](https://frenchy64.github.io/fully-satisfies/latest)
 
@@ -134,6 +135,49 @@ user=> (get (into-array [1 2 42]) 4294967296 :not-found)
 user=> (get "123" 4294967296 :not-found)
 \1
 ```
+- https://clojure.atlassian.net/browse/CLJ-2322
+- `throwArity(21)` in AFn.java should be `throwArity(20+args.length)`
+  - reprod:
+```
+Clojure 1.11.1
+user=> (apply {} (range 21))
+Execution error (ArityException) at user/eval214 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+user=> (apply {} (range 22))
+Execution error (ArityException) at user/eval216 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+user=> (apply {} (range 24))
+Execution error (ArityException) at user/eval218 (REPL:1).
+Wrong number of args (21) passed to: clojure.lang.PersistentArrayMap
+```
+- same in RestFn.java
+  - reprod:
+```
+Clojure 1.11.1
+user=> (defmacro big-fn [nargs] `(fn ~(conj (mapv #(gensym (do % "arg")) (range nargs)) 'last)))
+#'user/big-fn
+user=> (apply (big-fn 19) (range 21))
+Execution error (ArityException) at user/eval145 (REPL:1).
+Wrong number of args (21) passed to: user/eval145/fn--165
+user=> (apply (big-fn 19) (range 22))
+Execution error (ArityException) at user/eval168 (REPL:1).
+Wrong number of args (21) passed to: user/eval168/fn--188
+user=> (apply (big-fn 19) (range 24))
+Execution error (ArityException) at user/eval191 (REPL:1).
+Wrong number of args (21) passed to: user/eval191/fn--211
+```
+
+- direct-linkable protocols
+  - apparently a matter of makings protocols non-closures
+  - https://ask.clojure.org/index.php/10967/are-protocol-methods-guaranteed-to-not-be-directly-linked?show=10990#a10990
+  - approach:
+    - add new field to clojure.lang.MethodImplCache$Entry which distinguishes between 
+      the `(.isInstance c x)` test in `-cache-protocol-fn`
+    - update the `identical?` clause in the with-meta-extension part to grab this
+      entry raw (eg., replace the `fnFor` with `fnEntryFor`)
+    - move ginterf into the -cache-protocol-fn calls (1 arity at a time)
+
+- defmulti with cache controls https://clojure.atlassian.net/browse/CLJ-2626
 
 ## License
 

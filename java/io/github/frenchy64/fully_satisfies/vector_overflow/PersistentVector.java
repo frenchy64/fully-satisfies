@@ -533,7 +533,10 @@ public boolean containsKey(Object key){
     return i >= 0 && i < count();
   } catch (IllegalArgumentException e) {
 		return false;
+  } catch (ArithmeticException e) {
+		return false;
   }
+
 }
 
 public IMapEntry entryAt(Object key){
@@ -544,6 +547,7 @@ public IMapEntry entryAt(Object key){
       if(i >= 0 && i < count())
         return (IMapEntry) MapEntry.create(key, nth(i));
     } catch (IllegalArgumentException e) {
+    } catch (ArithmeticException e) {
     }
 		}
 	return null;
@@ -566,6 +570,7 @@ public Object valAt(Object key, Object notFound){
       if(i >= 0 && i < count())
         return nth(i);
     } catch (IllegalArgumentException e) {
+    } catch (ArithmeticException e) { 
     }
 		}
 	return notFound;
@@ -732,6 +737,7 @@ static final class TransientVector extends AFn implements ITransientVector, ITra
         if(i >= 0 && i < cnt)
           return nth(i);
       } catch (IllegalArgumentException e) {
+      } catch (ArithmeticException e) { 
       }
     }
 		return notFound;

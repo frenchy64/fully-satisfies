@@ -34,18 +34,18 @@
       (is (= (get v wrap-zero)
              (get (transient v) wrap-zero)
              nil))
-      (is (thrown? IllegalArgumentException
+      (is (thrown? ArithmeticException
                    (v wrap-zero)))
       (is (= (get v wrap-zero :default)
              (get (transient v) wrap-zero :default)
              :default))
       (is (not (contains? v wrap-zero)))
       (is (not (contains? (transient v) wrap-zero)))
-      (is (thrown? IllegalArgumentException
+      (is (thrown? ArithmeticException
                    (assoc v wrap-zero :wow))
           (try (assoc v wrap-zero :wow)
                (catch Throwable _)))
-      (is (thrown? IllegalArgumentException
+      (is (thrown? ArithmeticException
                    (assoc! (transient v) wrap-zero :wow))
           (try (assoc! (transient v) wrap-zero :wow)
                (catch Throwable _)))

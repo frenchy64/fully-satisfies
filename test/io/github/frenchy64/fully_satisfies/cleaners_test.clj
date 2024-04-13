@@ -155,6 +155,21 @@
                lseq)]
     (dorun 5 c)))
 
+(deftest head-releasing-map-head-holding-during-f-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)
+        c (head-releasing/map
+            (fn [v]
+              (let [idx (swap! idx inc)
+                    ;; not garbage collected because we have a strong
+                    ;; reference below
+                    _ (is-live #{idx} live)
+                    _ (with-out-str (prn v))
+                    ;; garbage collected!
+                    _ (is-live #{} live)]))
+            lseq)]
+    (dorun 5 c)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

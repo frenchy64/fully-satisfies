@@ -90,7 +90,7 @@
   (defn ref-counting-lazy-seq
     "Returns a map with entries:
     - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
-      the result of (i->v {:i <index>}) when provided. Returning :end key from i->v arg also ends the sequence.
+      the result of (i->v {:i <index> :end <eos>}) when provided. Returning :end key from i->v arg also ends the sequence.
     - :strong, an atom containing a set of indicies whose values are (likely) currently strong references.
     
     For the most precise results, each element returned by i->v should be distinct according to identical?
@@ -116,7 +116,7 @@
   (defn ref-counting-chunked-seq
     "Returns a map with entries:
     - :lseq, an lazy sequence of length n (default ##Inf) where each element is a distinct fresh Object entity, or 
-      the result of (i->v {:i <index>}) when provided. Returning :end key from i->v arg also ends the sequence.
+      the result of (i->v {:i <index> :end eos}) when provided. Returning :end key from i->v arg also ends the sequence.
     - :strong, an atom containing a set of indicies whose values are (likely) currently strong references.
     
     For the most precise results, each element returned by i->v should be distinct according to identical?

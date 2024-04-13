@@ -34,9 +34,10 @@
             (vreset! nil))]
     (try-forcing-cleaners!)))
 
-(defn -is-strong-msg [expected actual]
-  (#'sut/-is-strong-msg (into (sorted-set) expected)
-                        (into (sorted-set) actual)))
+(when-jdk9
+  (defn -is-strong-msg [expected actual]
+    (#'sut/-is-strong-msg (into (sorted-set) expected)
+                          (into (sorted-set) actual))))
 
 (deftest -is-strong-msg-test
   (is (nil? (-is-strong-msg #{} #{})))

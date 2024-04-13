@@ -257,3 +257,25 @@
     (is (= nil (last ed)))
     (init!)
     (is (= 1 (safer/last ed)))))
+
+(deftest butlast-mutation-test
+  (let [t-f (atom false)
+        init! #(reset! t-f false)
+        ed (eduction (filter (fn [i]
+                               (when (zero? i)
+                                 (swap! t-f not))
+                               (if @t-f
+                                 (< i 2)
+                                 (< i 0))))
+                     (range 3))]
+    (testing "eduction alternates"
+      (init!)
+      (is (= [[0 1]
+              []
+              [0 1]
+              []]
+             (repeatedly 4 #(vec ed)))))
+    (init!)
+    (is (= [nil] (butlast ed)))
+    (init!)
+    (is (= [0] (safer/butlast ed)))))

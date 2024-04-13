@@ -16,7 +16,8 @@
   references to arguments before calling their function arguments.
   Realizing the following example would be prone to failure with an OutOfMemoryError using
   clojure.core/map because map retains a strong reference to takes-75-percent-of-heap
-  when calling its function argument.
+  when calling its function argument, which prevents memory from being reclaimed to create
+  another value of that size.
 
   (map (fn [takes-75-percent-of-heap]
          (if (< (rand) 0.5)
@@ -47,8 +48,8 @@
   the functions in this namespace will have no affect in the memory usage of processing these seqs.
   
   Another caveat is that the functions here are perhaps more useful as
-  validation of the leaky-seq-detection framework than as significant bump in
-  real-world expressivity.
+  validation of the leaky-seq-detection framework and for pedalogical purposes about sequences
+  than as significant bump in real-world expressivity.
  
   The author of this namespace can only speculate why the original functions were written this way.
   Perhaps the idea of a fn releasing a strong reference to one of its arguments was too rare to risk
@@ -56,6 +57,9 @@
   and have much higher memory requirements that the optimizations in this namespace might
   have been deemed insignificant. For example, map processing a chunk of 32 must have enough memory
   to hold both 32 elements of the input collection and 32 elements of the output collection simultaneously.
+  Chunked seqs also make programs such as the above unidiomatic since they are so difficult to get right
+  (see the hoops math.combinatorics jumps through to reduce the 32+32 elements of the previous example to
+  32+1).
   
   At the very least, this work helps crystallize the differences between rest and next---or
   more precisely, their similarities: while rest does not realize the next element, nor tell us whether

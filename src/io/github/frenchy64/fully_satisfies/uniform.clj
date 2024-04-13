@@ -16,6 +16,8 @@
   ones that are inaccessible to normal users (or more practically, unlikely
   to be generated with a generator like gen/any, or one that sources its
   values from the keyword interning table).
+
+  These corner-cases are demonstrated in io.github.frenchy64.fully-satisfies.uniform-test.
   
   An effective generator that could find such defects reliably could generate
   keywords that occur in the source code of the functions reachable from the

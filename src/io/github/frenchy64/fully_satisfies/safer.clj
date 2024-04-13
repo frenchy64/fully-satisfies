@@ -8,8 +8,12 @@
 
 (ns io.github.frenchy64.fully-satisfies.safer
   "Variants of clojure.core functions that improve thread-safety and general robustness
-  when passed mutating collections. Ignores the case of mutating array-backed
-  seqs like the rest of Clojure.
+  when passed mutating collections.
+ 
+  We agree that 'Robust programs should not mutate arrays or Iterables that have seqs on them.'
+  https://clojure.org/reference/sequences
+  Eductions inhabit a middle ground. They are designed to be walked from first to last like seqs,
+  but each element is recomputed when 
   
   For example, clojure.core/split-at could disagree on the take/drop parts of
   the collection if the coll is mutated between realizing the splits.

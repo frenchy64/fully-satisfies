@@ -41,7 +41,26 @@
   (map (fn [takes-75-percent-of-heap] nil)
        (lazy-seq-where-rest-calls-next
          (cons (->takes-75-percent-of-heap)
-               (lazy-seq [(->takes-75-percent-of-heap)]))))"
+               (lazy-seq [(->takes-75-percent-of-heap)]))))
+
+  Infinite lazy seqs such as cycle or repeat always hold strong references to all their elements, so
+  the functions in this namespace will have no affect in the memory usage of processing these seqs.
+  
+  Another caveat is that the functions here are perhaps more useful as
+  validation of the leaky-seq-detection framework than as significant bump in
+  real-world expressivity.
+ 
+  The author of this namespace can only speculate why the original functions were written this way.
+  Perhaps the idea of a fn releasing a strong reference to one of its arguments was too rare to risk
+  the caveats in using the default implementation of ISeq. Chunked seqs are also so prevalent
+  and have much higher memory requirements that the optimizations in this namespace might
+  have been deemed insignificant. For example, map processing a chunk of 32 must have enough memory
+  to hold both 32 elements of the input collection and 32 elements of the output collection simultaneously.
+  
+  At the very least, this work helps crystallize the differences between rest and next---or
+  more precisely, their similarities: while rest does not realize the next element, nor tell us whether
+  a seq has more elements, it is still an eager operation whose result, like next, releases a strong
+  reference to the first element of the seq."
   (:refer-clojure :exclude [every? keep keep-indexed map map-indexed mapcat not-any? not-every? some]))
 
 (defn naive-seq-reduce

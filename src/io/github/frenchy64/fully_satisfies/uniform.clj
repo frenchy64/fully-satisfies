@@ -13,14 +13,15 @@
   In all cases, a namespaced keyword was used as a special value
   that, if provided to the function, would break its promised semantics.
   The fixes involved replacing these special values with globally unique
-  ones that are inaccessible to normal users (or more practically, impossible
-  to generate with a generator like gen/any, or one that sources its
+  ones that are inaccessible to normal users (or more practically, unlikely
+  to be generated with a generator like gen/any, or one that sources its
   values from the keyword interning table).
   
   An effective generator that could find such defects reliably could generate
   keywords that occur in the source code of the functions reachable from the
   generative property (using static analysis, but perhaps this is also retrievable
-  dynamically from the bytecode)."
+  dynamically from the bytecode). On the other hand, such invasive analyses could
+  yield false-negatives by providing values normally inaccessible to the user."
   (:refer-clojure :exclude [partition-by halt-when dedupe])
   (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 

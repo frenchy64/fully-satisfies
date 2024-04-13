@@ -8,7 +8,30 @@
 
 (ns io.github.frenchy64.fully-satisfies.lazier
   "Variants of clojure.core functions that are slightly lazier when
-  processing and/or returning lazy seqs."
+  processing and/or returning lazy seqs.
+  
+  Some common (anti)patterns were to blame for the less-lazy versions of
+  these functions. The main insight was that if you are using a counter to
+  bound how many elements of a seq you are walking, you can be lazier by
+  testing the counter _before_ testing for more elements. For example, 
+
+  ```java
+  int n = 0;
+  while(iter.hasNext() && n < CHUNK_SIZE)
+  ```
+
+  will force n+1 elements and
+
+  ```java
+  int n = 0;
+  while(n < CHUNK_SIZE && iter.hasNext())
+  ```
+
+  will force n elements. In this case, realizing the extra element has no utility because
+  the chunk only fits CHUNK_SIZE elements.
+
+  Another problematic pattern was using seq-based implementations for sequence functions.
+  Seqs must be non-empty, but a sequence can be empty, so implementations can be lazier."
   (:refer-clojure :exclude [bounded-count cycle dedupe iterator-seq sequence]))
 
 ;;TODO unit test

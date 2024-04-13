@@ -8,8 +8,21 @@
 
 (ns io.github.frenchy64.fully-satisfies.uniform
   "Variants of clojure.core functions that are generalized
-  to work uniformly for all values."
-  (:refer-clojure :exclude [partition-by halt-when]))
+  to work uniformly for all values.
+  
+  In all cases, a namespaced keyword was used as a special value
+  that, if provided to the function, would break its promised semantics.
+  The fixes involved replacing these special values with globally unique
+  ones that are inaccessible to normal users (or more practically, impossible
+  to generate with a generator like gen/any, or one that sources its
+  values from the keyword interning table).
+  
+  An effective generator that could find such defects reliably could generate
+  keywords that occur in the source code of the functions reachable from the
+  generative property (using static analysis, but perhaps this is also retrievable
+  dynamically from the bytecode)."
+  (:refer-clojure :exclude [partition-by halt-when dedupe])
+  (:require [io.github.frenchy64.fully-satisfies.lazier :as lazier]))
 
 (let [none (Object.)]
   (defn partition-by
@@ -85,3 +98,17 @@
               (if (pred input)
                 (reduced {halt (if retf (retf (rf result) input) input)})
                 (rf result input))))))))
+
+(let [none (Object.)]
+  (defn dedupe
+    "Returns a lazy sequence removing consecutive duplicates in coll.
+    Returns a transducer when no collection is provided.
+
+    lazier/dedupe additionally:
+    - does not force a lazy seq until needed
+    - forces 32 elements per chunk instead of 33, preserving 32 elements
+    per chunk.
+    - transducer arity behaves correctly for all inputs (including :clojure.core/none)"
+    {:added "1.7"}
+    ([] (lazier/dedupe))
+    ([coll] (lazier/dedupe coll))))

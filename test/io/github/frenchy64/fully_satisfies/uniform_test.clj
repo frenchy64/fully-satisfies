@@ -36,3 +36,9 @@
                             ([result input]
                              (reduced {:clojure.core/halt :should-be-wrapped})))))
                [1]))))
+
+(deftest dedupe-uniform-test
+  ;; wrong
+  (is (= (into [] (dedupe) [:clojure.core/none])))
+  ;; right
+  (is (= (into [:clojure.core/none] (uniform/dedupe) [:clojure.core/none]))))

@@ -77,10 +77,7 @@
   (testing "lazier/dedupe seq"
     (let [realized (atom #{})]
       (seq (lazier/dedupe (map #(swap! realized conj %) (lazy-range))))
-      (is (= (into (sorted-set) (range 32)) @realized))))
-  (testing "transducer"
-    (is (= (into [] (dedupe) [:clojure.core/none])))
-    (is (= (into [:clojure.core/none] (lazier/dedupe) [:clojure.core/none])))))
+      (is (= (into (sorted-set) (range 32)) @realized)))))
 
 (deftest lazier-bounded-count-test
   (testing "semantics"

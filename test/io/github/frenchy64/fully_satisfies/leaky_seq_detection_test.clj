@@ -15,10 +15,11 @@
      (test-ctx/deftest ~@args)))
 
 (when-jdk9
-  (require '[io.github.frenchy64.fully-satisfies.cleaners :refer [register-cleaner! try-forcing-cleaners!
-                                                                  head-hold-detecting-lazy-seq
-                                                                  head-hold-detecting-chunked-seq
-                                                                  is-strong]]))
+  (require '[io.github.frenchy64.fully-satisfies.leaky-seq-detection
+             :refer [register-cleaner! try-forcing-cleaners!
+                     head-hold-detecting-lazy-seq
+                     head-hold-detecting-chunked-seq
+                     is-strong]]))
 
 (when-jdk9
   (deftest try-forcing-cleaners!-test

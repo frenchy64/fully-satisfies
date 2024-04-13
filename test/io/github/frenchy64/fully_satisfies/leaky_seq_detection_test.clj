@@ -140,7 +140,7 @@
                   (fn [i]
                     (swap! head-holder (if (zero? i) seq next))
                     (testing (str i " nexts holds 1 element")
-                      (is-strong #{i 2} strong)))
+                      (is-strong #{i} strong)))
                   (range 32))
             (reset! head-holder nil)
             (testing "release hold"

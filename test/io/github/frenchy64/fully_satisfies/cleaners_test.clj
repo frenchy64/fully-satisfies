@@ -103,10 +103,6 @@
           (testing "release hold"
             (is-live #{} live)))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; map
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (deftest map-head-holding-test
   (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
         c (atom (map #(do % nil) lseq))
@@ -142,6 +138,22 @@
         _ (reset! c nil)
         ;; c=nil
         _ (is-live #{} live)]))
+
+(deftest map-head-holding-during-f-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)
+        c (map (fn [v]
+                 (let [idx (swap! idx inc)
+                       ;; not garbage collected because we have a strong
+                       ;; reference below
+                       _ (is-live #{idx} live)
+                       _ (with-out-str (prn v))
+                       ;; not garbage collected because map holds a strong
+                       ;; reference to v because it calls rest after the
+                       ;; fn returns.
+                       _ (is-live #{idx} live)]))
+               lseq)]
+    (dorun 5 c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter

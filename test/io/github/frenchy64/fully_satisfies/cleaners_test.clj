@@ -283,18 +283,18 @@
 (deftest filter-head-holding-test
   (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
                               {:n 100})
-        c (atom (filter #(do % nil) lseq))
+        c (atom (filter #(do % []) lseq))
         _ (is-live #{} live)
         _ (swap! c seq)
-        _ (is-live #{} live)
+        _ (is-live #{0} live)
         _ (swap! c next)
-        _ (is-live #{} live)
+        _ (is-live #{1} live)
         ;; hold onto c
         _ (reset! c nil)
         _ (is-live #{} live)])
   (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
                               {:n 100})
-        c (atom (filter #(do %) lseq))
+        c (atom (filter #(do % []) lseq))
         ;; c=(...)
         _ (testing "init"
             (is-live #{} live))
@@ -325,12 +325,12 @@
 (deftest remove-head-holding-test
   (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq
                               {:n 100})
-        c (atom (remove #(do % true) lseq))
+        c (atom (remove #(do % nil) lseq))
         _ (is-live #{} live)
         _ (swap! c seq)
-        _ (is-live #{} live)
+        _ (is-live #{0} live)
         _ (swap! c next)
-        _ (is-live #{} live)
+        _ (is-live #{1} live)
         ;; hold onto c
         _ (reset! c nil)
         _ (is-live #{} live)])

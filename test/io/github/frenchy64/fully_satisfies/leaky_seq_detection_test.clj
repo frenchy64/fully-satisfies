@@ -1,6 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.leaky-seq-detection-test
   "Goal: use Java Cleaners to test for memory leaks"
-  (:require [clojure.test :refer [is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :as test-ctx :refer [testing]]
             [io.github.frenchy64.fully-satisfies.lazier :as lazier]
             [io.github.frenchy64.fully-satisfies.head-releasing :as head-releasing]))
@@ -16,18 +17,44 @@
 
 (when-jdk9
   (require '[io.github.frenchy64.fully-satisfies.leaky-seq-detection
+             :as sut
              :refer [register-cleaner!
                      try-forcing-cleaners!
                      ref-counting-lazy-seq
                      ref-counting-chunked-seq
                      is-strong]]))
 
-(when-jdk9
-  (deftest try-forcing-cleaners!-test
-    (let [cleaned? (atom [])
-          _ (doto (volatile! (register-cleaner! (Object.) #(swap! cleaned? conj true)))
-              (vreset! nil))]
-      (try-forcing-cleaners!))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; impl
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest try-forcing-cleaners!-test
+  (let [cleaned? (atom [])
+        _ (doto (volatile! (register-cleaner! (Object.) #(swap! cleaned? conj true)))
+            (vreset! nil))]
+    (try-forcing-cleaners!)))
+
+(defn -is-strong-msg [expected actual]
+  (#'sut/-is-strong-msg (into (sorted-set) expected)
+                        (into (sorted-set) actual)))
+
+(deftest -is-strong-msg-test
+  (is (nil? (-is-strong-msg #{} #{})))
+  (is (nil? (-is-strong-msg #{1 2 3} #{1 2 3})))
+  (is (= "Missing strong references to indexes: #{1}"
+         (-is-strong-msg #{1} #{})))
+  (is (= "Unexpected strong references to indexes: #{1}"
+         (-is-strong-msg #{} #{1})))
+  (is (= (str/join
+           "\n"
+           ["Missing strong references to indexes: #{2}"
+            "Unexpected strong references to indexes: #{1}"])
+         (-is-strong-msg #{2} #{1})))
+  (is (= (str/join
+           "\n"
+           ["Missing strong references to indexes: #{3 5}"
+            "Unexpected strong references to indexes: #{1 4}"])
+         (-is-strong-msg #{2 3 5} #{1 2 4}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; example
@@ -65,87 +92,82 @@
 ;; reduce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when-jdk9
-  (deftest reduce2-processes-sequentially-after-first-test
-    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-          times (atom 0)]
-      (reduce (fn [_ _]
-                (let [t (swap! times inc)]
-                  (is-strong (if (= 1 t)
-                             #{0 1}
-                             #{t})
-                           strong)))
-              (take 10 lseq))
-      (is-strong #{} strong))))
+(deftest reduce2-processes-sequentially-after-first-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        times (atom 0)]
+    (reduce (fn [_ _]
+              (let [t (swap! times inc)]
+                (is-strong (if (= 1 t)
+                           #{0 1}
+                           #{t})
+                         strong)))
+            (take 10 lseq))
+    (is-strong #{} strong)))
 
-(when-jdk9
-  (deftest reduce3-processes-sequentially-test
-    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)]
-      (reduce (fn [i _]
-                (is-strong #{i} strong)
-                (inc i))
-              0 (take 10 lseq))
-      (is-strong #{} strong))))
+(deftest reduce3-processes-sequentially-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)]
+    (reduce (fn [i _]
+              (is-strong #{i} strong)
+              (inc i))
+            0 (take 10 lseq))
+    (is-strong #{} strong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; take
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when-jdk9
-  (deftest head-holding-test
-    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-          head-holder (volatile! (doall (take 10 lseq)))]
-      (is-strong (into #{} (range 10))
-               strong)
-      (vreset! head-holder nil)
-      (is-strong #{} strong))))
+(deftest head-holding-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (volatile! (doall (take 10 lseq)))]
+    (is-strong (into #{} (range 10))
+             strong)
+    (vreset! head-holder nil)
+    (is-strong #{} strong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; map / map-indexed / keep / keep-indexed
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when-jdk9
-  (deftest map-does-not-chunk-lazy-seq-test
-    (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
-      (testing map
-        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-              head-holder (atom (map vector lseq))]
-          (when (testing "initial call to map is lazy"
-                  (is-strong #{} strong))
+(deftest map-does-not-chunk-lazy-seq-test
+  (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
+    (testing map
+      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+            head-holder (atom (map vector lseq))]
+        (when (testing "initial call to map is lazy"
+                (is-strong #{} strong))
+          (when (every?
+                  (fn [i]
+                    (swap! head-holder (if (zero? i) seq next))
+                    (testing (str i " nexts holds 1 element")
+                      (is-strong #{i 2} strong)))
+                  (range 32))
+            (reset! head-holder nil)
+            (testing "release hold"
+              (is-strong #{} strong))))))))
+
+(deftest map-chunks-chunked-seq-test
+  (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
+    (testing map
+      (let [{:keys [strong lseq]} (ref-counting-chunked-seq)
+            head-holder (atom (map vector lseq))]
+        (when (testing "initial call to map is lazy"
+                (is-strong #{} strong))
+          (let [first-chunk (into (sorted-set) (range 32))
+                second-chunk (into (sorted-set) (range 32 64))]
             (when (every?
                     (fn [i]
-                      (swap! head-holder (if (zero? i) seq next))
-                      (testing (str i " nexts holds 1 element")
-                        (is-strong #{i} strong)))
-                    (range 32))
+                      (swap! head-holder next)
+                      (testing (str i " nexts holds 32 elements")
+                        ;; map holds onto each chunk until the entire chunk
+                        ;; is processed. this is because a chunk is an ArrayChunk
+                        ;; which is backed by an array, and next just moves the start
+                        ;; index forward. Since the array is shared between immutable
+                        ;; seqs, it cannot be mutated.
+                        (is-strong (if (< i 31) first-chunk second-chunk) strong)))
+                    (range 33))
               (reset! head-holder nil)
               (testing "release hold"
                 (is-strong #{} strong)))))))))
-
-(when-jdk9
-  (deftest map-chunks-chunked-seq-test
-    (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
-      (testing map
-        (let [{:keys [strong lseq]} (ref-counting-chunked-seq)
-              head-holder (atom (map vector lseq))]
-          (when (testing "initial call to map is lazy"
-                  (is-strong #{} strong))
-            (let [first-chunk (into (sorted-set) (range 32))
-                  second-chunk (into (sorted-set) (range 32 64))]
-              (when (every?
-                      (fn [i]
-                        (swap! head-holder next)
-                        (testing (str i " nexts holds 32 elements")
-                          ;; map holds onto each chunk until the entire chunk
-                          ;; is processed. this is because a chunk is an ArrayChunk
-                          ;; which is backed by an array, and next just moves the start
-                          ;; index forward. Since the array is shared between immutable
-                          ;; seqs, it cannot be mutated.
-                          (is-strong (if (< i 31) first-chunk second-chunk) strong)))
-                      (range 33))
-                (reset! head-holder nil)
-                (testing "release hold"
-                  (is-strong #{} strong))))))))))
 
 (deftest map-head-holding-test
   (doseq [map [#'map #'map-indexed #'keep #'keep-indexed]]
@@ -525,28 +547,27 @@
 ;; sequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when-jdk9
-  (deftest sequence-chunks-lazy-seq-test
-    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-          head-holder (atom (sequence (map identity) lseq))]
-      (when (testing "initial call to sequence realizes one element"
-              ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
-              ;; https://clojure.atlassian.net/browse/CLJ-2795
-              (is-strong #{0} strong))
-        (when (testing "seq holds 33 elements"
-                (swap! head-holder seq)
-                ;;FIXME this is a bug. recursive call to chunkIteratorSeq calls
-                ;; iter.hasNext () an extra time without adding to a chunk
-                (is-strong (into (sorted-set) (range 33)) strong))
-          (when (every?
-                  (fn [i]
-                    (swap! head-holder next)
-                    (testing (str i " nexts holds 33 elements")
-                      (is-strong (into (sorted-set) (range 33)) strong)))
-                  (range 31))
-            (reset! head-holder nil)
-            (testing "release hold"
-              (is-strong #{} strong))))))))
+(deftest sequence-chunks-lazy-seq-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (atom (sequence (map identity) lseq))]
+    (when (testing "initial call to sequence realizes one element"
+            ;;FIXME this is a bug. sequence doc says "will not force lazy seq"
+            ;; https://clojure.atlassian.net/browse/CLJ-2795
+            (is-strong #{0} strong))
+      (when (testing "seq holds 33 elements"
+              (swap! head-holder seq)
+              ;;FIXME this is a bug. recursive call to chunkIteratorSeq calls
+              ;; iter.hasNext () an extra time without adding to a chunk
+              (is-strong (into (sorted-set) (range 33)) strong))
+        (when (every?
+                (fn [i]
+                  (swap! head-holder next)
+                  (testing (str i " nexts holds 33 elements")
+                    (is-strong (into (sorted-set) (range 33)) strong)))
+                (range 31))
+          (reset! head-holder nil)
+          (testing "release hold"
+            (is-strong #{} strong)))))))
 
 (comment
   (do (sequence (map #(prn "computed" %))
@@ -581,24 +602,23 @@
 ;; lazier/sequence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when-jdk9
-  (deftest lazier-sequence-chunks-lazy-seq-test
-    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-          head-holder (atom (lazier/sequence (map identity) lseq))]
-      (when (testing "initial call to sequence realizes no elements"
-              (is-strong #{} strong))
-        (when (testing "seq holds 32 elements"
-                (swap! head-holder seq)
-                (is-strong (into (sorted-set) (range 32)) strong))
-          (when (every?
-                  (fn [i]
-                    (swap! head-holder next)
-                    (testing (str i " nexts holds 32 elements")
-                      (is-strong (into (sorted-set) (range 32)) strong)))
-                  (range 31))
-            (reset! head-holder nil)
-            (testing "release hold"
-              (is-strong #{} strong))))))))
+(deftest lazier-sequence-chunks-lazy-seq-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (atom (lazier/sequence (map identity) lseq))]
+    (when (testing "initial call to sequence realizes no elements"
+            (is-strong #{} strong))
+      (when (testing "seq holds 32 elements"
+              (swap! head-holder seq)
+              (is-strong (into (sorted-set) (range 32)) strong))
+        (when (every?
+                (fn [i]
+                  (swap! head-holder next)
+                  (testing (str i " nexts holds 32 elements")
+                    (is-strong (into (sorted-set) (range 32)) strong)))
+                (range 31))
+          (reset! head-holder nil)
+          (testing "release hold"
+            (is-strong #{} strong)))))))
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}
@@ -632,56 +652,53 @@
                                                  0)))))))
       (is (= (repeat 7 0) @a)))))
 
-(when-jdk9
-  (deftest seque-look-ahead-test
-    (doseq [seque [#'synchronous-seque
-                   ;#'seque
-                   ]]
-      (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-              head-holder (volatile! (doto (seque 5 lseq)
-                                       seq))]
-          (first @head-holder)
-          (is-strong (into #{} (range 6)) strong)
-          (vreset! head-holder nil)
-          (is-strong #{} strong))))))
+(deftest seque-look-ahead-test
+  (doseq [seque [#'synchronous-seque
+                 ;#'seque
+                 ]]
+    (testing (pr-str seque)
+      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+            head-holder (volatile! (doto (seque 5 lseq)
+                                     seq))]
+        (first @head-holder)
+        (is-strong (into #{} (range 6)) strong)
+        (vreset! head-holder nil)
+        (is-strong #{} strong)))))
 
-(when-jdk9
-  (deftest seque-reduce-look-ahead-test
-    (doseq [seque [#'synchronous-seque
-                   ;#'seque
-                   ]]
-      (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-              len 20
-              buffer-size 5]
-          (reduce (fn [i _]
-                    (testing (pr-str i)
-                      (is-strong (into #{}
-                                     (range i
-                                            (min len (+ i buffer-size 1))))
-                               strong))
-                    (inc i))
-                  0
-                  (seque buffer-size (take len lseq)))
-          (is-strong #{} strong))))))
+(deftest seque-reduce-look-ahead-test
+  (doseq [seque [#'synchronous-seque
+                 ;#'seque
+                 ]]
+    (testing (pr-str seque)
+      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+            len 20
+            buffer-size 5]
+        (reduce (fn [i _]
+                  (testing (pr-str i)
+                    (is-strong (into #{}
+                                   (range i
+                                          (min len (+ i buffer-size 1))))
+                             strong))
+                  (inc i))
+                0
+                (seque buffer-size (take len lseq)))
+        (is-strong #{} strong)))))
 
-(when-jdk9
-  (deftest seque-loop-look-ahead-test
-    (doseq [seque [#'synchronous-seque
-                   ;#'seque
-                   ]]
-      (testing (pr-str seque)
-        (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-              len 20
-              buffer-size 5]
-          (loop [i 0
-                 c (seque buffer-size (take len lseq))]
-            (when-some [c (seq c)]
-              (testing (pr-str i)
-                (is-strong (into #{}
-                                 (range i
-                                        (min len (+ i buffer-size 1))))
-                           strong))
-              (recur (inc i) (next c))))
-          (is-strong #{} strong))))))
+(deftest seque-loop-look-ahead-test
+  (doseq [seque [#'synchronous-seque
+                 ;#'seque
+                 ]]
+    (testing (pr-str seque)
+      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+            len 20
+            buffer-size 5]
+        (loop [i 0
+               c (seque buffer-size (take len lseq))]
+          (when-some [c (seq c)]
+            (testing (pr-str i)
+              (is-strong (into #{}
+                               (range i
+                                      (min len (+ i buffer-size 1))))
+                         strong))
+            (recur (inc i) (next c))))
+        (is-strong #{} strong)))))

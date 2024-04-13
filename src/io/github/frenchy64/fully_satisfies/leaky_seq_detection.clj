@@ -21,7 +21,20 @@
   like to test for memory leaks.
 
   is-strong then takes a set of seq indexes expected to have strong references
-  and checks them against the atom tracking strong references.
+  and checks them against the atom tracking strong references. It will continue
+  to induce OutOfMemoryError's until the expected references are found, or eventually
+  fail via an is test assertion.
+ 
+  Note that it's best to build up the set of expected strong references rather than
+  whittle it down. From a usability standpoint, starting with (is-strong #{} live)
+  will likely print the actual set of strongly referenced indexes, from which you can
+  source the expected strong references (from the result itself or a subset).
+  But false-positives are possible if an overly broad superset of the actual strong references are provided,
+  since is-strong may short-circuit its search earlier than the cleaners can run since.
+  Such results can lead to false conclusions about how lazy a function is, especially
+  if you have a pre-conceived notion of the results! The JVM property
+    io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true
+  will more aggressively search for such false-positives, which may be suitable for a cron CI job.
 
   Here's an example of asserting that a program adds or subtracts strong references to elements
   of a lazy seq at particular points.
@@ -56,7 +69,8 @@
   
   See io.github.frenchy64.fully-satisfies.leaky-seq-detection-test for real-world
   examples of finding memory leaks in Clojure functions, and then verifying fixes for them."
-  (:require [clojure.test :refer [is]]))
+  (:require [clojure.string :as str]
+            [clojure.test :refer [is]]))
 
 (defmacro ^:private when-jdk9 [& body]
   (when (try (Class/forName "java.lang.ref.Cleaner")
@@ -101,7 +115,7 @@
     ([{:keys [i->v n]
        :or {i->v (fn [{:keys [i end]}] (Object.))
             n ##Inf}}]
-     (let [strong (atom #{})
+     (let [strong (atom (sorted-set))
            rec (fn rec [i]
                  (lazy-seq
                    (when (< i n)
@@ -129,7 +143,7 @@
        :or {i->v (fn [{:keys [i end]}] (Object.))
             n ##Inf
             chunk-size 32}}]
-     (let [strong (atom #{})
+     (let [strong (atom (sorted-set))
            rec (fn rec [i]
                  (lazy-seq
                    (when (< i n)
@@ -151,9 +165,36 @@
         :strong strong}))))
 
 (when-jdk9
-  (defn is-strong [expected strong]
-    (loop [tries 100]
-      (when (and (pos? tries)
-                 (not (try-forcing-cleaners! #(= expected @strong))))
-        (recur (dec tries))))
-    (is (= expected (into (sorted-set) @strong)))))
+  (defn- -is-strong-msg [expected actual]
+    (assert (sorted? expected))
+    (assert (sorted? actual))
+    (let [missing (not-empty (apply disj expected actual))
+          extra (not-empty (apply disj actual expected))]
+      (not-empty
+        (str/join "\n"
+                  (cond-> []
+                    missing
+                    (conj (str "Missing strong references to indexes: "
+                               (pr-str missing)))
+                    extra
+                    (conj (str "Unexpected strong references to indexes: "
+                               (pr-str extra)))))))))
+
+(when-jdk9
+  (defn is-strong
+    "Asserts that there are strong references to the expected set of indexes
+    into the ref-counting seq associated with strong."
+    [expected strong]
+    (let [f (if (= "true"
+                   (System/getProperty
+                     "io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection"))
+              (constantly false)
+              #(= expected @strong))]
+      (loop [tries 100]
+        (when (and (pos? tries)
+                   (not (try-forcing-cleaners! f)))
+          (recur (dec tries)))))
+    (let [expected (into (sorted-set) expected)
+          actual @strong]
+      (is (= expected actual)
+          (-is-strong-msg expected actual)))))

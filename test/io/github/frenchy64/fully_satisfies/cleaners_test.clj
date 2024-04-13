@@ -192,7 +192,8 @@
                     ;; fn returns.
                     _ (is-live #{idx} live)]
                 (< idx 5)))
-            lseq)))
+            lseq)
+    (is (= 5 @idx))))
 
 (deftest head-releasing-every?-head-holding-during-pred-test
   (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
@@ -207,7 +208,45 @@
               ;; garbage collected!
               _ (is-live #{} live)]
           (< idx 5)))
-      lseq)))
+      lseq)
+    (is (= 5 @idx))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; not-every?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest not-every?-head-holding-during-pred-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)]
+    (not-every? (fn [v]
+                  (let [idx (swap! idx inc)
+                        ;; not garbage collected because we have a strong
+                        ;; reference below
+                        _ (is-live #{idx} live)
+                        _ (with-out-str (prn v))
+                        ;; not garbage collected because map holds a strong
+                        ;; reference to v because it calls rest after the
+                        ;; fn returns.
+                        _ (is-live #{idx} live)]
+                    (< idx 5)))
+                lseq)
+    (is (= 5 @idx))))
+
+(deftest head-releasing-not-every?-head-holding-during-pred-test
+  (let [{:keys [lseq live]} (head-hold-detecting-lazy-seq)
+        idx (atom -1)]
+    (head-releasing/not-every?
+      (fn [v]
+        (let [idx (swap! idx inc)
+              ;; not garbage collected because we have a strong
+              ;; reference below
+              _ (is-live #{idx} live)
+              _ (with-out-str (prn v))
+              ;; garbage collected!
+              _ (is-live #{} live)]
+          (< idx 5)))
+      lseq)
+    (is (= 5 @idx))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter

@@ -1,7 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.head-releasing
   "Variants of clojure.core functions (and internal helpers)
   that release the head of seqs above all other concerns."
-  (:refer-clojure :exclude [map every?]))
+  (:refer-clojure :exclude [map every? not-every?]))
 
 (defn naive-seq-reduce
   "Reduces a seq, ignoring any opportunities to switch to a more
@@ -91,8 +91,16 @@
   [pred coll]
   ;; reuses result of `seq` - Ambrose
   (if-let [coll (seq coll)]
-    (let [r (rest coll)] ;; release a strong reference to (first coll)
+    (let [r (rest coll)] ;; release a strong reference to (first coll) - Ambrose
       (if (pred (first coll))
         (recur pred r)
         false))
     true))
+
+(def
+ ^{:tag Boolean
+   :doc "Returns false if (pred x) is logical true for every x in
+  coll, else true."
+   :arglists '([pred coll])
+   :added "1.0"}
+ not-every? (comp not every?)) ;; use head-releasing/every - Ambrose

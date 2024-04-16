@@ -39,6 +39,10 @@
 
 (deftest dedupe-uniform-test
   ;; wrong
-  (is (= (into [] (dedupe) [:clojure.core/none])))
+  (is (= []
+         (into [] (dedupe) [:clojure.core/none])
+         (sequence (dedupe) [:clojure.core/none])))
   ;; right
-  (is (= (into [:clojure.core/none] (uniform/dedupe) [:clojure.core/none]))))
+  (is (= [:clojure.core/none]
+         (into [] (uniform/dedupe) [:clojure.core/none])
+         (sequence (uniform/dedupe) [:clojure.core/none]))))

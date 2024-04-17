@@ -5,8 +5,8 @@ Utilities for Clojure.
 
 - [fully-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.html#var-fully-satisfies.3F) -- a variant of `clojure.core/satisfies?` that also checks if a value implements all methods in the protocol (considering direct, extended, and metadata methods).
 - [partially-satisfies?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.partially-satisfies.html#var-partially-satisfies.3F) -- a variant of `clojure.core/satisfies?` that is [compatible with metadata extension](https://clojure.atlassian.net/browse/CLJ-2426).
-- [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a zero-arity, and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
-- [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a zero-arity.
+- [somef](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.somef.html#var-somef) -- a variant of `clojure.core/some-fn` that has a simple definitional equivalence, a [zero-arity](https://clojure.atlassian.net/browse/CLJ-1094), and [consistent return values](https://clojure.atlassian.net/browse/CLJ-2634).
+- [everyp](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.everyp.html#var-everyp) -- a variant of `clojure.core/every-pred` that has a simple definitional equivalence, and a [zero-arity](https://clojure.atlassian.net/browse/CLJ-1094).
 - [never?](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.never.html#var-never.3F) -- a predicate `never?` that always returns false.
 - [run-all!](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.run-all.html#var-run-all.21) -- a variant of `clojure.core/run!` that does not [short-circuit on reduced](https://clojure.atlassian.net/browse/CLJ-2574).
 - [clearing-future](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.clearing-future.html#var-clearing-future) -- a variant of `clojure.core/future` that clears conveyed bindings after execution, resolving a [known memory leak](https://clojure.atlassian.net/browse/CLJ-2619).
@@ -184,6 +184,31 @@ Wrong number of args (21) passed to: user/eval191/fn--211
     - move ginterf into the -cache-protocol-fn calls (1 arity at a time)
 
 - defmulti with cache controls https://clojure.atlassian.net/browse/CLJ-2626
+- `count+last` vs `count+butlast+last`
+- `thrown?`, `thrown-with-msg?` inherits try syntax https://github.com/clojure/clojure/blob/5ffe3833508495ca7c635d47ad7a1c8b820eab76/src/clj/clojure/test.clj#L504-L535
+- - report [another](https://clojure.atlassian.net/browse/CLJ-2649) `some-fn` and `every-pred` short-circuiting inconsistencies
+```clojure
+;; # some-fn
+;; these are `(some #(some % args) fs)`, or `(some #(some % fs) args)`, or some hybrid
+;; should be `(some #(some % args) fs)`
+       ([x y z & args] (or (sp2 x y z)
+                           (some #(or (p1 %) (p2 %)) args)))))
+       ([x y z & args] (or (sp3 x y z)
+                           (some #(or (p1 %) (p2 %) (p3 %)) args)))))
+         ([x y z & args] (or (spn x y z)
+                             (some #(some % args) ps)))))))
+
+;; # every-pred
+;; these are `(every? #(every? % args) preds)` or `(every? #(every? % preds) args)`, or some hybrid
+;; should be `(every? #(every? % args) preds)`.
+       ([x y z & args] (boolean (and (ep2 x y z)
+                                     (every? #(and (p1 %) (p2 %)) args))))))
+       ([x y z & args] (boolean (and (ep3 x y z)
+                                     (every? #(and (p1 %) (p2 %) (p3 %)) args))))))
+         ([x y z & args] (boolean (and (epn x y z)
+                                       (every? #(every? % args) ps))))))))
+```
+- (count (eduction)) => count not supported on this type: Eduction
 
 ## License
 

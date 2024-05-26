@@ -1,5 +1,8 @@
 # NEXT - TBD
 
+# 1.11.0 - May 26th  2024
+- add thread-safe `requiring-resolve`
+
 # 1.10.4 - April 13th 2024
 - improve documentation and methodology for code in 1.10.0
 - add `io.github.frenchy64.fully-satisfies.leaky-seq-detection.is-strong.false-positive-detection=true` Java property to try harder to catch false-positive strong references.

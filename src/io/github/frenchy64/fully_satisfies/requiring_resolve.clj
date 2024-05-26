@@ -9,9 +9,54 @@
 (ns io.github.frenchy64.fully-satisfies.requiring-resolve
   "A variant of `clojure.core/requiring-resolve` that fixes [CLJ-2735](https://clojure.atlassian.net/browse/CLJ-2735)
   and is safe to use concurrently with other calls to itself.
+
+  The original `requiring-resolve` implementation only works if namespaces are immutable.
+  Namespaces are mutable and are incrementally mutated while its file is loaded. This mutation
+  is globally visible. The problem with the original implementation of `requiring-resolve` is
+  that it can return a partially loaded value before the file is fully loaded.
+
+  For example, if two threads are both calling `requiring-resolve` on the same var, a race condition
+  can occur:
+  1. thread 1 calls resolve, which returns nil, acquires the require lock and starts loading the namespace
+  2. thread 2 then calls resolve which succeeds in the middle of thread 1 loading the namespace.
+  3. thread 2 derefs the var and calls it while thread 1 is still loading the namespace
+  4. since the var is not completely loaded, the results of thread 2 are non-deterministic
+
+  As usual, it is completely unsafe to concurrently call `require` without first acquiring REQUIRE_LOCK.
+
+  We do not attempt to implement immutable namespaces in order to solve this problem. Instead, we
+  view this a bug in `requiring-resolve`'s implementation which was advertised as atomic and thread safe
+  with itself but did not account for mutable namespaces.
+
+  The naive approach to fixing this is to globally synchronize all calls to `requiring-resolve`:
+
+  (defn requiring-resolve-synchronized [sym]
+    (locking RT/REQUIRE_LOCK
+      (or (resolve sym)
+          (do (-> sym namespace symbol require)
+              (resolve sym)))))
+
+  This fixes CLJ-2735 but creates maximum thread contention, since unrelated calls to `requiring-resolve` now must
+  coordinate before returning. This implementation locks reads (resolve) when we ideally only want to lock writes (loads).
+
+  
+
+  (defn requiring-resolve-guard-entry [sym]
+    (let [nsym (-> sym namespace symbol)]
+      (when (fully-loaded? nsym)
+        (locking RT/REQUIRE_LOCK
+          (require nsym)))
+      (resolve sym)))
+
+  The basic approach is to treat the root binding of *loading-libs* differently than thread bindings
+  such that it can be used to check if a namespace has finished loading.
  
-  It returns the correct value when used concurrently with `clojure.core/requiring-resolve`, but note the
-  `clojure.core/requiring-resolve` calls may still see partial loads as described in CLJ-2735.
+  It is also unsafe to concurrently call `clojure.core/requiring-resolve` for the same reason as CLJ-2735.
+
+
+  This is because the function in this namespace treats the root binding of *loading-libs* as only containing
+  fully loaded operations, but `clojure.core/requiring-resolve` also adds partially loaded libs. This case
+  is not address for performance reasons.
   
   This may be fixed in future versions of clojure.
   For versions 1.10 to 1.12.0-alpha9, the `requiring-resolve` var in this namespace will use a compatible thread-safe implementation.
@@ -22,106 +67,42 @@
   3) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=<fully-qualified-var> if CLJ-2735 is not fixed in this version of Clojure and fully-qualified-var should be used to patch it
   
   Please report such errors to https://github.com/frenchy64/fully-satisfies"
-  (:refer-clojure :exclude [requiring-resolve thread-safe-requiring-resolve known-broken-clojure-versions load-one
-                            load-libs load-lib load-all])
+  (:refer-clojure :exclude [requiring-resolve thread-safe-requiring-resolve known-broken-clojure-versions])
   (:require [clojure.core :as cc]))
+
+(defn- thread-safe-requiring-resolve
+  "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
+  Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
+  Not thread-safe with simultaneous calls to clojure.core/requiring-resolve."
+  [sym]
+  (if (qualified-symbol? sym)
+    (let [lib (-> sym namespace symbol)]
+      (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) lib)
+        (locking clojure.lang.RT/REQUIRE_LOCK
+          (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) lib)
+            (let [loaded (with-bindings {#'cc/*loaded-libs* (ref @@#'cc/*loaded-libs*)}
+                           (require lib)
+                           @@#'cc/*loaded-libs*)
+                  llibs @#'cc/*loaded-libs*
+                  llibs-global (.getRawRoot #'cc/*loaded-libs*)]
+              (dosync
+                (commute llibs into loaded)
+                (when-not (identical? llibs llibs-global)
+                  (commute llibs-global into loaded)))))))
+      (resolve sym))
+    (throw (IllegalArgumentException. (str "Not a qualified symbol: " sym)))))
+
+
+
+
+
+;; conditional loading boilerplate
 
 (def ^:private known-broken-clojure-versions
   (-> #{}
       (into (map #(do {:major 1, :minor 10, :incremental %, :qualifier nil})) (range 4))
       (into (map #(do {:major 1, :minor 11, :incremental %, :qualifier nil})) (range 4))
       (into (map #(do {:major 1, :minor 12, :incremental 0, :qualifier (str "alpha" %)})) (range 13))))
-
-(defn- load-one
-  "Loads a lib given its name. If need-ns, ensures that the associated
-  namespace exists after loading. Records the load after
-  loading successfully so any duplicate loads can be skipped."
-  [lib need-ns]
-  (let [loaded (with-bindings {#'cc/*loaded-libs* (ref (conj @@#'cc/*loaded-libs* lib))}
-                 (load (#'cc/root-resource lib))
-                 @@#'cc/*loaded-libs*)]
-    (#'cc/throw-if (and need-ns (not (find-ns lib)))
-                   "namespace '%s' not found after loading '%s'"
-                   lib (#'cc/root-resource lib))
-    (let [llibs @#'cc/*loaded-libs*
-          llibs-global (.getRawRoot #'cc/*loaded-libs*)]
-      (dosync
-       (commute llibs into loaded)
-       (when-not (identical? llibs llibs-global)
-         (commute llibs-global into loaded))))))
-
-(defn- load-all
-  "Loads a lib given its name and forces a load of any libs it directly or
-  indirectly loads. If need-ns, ensures that the associated namespace
-  exists after loading. Records the load after loading successfully so any
-  duplicate loads can be skipped."
-  [lib need-ns]
-  (let [loaded (with-bindings {#'cc/*loaded-libs* (ref (sorted-set))}
-                 (load-one lib need-ns)
-                 @@#'cc/*loaded-libs*)]
-    (dosync
-     (commute @#'cc/*loaded-libs* into loaded))))
-
-(defn- load-lib
-  "Loads a lib with options"
-  [prefix lib & options]
-  (#'cc/throw-if (and prefix (pos? (.indexOf (name lib) (int \.))))
-                 "Found lib name '%s' containing period with prefix '%s'.  lib names inside prefix lists must not contain periods"
-                 (name lib) prefix)
-  (let [lib (if prefix (symbol (str prefix \. lib)) lib)
-        opts (apply hash-map options)
-        {:keys [as reload reload-all use verbose as-alias]} opts
-        loaded (contains? @@#'cc/*loaded-libs* lib)
-        need-ns (or as use)
-        load (cond reload-all load-all
-                   reload load-one
-                   (not loaded) (cond need-ns load-one
-                                      as-alias (fn [lib _need] (create-ns lib))
-                                      :else load-one))
-
-        filter-opts (select-keys opts '(:exclude :only :rename :refer))
-        undefined-on-entry (not (find-ns lib))]
-    (with-bindings {#'cc/*loading-verbosely* (or @#'cc/*loading-verbosely* verbose)}
-      (if load
-        (try
-          (load lib need-ns)
-          (catch Exception e
-            (when undefined-on-entry
-              (remove-ns lib))
-            (throw e)))
-        (#'cc/throw-if (and need-ns (not (find-ns lib)))
-                       "namespace '%s' not found" lib))
-      (when (and need-ns #'cc/*loading-verbosely*)
-        (printf "(clojure.core/in-ns '%s)\n" (ns-name *ns*)))
-      (when as
-        (when #'cc/*loading-verbosely*
-          (printf "(clojure.core/alias '%s '%s)\n" as lib))
-        (alias as lib))
-      (when as-alias
-        (when #'cc/*loading-verbosely*
-          (printf "(clojure.core/alias '%s '%s)\n" as-alias lib))
-        (alias as-alias lib))
-      (when (or use (:refer filter-opts))
-        (when #'cc/*loading-verbosely*
-          (printf "(clojure.core/refer '%s" lib)
-          (doseq [opt filter-opts]
-            (printf " %s '%s" (key opt) (print-str (val opt))))
-          (printf ")\n"))
-        (apply refer lib (mapcat seq filter-opts))))))
-
-(defn- thread-safe-requiring-resolve
-  "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
-  Thread-safe with other calls to this function and clojure.core/requiring-resolve.
-  Not thread-safe with simultaneous calls to clojure.core/require."
-  [sym]
-  (if (qualified-symbol? sym)
-    (let [nsym (-> sym namespace symbol)]
-      (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) nsym)
-        (locking clojure.lang.RT/REQUIRE_LOCK
-          (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) nsym)
-            (load-lib nil nsym))))
-      (resolve sym))
-    (throw (IllegalArgumentException. (str "Not a qualified symbol: " sym)))))
 
 (def ^:private impl-var
   (let [prop (System/getProperty "io.github.frenchy64.fully-satisfies.requiring-resolve")]
@@ -138,7 +119,7 @@
                             {:clojure-version *clojure-version*}))
         (symbol prop)))))
 
-(defonce
+(def
   ^{:doc (:doc (meta impl-var))
     :arglists (:arglists (meta impl-var))}
   requiring-resolve

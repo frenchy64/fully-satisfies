@@ -108,9 +108,10 @@
           (let [global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
             (when-not (contains? global-loaded lib)
               (let [thread-loaded @@#'cc/*loaded-libs*
-                    loaded (with-bindings {#'cc/*loaded-libs* (ref (into global-loaded thread-loaded))}
+                    all-loaded (into global-loaded thread-loaded)
+                    loaded (with-bindings {#'cc/*loaded-libs* (ref all-loaded)}
                              (require lib)
-                             (apply disj @@#'cc/*loaded-libs* global-loaded))
+                             (apply disj @@#'cc/*loaded-libs* all-loaded))
                     llibs @#'cc/*loaded-libs*
                     llibs-global (.getRawRoot #'cc/*loaded-libs*)]
                 (dosync

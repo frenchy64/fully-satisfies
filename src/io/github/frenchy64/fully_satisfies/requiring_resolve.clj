@@ -104,6 +104,9 @@
 
 ;;TODO I think this changes requiring-resolve's behavior when called via (require :reload-all). since we only
 ;; check root bindings for *loaded-libs*, we ignore the request to reload the lib.
+;; OTOH, requiring-resolve's original behavior would shortcircuit the require if the resolve succeeded.
+;; so this case is different if resolve returns nil even though the file is fully loaded, then calling require
+;; reloads the file changing resolve to return a value.
 (defn- thread-safe-requiring-resolve
   "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
   Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.

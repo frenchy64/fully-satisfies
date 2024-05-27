@@ -1,5 +1,10 @@
 # NEXT - TBD
 
+# 1.11.1 - May 26th  2024
+- drop support for transitive `(require :reload-all)` via a `requiring-resolve`
+- streamline `requiring-resolve` into a single function
+- remove compile-time conditionalization for `requiring-resolve` function
+
 # 1.11.0 - May 26th  2024
 - add thread-safe `requiring-resolve`
 

@@ -88,87 +88,34 @@
 
   This is because the function in this namespace treats the root binding of *loading-libs* as only containing
   fully loaded operations, but `clojure.core/requiring-resolve` also adds partially loaded libs. This case
-  is not address for performance reasons.
-  
-  This may be fixed in future versions of clojure.
-  For versions 1.10 to 1.12.0-alpha9, the `requiring-resolve` var in this namespace will use a compatible thread-safe implementation.
-
-  For other versions, a compile-time error will occur. You must resolve it by either setting:
-  1) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=patch if CLJ-2735 is not fixed in this version of Clojure and the thread-safe variant in this namespace is compatible with this version of Clojure, or
-  2) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=clojure.core/requiring-resolve if CLJ-2735 is fixed in this version of Clojure
-  3) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=<fully-qualified-var> if CLJ-2735 is not fixed in this version of Clojure and fully-qualified-var should be used to patch it
-  
-  Please report such errors to https://github.com/frenchy64/fully-satisfies"
-  (:refer-clojure :exclude [requiring-resolve thread-safe-requiring-resolve known-broken-clojure-versions])
+  is not address for performance reasons."
+  (:refer-clojure :exclude [requiring-resolve])
   (:require [clojure.core :as cc]))
 
-;;TODO I think this changes requiring-resolve's behavior when called via (require :reload-all). since we only
-;; check root bindings for *loaded-libs*, we ignore the request to reload the lib.
-;; OTOH, requiring-resolve's original behavior would shortcircuit the require if the resolve succeeded.
-;; so this case is different if resolve returns nil even though the file is fully loaded, then calling require
-;; reloads the file changing resolve to return a value.
-(defn- thread-safe-requiring-resolve
+(defn requiring-resolve
   "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
   Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
   Not thread-safe with simultaneous calls to clojure.core/requiring-resolve.
 
-  Does not transitively reload files when called via (require :reload-all).
-  This is different to requiring-resolve when the initial resolve returned nil,
-  which would call require with :reload-all in effect. This always happens in 
-  single-threaded environments, however since calling resolve
-  here has a race condition via CLJ-2735, when this actually happens in multithreaded
-  environments is non-deterministic."
+  Does not respect require's :reload-all and will only load namespaces that do not appear
+  in the root binding of *loaded-libs*."
   [sym]
   (if (qualified-symbol? sym)
-    (let [lib (-> sym namespace symbol)]
-      (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) lib)
+    (let [lib (-> sym namespace symbol)
+          global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
+      (when-not (contains? global-loaded lib)
         (locking clojure.lang.RT/REQUIRE_LOCK
-          (when-not (contains? @(.getRawRoot #'cc/*loaded-libs*) lib)
-            (let [loaded (with-bindings {#'cc/*loaded-libs* (ref @@#'cc/*loaded-libs*)}
-                           (require lib)
-                           @@#'cc/*loaded-libs*)
-                  llibs @#'cc/*loaded-libs*
-                  llibs-global (.getRawRoot #'cc/*loaded-libs*)]
-              (dosync
-                (commute llibs into loaded)
-                (when-not (identical? llibs llibs-global)
-                  (commute llibs-global into loaded)))))))
+          (let [global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
+            (when-not (contains? global-loaded lib)
+              (let [local-loaded @@#'cc/*loaded-libs*
+                    loaded (with-bindings {#'cc/*loaded-libs* (ref (into global-loaded thread-loaded))}
+                             (require lib)
+                             (apply @@#'cc/*loaded-libs* disj global-loaded))
+                    llibs @#'cc/*loaded-libs*
+                    llibs-global (.getRawRoot #'cc/*loaded-libs*)]
+                (dosync
+                  (commute llibs into loaded)
+                  (when-not (identical? llibs llibs-global)
+                    (commute llibs-global into loaded))))))))
       (resolve sym))
     (throw (IllegalArgumentException. (str "Not a qualified symbol: " sym)))))
-
-
-
-
-
-;; conditional loading boilerplate
-
-(def ^:private known-broken-clojure-versions
-  (-> #{}
-      (into (map #(do {:major 1, :minor 10, :incremental %, :qualifier nil})) (range 4))
-      (into (map #(do {:major 1, :minor 11, :incremental %, :qualifier nil})) (range 4))
-      (into (map #(do {:major 1, :minor 12, :incremental 0, :qualifier (str "alpha" %)})) (range 13))))
-
-(def ^:private impl-var
-  (let [prop (System/getProperty "io.github.frenchy64.fully-satisfies.requiring-resolve")]
-    (cc/requiring-resolve
-      (case (or prop (when (known-broken-clojure-versions *clojure-version*)
-                       "patch"))
-        "patch" `thread-safe-requiring-resolve
-        nil (throw (ex-info (str "Unknown Clojure version " (pr-str *clojure-version*) "\n"
-                                 "Please set either:\n"
-                                 "1) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=patch if CLJ-2735 is not fixed in this version of Clojure and the thread-safe variant in io.github.frenchy64.fully-satisfies.requiring-resolve is compatible with this version of Clojure, or\n"
-                                 "2) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=clojure.core/requiring-resolve if CLJ-2735 is fixed in this version of Clojure\n"
-                                 "3) -Dio.github.frenchy64.fully-satisfies.requiring-resolve=<fully-qualified-var> if CLJ-2735 is fixed in this version of Clojure and fully-qualified-var should be used to patch it\n"
-                                 "If this is an official non-SNAPSHOT version of Clojure, please report this error to https://github.com/frenchy64/fully-satisfies")
-                            {:clojure-version *clojure-version*}))
-        (symbol prop)))))
-
-(def
-  ^{:doc (:doc (meta impl-var))
-    :arglists (:arglists (meta impl-var))}
-  requiring-resolve
-  (if (= impl-var #'thread-safe-requiring-resolve)
-    thread-safe-requiring-resolve
-    (if (= impl-var #'cc/requiring-resolve)
-      cc/requiring-resolve
-      (fn [sym] (impl-var sym)))))

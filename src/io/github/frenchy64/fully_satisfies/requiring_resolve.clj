@@ -107,7 +107,7 @@
         (locking clojure.lang.RT/REQUIRE_LOCK
           (let [global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
             (when-not (contains? global-loaded lib)
-              (let [local-loaded @@#'cc/*loaded-libs*
+              (let [thread-loaded @@#'cc/*loaded-libs*
                     loaded (with-bindings {#'cc/*loaded-libs* (ref (into global-loaded thread-loaded))}
                              (require lib)
                              (apply @@#'cc/*loaded-libs* disj global-loaded))

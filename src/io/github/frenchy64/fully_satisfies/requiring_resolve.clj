@@ -114,7 +114,8 @@
 
   Does not transitively reload files when called via (require :reload-all).
   This is different to requiring-resolve when the initial resolve returned nil,
-  which would call require with :reload-all in effect."
+  which would call require with :reload-all in effect. However, since calling resolve
+  here has a race condition via CLJ-2735, when this actually happens is non-deterministic."
   [sym]
   (if (qualified-symbol? sym)
     (let [lib (-> sym namespace symbol)]

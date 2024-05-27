@@ -28,25 +28,57 @@
   view this a bug in `requiring-resolve`'s implementation which was advertised as atomic and thread safe
   with itself but did not account for mutable namespaces.
 
-  The naive approach to fixing this is to globally synchronize all calls to `requiring-resolve`:
+  This is the original implementation of requiring-resolve:
 
-  (defn requiring-resolve-synchronized [sym]
-    (locking RT/REQUIRE_LOCK
-      (or (resolve sym)
-          (do (-> sym namespace symbol require)
+  (defn requiring-resolve [sym]
+    (or (resolve sym)
+        (do (locking RT/REQUIRE_LOCK
+              (-> sym namespace symbol require))
+            (resolve sym))))
+
+  The initial `resolve` is doing two jobs here:
+  1. Deciding whether we need to load the file
+  2. Resolving a var
+
+  Resolve is not an appropriate function to whether a namespace is loaded using mutable namespaces.
+
+  Let's make this explicit by pulling apart these two jobs, using a placeholder function
+  `fully-loaded?` for the step 1 and `resolve` for step 2.
+
+  (defn requiring-resolve [sym]
+    (let [lib (-> sym namespace symbol)]
+      (or (when (fully-loaded? lib)
+            (resolve sym))
+          (do (locking RT/REQUIRE_LOCK
+                (require lib))
               (resolve sym)))))
 
-  This fixes CLJ-2735 but creates maximum thread contention, since unrelated calls to `requiring-resolve` now must
-  coordinate before returning. This implementation locks reads (resolve) when we ideally only want to lock writes (loads).
+  `fully-loaded?` here should return true only if the namespace has completely finished loading. This implementation
+  now calls require on one of two conditions:
+  1. (not (fully-loaded? lib)), or 
+  2. (and (fully-loaded? lib) (not (resolve sym)))
 
-  
+  (defn requiring-resolve [sym]
+    (let [lib (-> sym namespace symbol)]
+      (or (when (fully-loaded? lib)
+            (resolve sym))
+          (do (locking RT/REQUIRE_LOCK
+                (require lib))
+              (resolve sym)))))
 
-  (defn requiring-resolve-guard-entry [sym]
-    (let [nsym (-> sym namespace symbol)]
-      (when (fully-loaded? nsym)
+  However, the second condition is not needed. We don't need to call require on a lib that is fully loaded since
+  it does not change the result of `resolve`. So we can rewrite it as:
+
+  (defn requiring-resolve-sketch [sym]
+    (let [lib (-> sym namespace symbol)]
+      (when (fully-loaded? lib)
         (locking RT/REQUIRE_LOCK
-          (require nsym)))
+          (require lib)))
       (resolve sym)))
+
+  The next task is to implement `fully-loaded?`.
+
+  TODO
 
   The basic approach is to treat the root binding of *loading-libs* differently than thread bindings
   such that it can be used to check if a namespace has finished loading.

@@ -110,7 +110,7 @@
               (let [thread-loaded @@#'cc/*loaded-libs*
                     loaded (with-bindings {#'cc/*loaded-libs* (ref (into global-loaded thread-loaded))}
                              (require lib)
-                             (apply @@#'cc/*loaded-libs* disj global-loaded))
+                             (apply disj @@#'cc/*loaded-libs* global-loaded))
                     llibs @#'cc/*loaded-libs*
                     llibs-global (.getRawRoot #'cc/*loaded-libs*)]
                 (dosync

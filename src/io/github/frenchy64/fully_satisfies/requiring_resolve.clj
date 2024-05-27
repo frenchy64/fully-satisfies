@@ -97,8 +97,8 @@
   Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
   Not thread-safe with simultaneous calls to clojure.core/requiring-resolve.
 
-  Does not respect require's :reload-all and will only load namespaces that do not appear
-  in the root binding of *loaded-libs*."
+  The require call does not respect any wrapping (require :reload-all) calls and will
+  only load namespaces that do not appear in the root binding of *loaded-libs*."
   [sym]
   (if (qualified-symbol? sym)
     (let [lib (-> sym namespace symbol)

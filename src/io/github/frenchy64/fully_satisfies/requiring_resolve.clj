@@ -110,7 +110,11 @@
 (defn- thread-safe-requiring-resolve
   "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
   Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
-  Not thread-safe with simultaneous calls to clojure.core/requiring-resolve."
+  Not thread-safe with simultaneous calls to clojure.core/requiring-resolve.
+
+  Does not transitively reload files when called via (require :reload-all).
+  This is different to requiring-resolve when the initial resolve returned nil,
+  which would call require with :reload-all in effect."
   [sym]
   (if (qualified-symbol? sym)
     (let [lib (-> sym namespace symbol)]

@@ -92,6 +92,11 @@
   (:refer-clojure :exclude [requiring-resolve])
   (:require [clojure.core :as cc]))
 
+(def ^:private -require-lock
+  (let [{:keys [major minor]} *clojure-version*]
+    (or (.getField clojure.lang.RT "REQUIRE_LOCK")
+        #'clojure.core/require)))
+
 (defn requiring-resolve
   "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
   Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
@@ -104,7 +109,7 @@
     (let [lib (-> sym namespace symbol)
           global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
       (when-not (contains? global-loaded lib)
-        (locking clojure.lang.RT/REQUIRE_LOCK
+        (locking -require-lock
           (let [global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
             (when-not (contains? global-loaded lib)
               (let [thread-loaded @@#'cc/*loaded-libs*

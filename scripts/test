@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -xe
+
+lein test
+lein with-profile +1.9 test io.github.frenchy64.fully-satisfies.requiring-resolve-test

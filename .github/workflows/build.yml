@@ -35,7 +35,7 @@ jobs:
         uses: DeLaGuardo/setup-clojure@3.5
         with:
           lein: 2.9.6
-      - run: lein test
+      - run: ./scripts/test
   deploy:
     concurrency: deploy
     needs: test

@@ -11,6 +11,7 @@
                              [criterium/criterium "0.4.6"]
                              [metasoarous/oz "1.6.0-alpha36"]]
               :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
+             :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
              :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests

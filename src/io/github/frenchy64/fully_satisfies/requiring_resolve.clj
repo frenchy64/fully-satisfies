@@ -94,7 +94,8 @@
 
 (def ^:private -require-lock
   (let [{:keys [major minor]} *clojure-version*]
-    (or (.getField clojure.lang.RT "REQUIRE_LOCK")
+    (or (try (.get (.getField clojure.lang.RT "REQUIRE_LOCK") clojure.lang.RT)
+             (catch java.lang.NoSuchFieldException _))
         #'clojure.core/require)))
 
 (defn requiring-resolve

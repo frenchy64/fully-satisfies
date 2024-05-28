@@ -1,4 +1,5 @@
 # NEXT - TBD
+- support thread-safe requiring-resolve in Clojure 1.9
 
 # 1.11.1 - May 26th  2024
 - drop support for transitive `(require :reload-all)` via a `requiring-resolve`

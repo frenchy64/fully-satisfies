@@ -1,5 +1,8 @@
 # NEXT - TBD
+
+# 1.11.2 - May 27th 2024
 - support thread-safe requiring-resolve in Clojure 1.9
+  - locks on `#'clojure.core/require` instead of `clojure.lang.RT/REQUIRE_LOCK`
 
 # 1.11.1 - May 26th  2024
 - drop support for transitive `(require :reload-all)` via a `requiring-resolve`

@@ -41,6 +41,9 @@
   2. Resolving a var
 
   Resolve is not an appropriate function to whether a namespace is loaded using mutable namespaces.
+  Additionally, when resolving classes, arbitrary code can be executed in order
+  to load classes, including calling require without acquiring RT/REQUIRE_LOCK. As usual, this
+  is bad and can corrupt your runtime.
 
   Let's make this explicit by pulling apart these two jobs, using a placeholder function
   `fully-loaded?` for the step 1 and `resolve` for step 2.

@@ -53,7 +53,11 @@
                     @@self)))]
         (deliver self d)
         (is (thrown? NullPointerException @d))
-        (is (= [f nil] @*atom*))))))
+        (is (= [f nil] @*atom*)))))
+  (testing "recur target is exposed"
+    (let [f identity
+          d (cc/delay (f 1) (recur))]
+      (is (thrown? NullPointerException @d)))))
 
 (deftest safe-test
   (is (cc/delay? (safe/delay)))
@@ -102,4 +106,7 @@
                     @@self)))]
         (deliver self d)
         (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
-        (is (= [f] @*atom*))))))
+        (is (= [f] @*atom*)))))
+  (testing "recur target is hidden"
+    (is (thrown? clojure.lang.Compiler$CompilerException
+                 (eval `(safe/delay (recur)))))))

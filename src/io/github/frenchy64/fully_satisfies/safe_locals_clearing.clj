@@ -36,17 +36,20 @@
   will cache the result and return it on all subsequent force
   calls. See also - realized?
   
-  Throws if dereferenced recursively."
+  Throws if dereferenced recursively and hides the recur target from body."
   {:added "1.0"}
   [& body]
-    (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (list* `^{:once true} fn* [] body)))
+  `(io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay.
+     (^{:once true} fn* [] (let* [res# (do ~@body)] res#))))
 
 ;;TODO unit test
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
   a Seqable object that will invoke the body only the first time seq
   is called, and will cache the result and return it on all subsequent
-  seq calls. See also - realized?"
+  seq calls. See also - realized?
+  
+  Throws if dereferenced recursively."
   {:added "1.0"}
   [& body]
   (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.LazySeq (list* '^{:once true} fn* [] body)))    

@@ -73,7 +73,7 @@
           p (promise)
           d (safe/delay (f) @@p)]
       (deliver p d)
-      (is (thrown-with-msg? Error #"Recursive delay detected" @d))))
+      (is (thrown-with-msg? Exception #"Recursive delay detected" @d))))
   (binding [*atom* (atom [])]
     (let [n 1
           self (promise)
@@ -84,7 +84,7 @@
                   @@self))
               n)]
       (deliver self d)
-      (is (thrown-with-msg? Error #"Recursive delay detected" @d))
+      (is (thrown-with-msg? Exception #"Recursive delay detected" @d))
       (is (= [1] @*atom*))))
   (binding [*atom* (atom [])]
     (let [n identity
@@ -96,7 +96,7 @@
                   @@self))
               n)]
       (deliver self d)
-      (is (thrown-with-msg? Error #"Recursive delay detected" @d))
+      (is (thrown-with-msg? Exception #"Recursive delay detected" @d))
       (is (= [n] @*atom*))))
   (binding [*atom* (atom [])]
     (let [f #(do nil)
@@ -108,10 +108,10 @@
                 (binding [*recursive* true]
                   @@self)))]
       (deliver self d)
-      (is (thrown-with-msg? Error #"Recursive delay detected" @d))
+      (is (thrown-with-msg? Exception #"Recursive delay detected" @d))
       (is (= [f] @*atom*))))
   (testing "self recur target is detected at runtime"
-    (is (thrown? Error @(safe/delay (recur))))))
+    (is (thrown? Exception @(safe/delay (recur))))))
 
 (deftest once-recur-test
   (is (thrown? Error ((let* [x true] (^{:once true} fn* [] (assert x "Recur disallowed") (recur)))))))

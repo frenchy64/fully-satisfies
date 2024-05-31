@@ -19,13 +19,14 @@ import clojure.lang.IFn;
 import clojure.lang.IPending;
 import clojure.lang.Util;
 
-public class Delay implements IDeref, IPending{
+public class Delay extends clojure.lang.Delay{
 Object val;
 Throwable exception;
 IFn fn;
 volatile ReentrantLock lock;
 
 public Delay(IFn f){
+  super(f);
 	fn = f;
 	val = null;
 	exception = null;

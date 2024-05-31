@@ -15,9 +15,6 @@
   instead now throwing an exception instead of risking executing 
   locals-cleared garbage.
 
-  Additional functions delay? and force are also included that only
-  work on delays in this namespace.
-
   This article explains how locals clearing enables tail calls
   to potentially have strong references to their arguments.
   https://clojure.org/reference/lazy#_dont_hang_onto_your_head
@@ -29,7 +26,7 @@
     if(l.isHeldByCurrentThread()) {
       throw Util.sneakyThrow(Util.runtimeException(\"Recursive delay dereference\"));
     }"
-  (:refer-clojure :exclude [delay delay? force lazy-seq])
+  (:refer-clojure :exclude [delay lazy-seq])
   (:require [clojure.core :as cc])
   (:import [io.github.frenchy64.fully_satisfies.safe_locals_clearing Delay LazySeq]))
 
@@ -43,18 +40,6 @@
   {:added "1.0"}
   [& body]
     (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (list* `^{:once true} fn* [] body)))
-
-(defn delay?
-  "returns true if x is a Delay created with delay"
-  {:added "1.0"
-   :static true}
-  [x] (instance? io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay x))
-
-(defn force
-  "If x is a Delay, returns the (possibly cached) value of its expression, else returns x"
-  {:added "1.0"
-   :static true}
-  [x] (. io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (force x)))
 
 ;;TODO unit test
 (defmacro lazy-seq

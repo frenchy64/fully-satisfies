@@ -12,7 +12,11 @@
   while preserving their locals-clearing capabilities.
 
   The tradeoff being they now cannot be recursively dereferenced,
-  instead now throwing an exception instead of risking executing garbage.
+  instead now throwing an exception instead of risking executing 
+  locals-cleared garbage.
+
+  Additional functions delay? and force are also included that only
+  work on delays in this namespace.
 
   This article explains how locals clearing enables tail calls
   to potentially have strong references to their arguments.
@@ -27,7 +31,7 @@
     }"
   (:refer-clojure :exclude [delay delay? force lazy-seq])
   (:require [clojure.core :as cc])
-  (:import io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay))
+  (:import [io.github.frenchy64.fully_satisfies.safe_locals_clearing Delay LazySeq]))
 
 (defmacro delay
   "Takes a body of expressions and yields a Delay object that will
@@ -51,3 +55,13 @@
   {:added "1.0"
    :static true}
   [x] (. io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (force x)))
+
+;;TODO unit test
+(defmacro lazy-seq
+  "Takes a body of expressions that returns an ISeq or nil, and yields
+  a Seqable object that will invoke the body only the first time seq
+  is called, and will cache the result and return it on all subsequent
+  seq calls. See also - realized?"
+  {:added "1.0"}
+  [& body]
+  (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.LazySeq (list* '^{:once true} fn* [] body)))    

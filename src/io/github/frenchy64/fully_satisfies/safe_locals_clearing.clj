@@ -55,13 +55,14 @@
   will cache the result and return it on all subsequent force
   calls. See also - realized?
   
-  Throws if dereferenced recursively when *assert* is true when expanding."
+  Throws if dereferenced recursively when *assert* is true when expanding.
+  Explicitly disallows :pre/:post map."
   {:added "1.0"}
   [& body]
   `(clojure.lang.Delay.
      ~(if *assert*
         `(let* [x# true] (^:once fn* [] (assert x# ~(str "Recursive delay detected: " (pr-str &form))) ~@body))
-        `(^:once fn* [] ~@body))))
+        `(^:once fn* [] (do ~@body)))))
 
 ;;TODO unit test
 (defmacro lazy-seq
@@ -70,10 +71,11 @@
   is called, and will cache the result and return it on all subsequent
   seq calls. See also - realized?
   
-  Throws if realized recursively when *assert* is true when expanding."
+  Throws if realized recursively when *assert* is true when expanding.
+  Explicitly disallows :pre/:post map."
   {:added "1.0"}
   [& body]
   `(clojure.lang.LazySeq.
      ~(if *assert*
         `(let* [x# true] (^:once fn* [] (assert x# ~(str "Recursive lazy-seq detected: " (pr-str &form))) ~@body))
-        `(^:once fn* [] ~@body))))
+        `(^:once fn* [] (do ~@body)))))

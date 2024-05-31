@@ -60,9 +60,9 @@
       (is (thrown? NullPointerException @d)))
     (let [f identity
           self (promise)
-          d (clojure.lang.Delay. (^:once fn* [] (let* [res (do (f 1))] @self)))]
+          d (clojure.lang.Delay. (^:once fn* [] (let* [res (do (f 1))] @@self)))]
       (deliver self d)
-      (is @d))))
+      (is (thrown? NullPointerException @d)))))
 
 (deftest safe-test
   (is (cc/delay? (safe/delay)))
@@ -115,3 +115,8 @@
 
 (deftest once-recur-test
   (is (thrown? Error ((let* [x true] (^{:once true} fn* [] (assert x "Recur disallowed") (recur)))))))
+
+(deftest locals-clearing-non-tail-test
+  (let [p (promise)]
+    (deliver p (^{:once true} fn* [] (let [res (@p)] res)))
+    (@p)))

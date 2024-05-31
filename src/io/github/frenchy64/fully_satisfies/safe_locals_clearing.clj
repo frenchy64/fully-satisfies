@@ -44,10 +44,12 @@
       (^:once fn* [] (assert x) (recur)))
 
   This has a runtime cost. An alternative could be move the body out of tail position,
-  but that seems to disable locals clearing:
-  ^^^ FIXME this is wrong, doesn't seem to affect it
+  which would result in a compile-time error:
 
-    (^:once fn* [] (let [x (recur)] x))"
+    (^:once fn* [] (let [x (recur)] x))
+  
+  Here we use the assertion approach to handle all cases for portability
+  and compatibility."
   (:refer-clojure :exclude [delay lazy-seq]))
 
 (defmacro delay

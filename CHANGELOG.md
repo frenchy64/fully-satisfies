@@ -1,19 +1,22 @@
 # NEXT - TBD
-- safe local-clearing variants of delay and lazy-seq
+
+# 1.12.0 - May 31st 2024
+- [safe local-clearing variants of delay and lazy-seq](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safe-locals-clearing.html)
+  - fixes [CLJ-2861](https://clojure.atlassian.net/browse/CLJ-2861)
   - prevents recursive calls into locals-cleared code
-  - `io.github.frenchy64.fully-satisfies.safe-locals-clearing/{delay,lazy-seq}`
 
 # 1.11.2 - May 27th 2024
-- support thread-safe requiring-resolve in Clojure 1.9
+- support [thread-safe `requiring-resolve`](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.requiring-resolve.html) in Clojure 1.9
   - locks on `#'clojure.core/require` instead of `clojure.lang.RT/REQUIRE_LOCK`
 
 # 1.11.1 - May 26th  2024
 - drop support for transitive `(require :reload-all)` via a `requiring-resolve`
-- streamline `requiring-resolve` into a single function
+- streamline [thread-safe `requiring-resolve`](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.requiring-resolve.html)
 - remove compile-time conditionalization for `requiring-resolve` function
 
 # 1.11.0 - May 26th  2024
-- add thread-safe `requiring-resolve`
+- add [thread-safe `requiring-resolve`](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.requiring-resolve.html)
+  - fixes [CLJ-2735](https://clojure.atlassian.net/browse/CLJ-2735)
 
 # 1.10.4 - April 13th 2024
 - improve documentation and methodology for code in 1.10.0

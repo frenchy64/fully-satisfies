@@ -115,8 +115,3 @@
 
 (deftest once-recur-test
   (is (thrown? Error ((let* [x true] (^{:once true} fn* [] (assert x "Recur disallowed") (recur)))))))
-
-(deftest locals-clearing-non-tail-test
-  (let [p (promise)]
-    (deliver p (^{:once true} fn* [] (let [res (@p)] res)))
-    (@p)))

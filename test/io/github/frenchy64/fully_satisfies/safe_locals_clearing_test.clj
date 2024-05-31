@@ -57,7 +57,13 @@
   (testing "recur target is exposed"
     (let [f identity
           d (cc/delay (f 1) (recur))]
-      (is (thrown? NullPointerException @d)))))
+      (is (thrown? NullPointerException @d)))
+    ;;
+    (let [f identity
+          self (promise)
+          d (clojure.lang.Delay. (^:once fn* [] (let* [res (do (f 1))] @self)))]
+      (deliver self d)
+      (is @d))))
 
 (deftest safe-test
   (is (cc/delay? (safe/delay)))
@@ -68,45 +74,42 @@
           d (safe/delay (f) @@p)]
       (deliver p d)
       (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))))
-  (testing "doesn't seem to clear local here, maybe because n is a long"
-    (binding [*atom* (atom [])]
-      (let [n 1
-            self (promise)
-            d (safe/delay
-                (swap! *atom* conj n)
-                (when-not *recursive*
-                  (binding [*recursive* true]
-                    @@self))
-                n)]
-        (deliver self d)
-        (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
-        (is (= [1] @*atom*)))))
-  (testing "doesn't seem to clear local here, maybe because n is a long"
-    (binding [*atom* (atom [])]
-      (let [n identity
-            self (promise)
-            d (safe/delay
-                (swap! *atom* conj n)
-                (when-not *recursive*
-                  (binding [*recursive* true]
-                    @@self))
-                n)]
-        (deliver self d)
-        (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
-        (is (= [n] @*atom*)))))
-  (testing "clears f, seemingly because we invoked it"
-    (binding [*atom* (atom [])]
-      (let [f #(do nil)
-            self (promise)
-            d (safe/delay
-                (swap! *atom* conj f)
-                (f)
-                (when-not *recursive*
-                  (binding [*recursive* true]
-                    @@self)))]
-        (deliver self d)
-        (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
-        (is (= [f] @*atom*)))))
+  (binding [*atom* (atom [])]
+    (let [n 1
+          self (promise)
+          d (safe/delay
+              (swap! *atom* conj n)
+              (when-not *recursive*
+                (binding [*recursive* true]
+                  @@self))
+              n)]
+      (deliver self d)
+      (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
+      (is (= [1] @*atom*))))
+  (binding [*atom* (atom [])]
+    (let [n identity
+          self (promise)
+          d (safe/delay
+              (swap! *atom* conj n)
+              (when-not *recursive*
+                (binding [*recursive* true]
+                  @@self))
+              n)]
+      (deliver self d)
+      (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
+      (is (= [n] @*atom*))))
+  (binding [*atom* (atom [])]
+    (let [f #(do nil)
+          self (promise)
+          d (safe/delay
+              (swap! *atom* conj f)
+              (f)
+              (when-not *recursive*
+                (binding [*recursive* true]
+                  @@self)))]
+      (deliver self d)
+      (is (thrown-with-msg? Exception #"Recursive delay dereference" @d))
+      (is (= [f] @*atom*))))
   (testing "recur target is hidden"
     (is (thrown? clojure.lang.Compiler$CompilerException
                  (eval `(safe/delay (recur)))))))

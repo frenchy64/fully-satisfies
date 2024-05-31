@@ -40,6 +40,8 @@
   {:added "1.0"}
   [& body]
   `(io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay.
+     ;; FIXME I think this defeats locals clearing. maybe a linter is needed instead
+     ;; since we just need to disallow recur
      (^{:once true} fn* [] (let* [res# (do ~@body)] res#))))
 
 ;;TODO unit test

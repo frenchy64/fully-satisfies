@@ -65,7 +65,7 @@
   `(clojure.lang.Delay.
      ~(if *assert*
         `(let* [x# true] (^:once fn* [] (assert x# ~(str "Recursive delay detected: " (pr-str &form))) ~@body))
-        `(^:once fn* [] ~@body))))
+        `(^:once fn* [] (do ~@body)))))
 
 ;;TODO unit test
 (defmacro lazy-seq

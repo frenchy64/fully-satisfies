@@ -21,7 +21,8 @@
     if(l.isHeldByCurrentThread()) {
       throw Util.sneakyThrow(Util.runtimeException(\"Recursive delay dereference\"));
     }"
-  (:refer-clojure :exclude [delay lazy-seq])
+  (:refer-clojure :exclude [delay delay? force lazy-seq])
+  (:require [clojure.core :as cc])
   (:import io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay))
 
 (defmacro delay

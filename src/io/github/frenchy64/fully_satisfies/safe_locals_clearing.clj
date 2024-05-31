@@ -20,15 +20,32 @@
   https://clojure.org/reference/lazy#_dont_hang_onto_your_head
   
   Fixes https://clojure.atlassian.net/browse/CLJ-2861
+
+  There are two ways a ^:once function can be called in a delay or lazy-seq:
+  1. the thread that acquires the lock to call the body then realizes
+     the same object by calling the body.
+  2. the body has a (recur) call in tail position.
   
-  Approach: add the following before acquiring a lock.
+  The first issue can be handled by first checking if the realize lock is already
+  held by the current thread.
 
     if(l.isHeldByCurrentThread()) {
       throw Util.sneakyThrow(Util.runtimeException(\"Recursive delay dereference\"));
-    }"
-  (:refer-clojure :exclude [delay lazy-seq])
-  (:require [clojure.core :as cc])
-  (:import [io.github.frenchy64.fully_satisfies.safe_locals_clearing Delay LazySeq]))
+    }
+  
+  The second issue could be better supported by the Clojure compiler.
+  The form (^:once fn [] (recur)) probably should throw a compile-time error.
+
+  Instead, we take advantage of locals clearing to detect recursive calls:
+
+    (let [x true]
+      (^:once fn* [] (assert x) (recur)))
+
+  This has a runtime cost. An alternative could be move the body out of tail position,
+  but that seems to disable locals clearing:
+
+    (^:once fn* [] (let [x (recur)] x))"
+  (:refer-clojure :exclude [delay lazy-seq]))
 
 (defmacro delay
   "Takes a body of expressions and yields a Delay object that will
@@ -39,10 +56,10 @@
   Throws if dereferenced recursively and hides the recur target from body."
   {:added "1.0"}
   [& body]
-  `(io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay.
-     ;; FIXME I think this defeats locals clearing. maybe a linter is needed instead
-     ;; since we just need to disallow recur
-     (^{:once true} fn* [] (let* [res# (do ~@body)] res#))))
+  `(clojure.lang.Delay.
+     ~(if *assert*
+        `(let* [x# true] (^:once fn* [] (assert x# "Recursive delay detected") ~@body))
+        `(^:once fn* [] ~@body))))
 
 ;;TODO unit test
 (defmacro lazy-seq
@@ -54,4 +71,7 @@
   Throws if dereferenced recursively."
   {:added "1.0"}
   [& body]
-  (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.LazySeq (list* '^{:once true} fn* [] body)))    
+  `(clojure.lang.LazySeq.
+     ~(if *assert*
+        `(let* [x# true] (^:once fn* [] (assert x# "Recursive lazy-seq detected") ~@body))
+        `(^:once fn* [] ~@body))))

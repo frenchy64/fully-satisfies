@@ -58,7 +58,6 @@
     (let [f identity
           d (cc/delay (f 1) (recur))]
       (is (thrown? NullPointerException @d)))
-    ;;
     (let [f identity
           self (promise)
           d (clojure.lang.Delay. (^:once fn* [] (let* [res (do (f 1))] @self)))]
@@ -68,6 +67,7 @@
 (deftest safe-test
   (is (cc/delay? (safe/delay)))
   (is (= 1 (cc/force (safe/delay 1))))
+  (is (= 1 @(safe/delay 1)))
   (testing "f is cleared on recursive call"
     (let [f +
           p (promise)
@@ -113,3 +113,7 @@
   (testing "recur target is hidden"
     (is (thrown? clojure.lang.Compiler$CompilerException
                  (eval `(safe/delay (recur)))))))
+
+(deftest once-recur-test
+  (is (thrown? Error ((let* [x true] (^{:once true} fn* [] (assert x "Recur disallowed") (prn "a") (recur))))))
+  )

@@ -77,4 +77,5 @@
   {:added "1.0"}
   [& body]
   `(clojure.lang.LazySeq.
-     (let* [x# true] (^:once fn* [] (when-not x# (throw (Exception. ~(str "Recursive lazy-seq detected: " (pr-str &form))))) ~@body))))
+     (let* [x# true]
+       (^:once fn* [] (when-not x# (throw (Exception. ~(str "Recursive lazy-seq detected: " (pr-str &form))))) ~@body))))

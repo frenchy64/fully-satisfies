@@ -45,6 +45,7 @@
 
   This has a runtime cost. An alternative could be move the body out of tail position,
   but that seems to disable locals clearing:
+  ^^^ FIXME this is wrong, doesn't seem to affect it
 
     (^:once fn* [] (let [x (recur)] x))"
   (:refer-clojure :exclude [delay lazy-seq]))
@@ -62,7 +63,7 @@
   `(clojure.lang.Delay.
      ~(if *assert*
         `(let* [x# true] (^:once fn* [] (assert x# ~(str "Recursive delay detected: " (pr-str &form))) ~@body))
-        `(^:once fn* [] (do ~@body)))))
+        `(^:once fn* [] ~@body))))
 
 ;;TODO unit test
 (defmacro lazy-seq

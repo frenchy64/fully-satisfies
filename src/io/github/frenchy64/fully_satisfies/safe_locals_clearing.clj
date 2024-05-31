@@ -64,7 +64,7 @@
   [& body]
   `(clojure.lang.Delay.
      (let* [x# true]
-       (^:once fn* [] (when-not x# (throw (ex-info ~(str "Recursive delay detected: " (pr-str &form)) {}))) ~@body))))
+       (^:once fn* [] (when-not x# (throw (Exception. ~(str "Recursive delay detected: " (pr-str &form))))) ~@body))))
 
 ;;TODO unit test
 (defmacro lazy-seq
@@ -77,4 +77,4 @@
   {:added "1.0"}
   [& body]
   `(clojure.lang.LazySeq.
-     (let* [x# true] (^:once fn* [] (when-not x# (throw (ex-info ~(str "Recursive lazy-seq detected: " (pr-str &form)) {}))) ~@body))))
+     (let* [x# true] (^:once fn* [] (when-not x# (throw (Exception. ~(str "Recursive lazy-seq detected: " (pr-str &form))))) ~@body))))

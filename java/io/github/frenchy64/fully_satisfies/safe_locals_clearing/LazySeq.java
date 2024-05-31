@@ -66,8 +66,11 @@ final private void force() {
 }
 
 final private void lockAndForce() {
-	Lock l = lock;
+	ReentrantLock l = lock;
 	if(l != null) {
+    if(l.isHeldByCurrentThread()) {
+      throw Util.sneakyThrow(Util.runtimeException("Recursive lazy-seq realization"));
+    }
 		l.lock();
 		try {
 			force();

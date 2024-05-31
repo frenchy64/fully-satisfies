@@ -1,6 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.safe-locals-clearing-test
   (:refer-clojure :exclude [delay lazy-seq])
-  (:require [clojure.core :as broken]
+  (:require [clojure.core :as cc]
             [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.safe-locals-clearing :as safe]))
@@ -12,14 +12,14 @@
   (testing "f is cleared on recursive call"
     (let [f +
           p (promise)
-          d (broken/delay (f) @@p)]
+          d (cc/delay (f) @@p)]
       (deliver p d)
       (is (thrown? NullPointerException @d))))
   (testing "doesn't seem to clear local here, maybe because n is a long"
     (binding [*atom* (atom [])]
       (let [n 1
             self (promise)
-            d (broken/delay
+            d (cc/delay
                 (swap! *atom* conj n)
                 (when-not *recursive*
                   (binding [*recursive* true]
@@ -32,7 +32,7 @@
     (binding [*atom* (atom [])]
       (let [n identity
             self (promise)
-            d (broken/delay
+            d (cc/delay
                 (swap! *atom* conj n)
                 (when-not *recursive*
                   (binding [*recursive* true]
@@ -45,7 +45,7 @@
     (binding [*atom* (atom [])]
       (let [f #(do nil)
             self (promise)
-            d (broken/delay
+            d (cc/delay
                 (swap! *atom* conj f)
                 (f)
                 (when-not *recursive*
@@ -56,6 +56,8 @@
         (is (= [f nil] @*atom*))))))
 
 (deftest safe-test
+  (is (cc/delay? (safe/delay)))
+  (is (= 1 (cc/force (safe/delay 1))))
   (testing "f is cleared on recursive call"
     (let [f +
           p (promise)

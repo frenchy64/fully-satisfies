@@ -1,4 +1,7 @@
 # NEXT - TBD
+- safe local-clearing variants of delay and lazy-seq
+  - prevents recursive calls into locals-cleared code
+  - `io.github.frenchy64.fully-satisfies.safe-locals-clearing/{delay,lazy-seq}`
 
 # 1.11.2 - May 27th 2024
 - support thread-safe requiring-resolve in Clojure 1.9

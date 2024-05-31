@@ -16,7 +16,8 @@
   locals-cleared garbage.
 
   This article explains how locals clearing enables tail calls
-  to potentially have strong references to their arguments.
+  to potentially to inherit strong references to their arguments
+  from closed over locals.
   https://clojure.org/reference/lazy#_dont_hang_onto_your_head
   
   Fixes https://clojure.atlassian.net/browse/CLJ-2861

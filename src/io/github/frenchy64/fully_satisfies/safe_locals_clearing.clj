@@ -34,3 +34,15 @@
   {:added "1.0"}
   [& body]
     (list 'new 'io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (list* `^{:once true} fn* [] body)))
+
+(defn delay?
+  "returns true if x is a Delay created with delay"
+  {:added "1.0"
+   :static true}
+  [x] (instance? io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay x))
+
+(defn force
+  "If x is a Delay, returns the (possibly cached) value of its expression, else returns x"
+  {:added "1.0"
+   :static true}
+  [x] (. io.github.frenchy64.fully_satisfies.safe_locals_clearing.Delay (force x)))

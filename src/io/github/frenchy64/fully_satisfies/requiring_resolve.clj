@@ -89,14 +89,64 @@
   This is because the function in this namespace treats the root binding of *loading-libs* as only containing
   fully loaded operations, but `clojure.core/requiring-resolve` also adds partially loaded libs. This case
   is not address for performance reasons."
-  (:refer-clojure :exclude [requiring-resolve])
+  (:refer-clojure :exclude [requiring-resolve resolve the-ns find-ns remove-ns])
   (:require [clojure.core :as cc]))
+
+(defonce ^:private -removed-ns (atom nil))
+(defonce ^:private -global-loaded (.getRawRoot #'cc/*loaded-libs*))
 
 (def ^:private -require-lock
   (let [{:keys [major minor]} *clojure-version*]
     (or (try (.get (.getField clojure.lang.RT "REQUIRE_LOCK") clojure.lang.RT)
              (catch java.lang.NoSuchFieldException _))
         #'clojure.core/require)))
+
+(let [-global-loaded -global-loaded]
+  (defn- -loaded? [lib]
+    (contains? @-global-loaded lib)))
+
+(let [-global-loaded -global-loaded]
+  (defn require [& libs]
+    (doseq [lib libs]
+      (if (simple-symbol? lib)
+        (when-not (-loaded? lib)
+          (locking -require-lock
+            (when-not (-loaded? lib)
+              (let [global-loaded @-global-loaded
+                    thread-loaded @@#'cc/*loaded-libs*
+                    all-loaded (into global-loaded thread-loaded)
+                    loaded (with-bindings {#'cc/*loaded-libs* (ref all-loaded)}
+                             (cc/require lib)
+                             (apply disj @@#'cc/*loaded-libs* all-loaded))
+                    llibs @#'cc/*loaded-libs*
+                    llibs-global -global-loaded]
+                (dosync
+                  (commute llibs into loaded)
+                  (when-not (identical? llibs llibs-global)
+                    (commute llibs-global into loaded)))))))
+        (throw (IllegalArgumentException. (str "Not a simple symbol: " lib)))))))
+
+(let [-removed-ns -removed-ns]
+  (defn resolve
+    "Resolves namespace-qualified sym only if sym's namespace is fully loaded.
+    Thread-safe with simultaneous calls to clojure.core/require only if RT/REQUIRE_LOCK is acquired.
+    Not thread-safe with simultaneous calls to clojure.core/requiring-resolve.
+
+    Retries if a remove-ns call occurred between checking if the namespace is loaded
+    and resolving the var."
+    [sym]
+    (if (qualified-symbol? sym)
+      (let [lib (-> sym namespace symbol)
+            removed @-removed-ns]
+        (some-> removed deref)
+        (if (-loaded? lib)
+          (let [res (cc/resolve sym)]
+            (if (identical? removed @-removed-ns)
+              res
+              (recur sym)))
+          (when-not (identical? removed @-removed-ns)
+            (recur sym))))
+      (throw (IllegalArgumentException. (str "Not a qualified symbol: " sym))))))
 
 (defn requiring-resolve
   "Resolves namespace-qualified sym after ensuring sym's namespace is loaded.
@@ -107,22 +157,69 @@
   only load namespaces that do not appear in the root binding of *loaded-libs*."
   [sym]
   (if (qualified-symbol? sym)
-    (let [lib (-> sym namespace symbol)
-          global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
-      (when-not (contains? global-loaded lib)
-        (locking -require-lock
-          (let [global-loaded @(.getRawRoot #'cc/*loaded-libs*)]
-            (when-not (contains? global-loaded lib)
-              (let [thread-loaded @@#'cc/*loaded-libs*
-                    all-loaded (into global-loaded thread-loaded)
-                    loaded (with-bindings {#'cc/*loaded-libs* (ref all-loaded)}
-                             (require lib)
-                             (apply disj @@#'cc/*loaded-libs* all-loaded))
-                    llibs @#'cc/*loaded-libs*
-                    llibs-global (.getRawRoot #'cc/*loaded-libs*)]
-                (dosync
-                  (commute llibs into loaded)
-                  (when-not (identical? llibs llibs-global)
-                    (commute llibs-global into loaded))))))))
-      (resolve sym))
+    (do (-> sym namespace symbol require)
+        (resolve sym))
     (throw (IllegalArgumentException. (str "Not a qualified symbol: " sym)))))
+
+(let [-removed-ns -removed-ns]
+  (defn ns-resolve
+    [ns-or-sym sym]
+    (let [lib (-> sym namespace symbol)
+          removed @-removed-ns]
+      (if (-loaded? lib)
+        (let [res (cc/resolve sym)]
+          (if (identical? removed @-removed-ns)
+            res
+            (recur ns-or-sym sym)))
+        (when-not (identical? removed @-removed-ns)
+          (recur ns-or-sym sym))))))
+
+(let [-removed-ns -removed-ns]
+  (defn the-ns
+    "Returns ns object named by sym only if sym's namespace is fully loaded.
+
+    Throws if namespace was created purely by calling create-ns instead of loading a file or using clojure.core/ns.
+
+    Retry if remove-ns was between checking if the ns was loaded and the the-ns call."
+    [ns-or-sym]
+    (let [lib (cond-> ns-or-sym
+                (not (symbol? ns-or-sym)) ns-name)
+          removed @-removed-ns]
+      (some-> removed deref)
+      (if (-loaded? lib)
+        (let [res (if (instance? clojure.lang.Namespace ns-or-sym)
+                    ns-or-sym
+                    (cc/find-ns ns-or-sym))]
+          (if (identical? removed @-removed-ns)
+            (or res (throw (Exception. (str "No namespace: " lib " found"))))
+            (recur ns-or-sym)))
+        (if (identical? removed @-removed-ns)
+          (throw (ex-info (str "Namespace not loaded: " lib) {}))
+          (recur ns-or-sym))))))
+
+(let [-removed-ns -removed-ns]
+  (defn find-ns
+    "Returns ns object named by sym only if sym's namespace is fully loaded."
+    [sym]
+    (let [removed @-removed-ns]
+      (if (-loaded? sym)
+        (let [res (cc/find-ns sym)]
+          (if (identical? removed @-removed-ns)
+            res
+            (recur sym)))
+        (when-not (identical? removed @-removed-ns)
+          (recur sym))))))
+
+(let [-global-loaded -global-loaded
+      -removed-ns -removed-ns]
+  (defn remove-ns [lib]
+    @(swap! -removed-ns (fn [prev]
+                          (delay
+                            (some-> prev deref)
+                            (locking -require-lock
+                              ;; TODO dissoc from *loaded-libs*. but which op first?
+                              (vreset! -removed-ns (java.util.UUID/randomUUID))
+                              (dosync (commute -global-loaded disj lib))
+                              (cc/remove-ns lib))
+                            nil)))
+    nil))

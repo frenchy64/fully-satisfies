@@ -178,9 +178,10 @@
   (defn the-ns
     "Returns ns object named by sym only if sym's namespace is fully loaded.
 
-    Throws if namespace was created purely by calling create-ns instead of loading a file or using clojure.core/ns.
+    Throws if namespace was created purely by calling create-ns (e.g., via :as-alias)
+    instead of loading a file or using clojure.core/ns.
 
-    Retry if remove-ns was between checking if the ns was loaded and the the-ns call."
+    Retry if remove-ns was called between checking if the ns was loaded and the the-ns call."
     [ns-or-sym]
     (let [lib (cond-> ns-or-sym
                 (not (symbol? ns-or-sym)) ns-name)

@@ -1,4 +1,5 @@
 # NEXT - TBD
+- clojure.core as a macro
 
 # 1.12.0 - May 31st 2024
 - [safe local-clearing variants of delay and lazy-seq](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safe-locals-clearing.html)

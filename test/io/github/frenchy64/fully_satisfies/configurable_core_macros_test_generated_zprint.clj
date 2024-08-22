@@ -41,23 +41,24 @@
 (def
   ^{:doc
       "Same as (def name (fn [params* ] exprs*)) or (def\n                             name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n                             to the var metadata. prepost-map defines a map with optional keys\n                             :pre and :post that contain collections of pre or post conditions.",
-    :arglists (quote ^{:line 106, :column 37}
+    :arglists (quote ^{:line 107, :column 37}
                      ([name doc-string? attr-map? [params*] prepost-map? body]
                       [name doc-string? attr-map?
-                       ^{:line 107, :column 66} ([params*] prepost-map? body) +
+                       ^{:line 108, :column 66} ([params*] prepost-map? body) +
                        attr-map?]))}
   my-defn
-  (clojure.core/fn my-defn [&form__6065__auto__ &env__6066__auto__
-                            name__6067__auto__ & fdecl__6068__auto__]
+  (clojure.core/fn my-defn [&form__16823__auto__ &env__16824__auto__
+                            name__16825__auto__ & fdecl__16826__auto__]
     (io.github.frenchy64.fully-satisfies.configurable-core-macros.defn/defn-implementation
-      &form__6065__auto__
-      &env__6066__auto__
-      name__6067__auto__
-      fdecl__6068__auto__
-      {:rename {clojure.core/let my-let,
-                clojure.core/fn my-fn,
-                clojure.core/defn my-defn},
-       :opts-var
-         io.github.frenchy64.fully-satisfies.configurable-core-macros-test/opts})))
+      &form__16823__auto__
+      &env__16824__auto__
+      name__16825__auto__
+      fdecl__16826__auto__
+      (quote
+        {:rename {clojure.core/let my-let,
+                  clojure.core/fn my-fn,
+                  clojure.core/defn my-defn},
+         :opts-var
+           io.github.frenchy64.fully-satisfies.configurable-core-macros-test/opts}))))
 
 (clojure.core/doto (var my-defn) .setMacro)

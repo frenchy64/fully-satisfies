@@ -16,6 +16,13 @@
    `fn `fn/->fn
    `defn `defn/->defn})
 
+(defn flatten-top-level-forms [form]
+  (if (and (seq? form)
+           (= 'do (first form))
+           (next form))
+    (eduction (mapcat flatten-top-level-forms) (rest form))
+    [form]))
+
 ;;TODO generate requires
 (defn ->clojure-core*
   "
@@ -24,11 +31,18 @@
   :replace {`fn `already-existing-fn}
   "
   [opts]
-  `(do ~@(keep (fn [[sym d]]
-                 (when (u/define? sym opts)
-                   (macroexpand-1 (list d opts))))
-               ;; TODO sort by dependency order
-               core-sym->definer)))
+  (reduce (fn [m {:keys [forms requires]}]
+            (-> m
+                (update :forms into forms)
+                (update :requires into requires)))
+          {:forms [] :requires []}
+          (eduction
+            (keep (fn [[sym d]]
+                    (when (u/define? sym opts)
+                      {:forms (vec (flatten-top-level-forms (macroexpand-1 (list d opts))))
+                       :requires [(-> d namespace symbol)]})))
+            ;; TODO sort by dependency order
+            core-sym->definer)))
 
 (defmacro ->clojure-core
   "
@@ -37,7 +51,7 @@
   :replace {`fn `already-existing-fn}
   "
   [opts]
-  (->clojure-core* opts))
+  `(do ~@(:forms (->clojure-core* opts))))
 
 ;;; tests
 
@@ -51,7 +65,7 @@
         (with-out-str
           (println "(ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated)")
           (binding [*print-meta* true]
-            (clojure.pprint/pprint (->clojure-core* `opts)))))
+            (run! clojure.pprint/pprint (:forms (->clojure-core* `opts))))))
   (eval
     (-> (with-out-str
           (binding [*print-meta* true]

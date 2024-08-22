@@ -1,6 +1,6 @@
 ;; formatted by :zprint
 (ns
-  "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-zprint"
+  io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-zprint
   (:require
     [clojure.core :as cc]
     [io.github.frenchy64.fully-satisfies.configurable-core-macros.let :as let]

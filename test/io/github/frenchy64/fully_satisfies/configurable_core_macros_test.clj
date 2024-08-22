@@ -109,6 +109,8 @@
   (print (str-clojure-core-variant nsym macro-opts print-opts)))
 
 (defn spit-clojure-core-variant [file nsym macro-opts {:keys [formatting-lib] :as print-opts}]
+  {:pre [(string? file)
+         (simple-symbol? nsym)]}
   (spit file (str ";; formatted by " formatting-lib "\n"
                   (str-clojure-core-variant nsym macro-opts print-opts))))
 
@@ -128,7 +130,7 @@
     (spit-clojure-core-variant
       (format "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated_%s.clj"
               (name lib))
-      (str "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-" (name lib))
+      (symbol (str "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-" (name lib)))
       `opts
       {:formatting-lib lib})))
 

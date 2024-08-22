@@ -1,6 +1,8 @@
 ;; formatted by :cljfmt
 (ns
  io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-cljfmt
+  ^{:line 97, :column 39}
+  (:refer-clojure :only [])
   (:require
    [clojure.core :as cc]
    [io.github.frenchy64.fully-satisfies.configurable-core-macros.let

@@ -94,6 +94,7 @@
 (defn str-clojure-core-variant [nsym macro-opts {:keys [formatting-lib]}]
   (let [{:keys [forms requires]} (->clojure-core* macro-opts)
         top-level-forms (cons (list* 'ns nsym
+                                     '(:refer-clojure :only [])
                                      (when (seq requires)
                                        [(list* :require requires)]))
                               forms)]

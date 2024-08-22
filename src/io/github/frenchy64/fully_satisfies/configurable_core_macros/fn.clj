@@ -90,7 +90,7 @@
 
 
 (defmacro ->fn [opts]
-  `(defmacro ~(u/rename-to 'fn opts)
+  `(defmacro ~(u/rename-to `fn opts)
      "params => positional-params*, or positional-params* & rest-param
      positional-param => binding-form
      rest-param => binding-form

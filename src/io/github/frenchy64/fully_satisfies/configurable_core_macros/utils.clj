@@ -35,6 +35,7 @@
 
 (defn rename-to [vsym opts]
   {:pre [(qualified-symbol? vsym)]
-   :post [(qualified-symbol? vsym)]}
-  (assert (qualified-symbol? vsym))
-  (get (:rename (resolve-opts opts)) vsym))
+   :post [(simple-symbol? %)]}
+  (-> (get (:rename (resolve-opts opts)) vsym vsym)
+      name
+      symbol))

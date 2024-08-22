@@ -92,7 +92,7 @@
           (with-meta (cons (u/replacement-for `fn opts) fdecl) {:rettag (:tag m)}))))
 
 (defmacro ->defn [opts]
-  (let [macro-name (u/rename-to 'defn opts)]
+  (let [macro-name (u/rename-to `defn opts)]
     `(do (def
            ^{:doc "Same as (def name (fn [params* ] exprs*)) or (def
                   name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
@@ -102,6 +102,6 @@
                            [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
              ;:added "1.0"
              }
-           ~macro-name (cc/fn ~macro-name [&form# &env# name# & fdecl#]
+           ~macro-name (fn ~macro-name [&form# &env# name# & fdecl#]
                          (defn-implementation &form# &env# name# fdecl# '~opts)))
          (doto (var ~macro-name) .setMacro))))

@@ -23,7 +23,7 @@
   `(let* ~((u/replacement-for #'destructure options) bindings) ~@body))
 
 (defmacro ->let [opts]
-  `(defmacro ~(u/rename-to 'let opts)
+  `(defmacro ~(u/rename-to `let opts)
      "binding => binding-form init-expr
      binding-form => name, or destructuring-form
      destructuring-form => map-destructure-form, or seq-destructure-form

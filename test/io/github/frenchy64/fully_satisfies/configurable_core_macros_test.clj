@@ -27,9 +27,9 @@
 
 ;;; tests
 
-(def opts {:rename {`let `my-let
-                    `fn `my-fn
-                    `defn `my-defn}})
+(def opts {:rename {`let 'my-let
+                    `fn 'my-fn
+                    `defn 'my-defn}})
 
 (->clojure-core `opts)
 
@@ -42,7 +42,7 @@
   (is (= 1 (my-identity 1))))
 
 (deftest ->defn-test
-  (testing "fixes Clojure bug"
+  (testing "fixes Clojure bug" ;; https://clojure.atlassian.net/browse/CLJ-2874
     (is (= '([&form]) (-> #'f meta :arglists)))
     (is (= '([&form &env] [&form &env arg]) (-> #'g meta :arglists))))
   (is (= 1 (my-identity 1))))

@@ -18,11 +18,13 @@
    `defn `defn/->defn})
 
 (defn flatten-top-level-forms [form]
-  (if (and (seq? form)
-           (= 'do (first form))
-           (next form))
-    (eduction (mapcat flatten-top-level-forms) (rest form))
-    [form]))
+  (let [rec (fn rec [form]
+              (if (and (seq? form)
+                       (= 'do (first form))
+                       (next form))
+                (eduction (mapcat rec) (rest form))
+                [form]))]
+    (vec (rec form))))
 
 ;;TODO generate requires
 (defn ->clojure-core*
@@ -42,7 +44,7 @@
             (eduction
               (keep (fn [[sym d]]
                       (when (u/define? sym opts)
-                        {:forms (vec (flatten-top-level-forms (macroexpand-1 (list d opts))))
+                        {:forms (flatten-top-level-forms (macroexpand-1 (list d opts)))
                          :requires [[(-> d namespace symbol) :as (symbol (name sym))]]})))
               ;; TODO sort by dependency order
               core-sym->definer))))

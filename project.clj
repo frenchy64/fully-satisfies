@@ -25,7 +25,8 @@
                                   [org.clojure/core.match "1.0.0"]
                                   [org.clojure/tools.trace "0.7.11"]
                                   [org.clojure/math.combinatorics "0.1.6"]
-                                  [dev.weavejester/cljfmt "0.12.0"]]}}
+                                  [dev.weavejester/cljfmt "0.12.0"]
+                                  [zprint "1.2.9"]]}}
   :deploy-repositories [["snapshot" {:url "https://clojars.org/repo"
                                      :username :env/clojars_user
                                      :password  :env/clojars_token

@@ -56,27 +56,60 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
-(defn form-str [form]
-  (binding [*print-meta* true
-            *print-namespace-maps* false
-            *print-level* nil
-            *print-length* nil]
-    (pr-str form)))
+(defn format-forms-via-pprint [forms]
+  (apply str (interpose
+               "\n"
+               (map (fn [form]
+                      (binding [*print-level* nil
+                                *print-length* nil
+                                *print-meta* true
+                                *print-namespace-maps* false]
+                        (with-out-str
+                          (clojure.pprint/pprint form))))
+                    forms))))
 
-(defn str-clojure-core-variant [nsym opts]
-  (let [{:keys [forms requires]} (->clojure-core* opts)
-        form (into [(list* 'ns nsym
-                           (when (seq requires)
-                             [(list* :require requires)]))]
-                   forms)]
-    (fmt/reformat-string
-      (apply str (interpose "\n\n" (map form-str form))))))
+(defn format-forms-via-cljfmt [forms]
+  (apply str (interpose
+               "\n\n"
+               (map (fn [form]
+                      (fmt/reformat-string
+                        (binding [*print-level* nil
+                                  *print-length* nil
+                                  *print-meta* true
+                                  *print-namespace-maps* false]
+                          (pr-str form))))
+                    forms))))
 
-(defn print-clojure-core-variant [nsym opts]
-  (print (str-clojure-core-variant nsym opts)))
+(defn format-forms-via-zprint [forms]
+  (zp/zprint-file-str
+    (apply str (interpose "\n\n" forms))
+    ""
+    ""
+    {}))
 
-(defn spit-clojure-core-variant [file nsym opts]
-  (spit file (str-clojure-core-variant nsym opts)))
+(def formatting-lib
+  (case 0
+    0 :pprint
+    1 :cljfmt
+    2 :zprint))
+
+(defn str-clojure-core-variant [nsym macro-opts {:keys [formatting-lib]}]
+  (let [{:keys [forms requires]} (->clojure-core* macro-opts)
+        top-level-forms (cons (list* 'ns nsym
+                                     (when (seq requires)
+                                       [(list* :require requires)]))
+                              forms)]
+    ((case formatting-lib
+       :pprint format-forms-via-pprint
+       :cljfmt format-forms-via-cljfmt
+       :zprint format-forms-via-zprint)
+      top-level-forms)))
+
+(defn print-clojure-core-variant [nsym macro-opts print-opts]
+  (print (str-clojure-core-variant nsym macro-opts print-opts)))
+
+(defn spit-clojure-core-variant [file nsym macro-opts print-opts]
+  (spit file (str-clojure-core-variant nsym macro-opts print-opts)))
 
 ;;; tests
 
@@ -88,11 +121,15 @@
 (comment
   (print-clojure-core-variant
     'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
-    `opts)
-  (spit-clojure-core-variant
-    "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
-    'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
-    `opts))
+    `opts
+    {:formatting-lib :pprint})
+  (doseq [lib [:pprint :cljfmt :zprint]]
+    (spit-clojure-core-variant
+      (format "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated_%s.clj"
+              (name lib))
+      (str "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-" (name lib))
+      `opts
+      {:formatting-lib lib})))
 
 ;(my-defn f [&form])
 ;(my-defn g ([&form &env]) ([&form &env arg]))

@@ -1,4 +1,9 @@
-(ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated)
+(ns
+ io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
+ (:require
+  io.github.frenchy64.fully-satisfies.configurable-core-macros.let
+  io.github.frenchy64.fully-satisfies.configurable-core-macros.fn
+  io.github.frenchy64.fully-satisfies.configurable-core-macros.defn))
 (clojure.core/defmacro
  my-let
  "binding => binding-form init-expr\n     binding-form => name, or destructuring-form\n     destructuring-form => map-destructure-form, or seq-destructure-form\n\n     Evaluates the exprs in a lexical context in which the symbols in\n     the binding-forms are bound to their respective init-exprs or parts\n     therein.\n\n     See https://clojure.org/reference/special_forms#binding-forms for\n     more information about destructuring."

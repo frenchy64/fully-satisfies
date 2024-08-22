@@ -53,6 +53,17 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
+(defn print-clojure-core-variant [file nsym opts]
+  (let [{:keys [forms requires]} (->clojure-core* `opts)]
+    (clojure.pprint/pprint (list* 'ns nsym
+                                  (when (seq requires)
+                                    [(list* :require requires)])))
+    (binding [*print-meta* true]
+      (run! clojure.pprint/pprint forms))))
+
+(defn spit-clojure-core-variant [file nsym opts]
+  (spit file (with-out-str (print-clojure-core-variant file nsym opts))))
+
 ;;; tests
 
 (def opts {:rename {`let 'my-let
@@ -61,11 +72,14 @@
 
 (->clojure-core `opts)
 (comment
-  (spit "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
-        (with-out-str
-          (println "(ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated)")
-          (binding [*print-meta* true]
-            (run! clojure.pprint/pprint (:forms (->clojure-core* `opts))))))
+  (print-clojure-core-variant
+    "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
+    'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
+    `opts)
+  (spit-clojure-core-variant
+    "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
+    'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
+    `opts)
   (eval
     (-> (with-out-str
           (binding [*print-meta* true]

@@ -97,14 +97,14 @@
 (defmacro ->defn [opts]
   (let [macro-name (u/rename-to `defn opts)]
     `(do (def
-           ^{:doc "Same as (def name (fn [params* ] exprs*)) or (def
-                  name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
-                  to the var metadata. prepost-map defines a map with optional keys
-                  :pre and :post that contain collections of pre or post conditions."
-             :arglists '~'([name doc-string? attr-map? [params*] prepost-map? body]
-                           [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
-             ;:added "1.0"
-             }
-           ~macro-name (fn ~macro-name [&form# &env# name# & fdecl#]
-                         (defn-implementation &form# &env# name# fdecl# '~opts)))
+           ~(with-meta macro-name
+                       {;:added "1.0"
+                        :doc "Same as (def name (fn [params* ] exprs*)) or (def
+                             name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+                             to the var metadata. prepost-map defines a map with optional keys
+                             :pre and :post that contain collections of pre or post conditions."
+                        :arglists ''([name doc-string? attr-map? [params*] prepost-map? body]
+                                     [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])})
+           (fn ~macro-name [&form# &env# name# & fdecl#]
+             (defn-implementation &form# &env# name# fdecl# '~opts)))
          (doto (var ~macro-name) .setMacro))))

@@ -16,7 +16,7 @@
    `fn `fn/->fn
    `defn `defn/->defn})
 
-(defmacro ->clojure-core
+(defn ->clojure-core*
   "
   :exclude #{`defn `fn} ;;todo
   :rename {`fn `myfn}
@@ -25,8 +25,18 @@
   [opts]
   `(do ~@(keep (fn [[sym d]]
                  (when (u/define? sym opts)
-                   (list d opts)))
+                   (macroexpand-1 (list d opts))))
+               ;; TODO sort by dependency order
                core-sym->definer)))
+
+(defmacro ->clojure-core
+  "
+  :exclude #{`defn `fn} ;;todo
+  :rename {`fn `myfn}
+  :replace {`fn `already-existing-fn}
+  "
+  [opts]
+  (->clojure-core* opts))
 
 ;;; tests
 
@@ -35,6 +45,17 @@
                     `defn 'my-defn}})
 
 (->clojure-core `opts)
+(comment
+  (spit "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
+        (with-out-str
+          (println "(ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated)")
+          (binding [*print-meta* true]
+            (clojure.pprint/pprint (->clojure-core* `opts)))))
+  (eval
+    (-> (with-out-str
+          (binding [*print-meta* true]
+            (clojure.pprint/pprint (->clojure-core* `opts))))
+        read-string)))
 
 (my-defn f [&form])
 (my-defn g ([&form &env]) ([&form &env arg]))

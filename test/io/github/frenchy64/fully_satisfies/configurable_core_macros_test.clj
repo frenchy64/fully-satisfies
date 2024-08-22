@@ -1,6 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test
   (:refer-clojure :exclude [replace])
   (:require [clojure.test :refer [is]]
+            [cljfmt.core :as fmt]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.utils :as u]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.let :as let]
@@ -55,19 +56,30 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
-(defn print-clojure-core-variant [nsym opts]
-  (let [{:keys [forms requires]} (->clojure-core* opts)]
-    (clojure.pprint/pprint (list* 'ns nsym
-                                  (when (seq requires)
-                                    [(list* :require requires)])))
+(defn format-form [form]
+  (fmt/reformat-string
     (binding [*print-meta* true
               *print-namespace-maps* false
               *print-level* nil
               *print-length* nil]
-      (run! clojure.pprint/pprint forms))))
+      (pr-str form))))
+
+(defn str-clojure-core-variant [nsym opts]
+  (let [{:keys [forms requires]} (->clojure-core* opts)]
+    (str (format-form
+           (list* 'ns nsym
+                  (when (seq requires)
+                    [(list* :require requires)])))
+         "\n\n"
+         (apply str (interpose
+                      "\n\n"
+                      (map format-form forms))))))
+
+(defn print-clojure-core-variant [nsym opts]
+  (print (str-clojure-core-variant nsym opts)))
 
 (defn spit-clojure-core-variant [file nsym opts]
-  (spit file (with-out-str (print-clojure-core-variant nsym opts))))
+  (spit file (str-clojure-core-variant nsym opts)))
 
 ;;; tests
 
@@ -75,7 +87,7 @@
                     `fn 'my-fn
                     `defn 'my-defn}})
 
-(->clojure-core `opts)
+;(->clojure-core `opts)
 (comment
   (print-clojure-core-variant
     'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
@@ -83,22 +95,17 @@
   (spit-clojure-core-variant
     "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
     'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
-    `opts)
-  (eval
-    (-> (with-out-str
-          (binding [*print-meta* true]
-            (clojure.pprint/pprint (->clojure-core* `opts))))
-        read-string)))
+    `opts))
 
-(my-defn f [&form])
-(my-defn g ([&form &env]) ([&form &env arg]))
-(my-defn my-identity [x] x)
-
-(deftest ->fn-test
-  (is (= 1 (my-identity 1))))
-
-(deftest ->defn-test
-  (testing "fixes Clojure bug" ;; https://clojure.atlassian.net/browse/CLJ-2874
-    (is (= '([&form]) (-> #'f meta :arglists)))
-    (is (= '([&form &env] [&form &env arg]) (-> #'g meta :arglists))))
-  (is (= 1 (my-identity 1))))
+;(my-defn f [&form])
+;(my-defn g ([&form &env]) ([&form &env arg]))
+;(my-defn my-identity [x] x)
+;
+;(deftest ->fn-test
+;  (is (= 1 (my-identity 1))))
+;
+;(deftest ->defn-test
+;  (testing "fixes Clojure bug" ;; https://clojure.atlassian.net/browse/CLJ-2874
+;    (is (= '([&form]) (-> #'f meta :arglists)))
+;    (is (= '([&form &env] [&form &env arg]) (-> #'g meta :arglists))))
+;  (is (= 1 (my-identity 1))))

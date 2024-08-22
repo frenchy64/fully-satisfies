@@ -3,7 +3,7 @@
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.fn :as fn]))
 
-(def my-fn-opts {:rename {'fn 'my-fn}})
+(def my-fn-opts {:rename {`fn 'my-fn}})
 
 (fn/->fn `my-fn-opts)
 
@@ -16,7 +16,7 @@
   `(do (vreset! *vol* true)
        (let ~@args)))
 
-(def custom-let-opts {:rename {`fn `fn-with-custom-let}
+(def custom-let-opts {:rename {`fn 'fn-with-custom-let}
                       :replace {`let `my-let}})
 (fn/->fn `custom-let-opts)
 

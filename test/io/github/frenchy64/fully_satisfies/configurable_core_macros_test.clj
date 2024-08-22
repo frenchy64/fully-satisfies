@@ -33,7 +33,6 @@
 
 (->clojure-core `opts)
 
-;;FIXME
 (my-defn f [&form])
 (my-defn g ([&form &env]) ([&form &env arg]))
 (my-defn my-identity [x] x)

@@ -16,6 +16,7 @@
    `fn `fn/->fn
    `defn `defn/->defn})
 
+;;TODO generate requires
 (defn ->clojure-core*
   "
   :exclude #{`defn `fn} ;;todo

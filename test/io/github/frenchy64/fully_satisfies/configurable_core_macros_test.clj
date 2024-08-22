@@ -16,10 +16,9 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (def core-sym->definer
-  {`let `let/->let
-   `fn `fn/->fn
-   `defn `defn/->defn
-   })
+  [[`let `let/->let]
+   [`fn `fn/->fn]
+   [`defn `defn/->defn]])
 
 (defn flatten-top-level-forms [form]
   (let [rec (fn rec [form]

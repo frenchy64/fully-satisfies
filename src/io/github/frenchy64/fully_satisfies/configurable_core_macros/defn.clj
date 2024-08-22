@@ -32,7 +32,10 @@
            fdecl)
       (meta fdecl))))
 
-(defn- sigs [fdecl macro?]
+(defn- sigs
+  "Massages fdecl before calling clojure.core/sigs to work
+  around https://clojure.atlassian.net/browse/CLJ-2874"
+  [fdecl macro?]
   (#'cc/assert-valid-fdecl fdecl)
   (let [gform (gensym '&form)
         s (#'cc/sigs (cond-> fdecl

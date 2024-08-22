@@ -1,6 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test
+  (:refer-clojure :exclude [replace])
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.utils :as u]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.let :as let]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.fn :as fn]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.defn :as defn]))
@@ -16,13 +18,14 @@
 
 (defmacro ->clojure-core
   "
-  :exclude [defn fn] ;;todo
+  :exclude #{`defn `fn} ;;todo
   :rename {`fn `myfn}
   :replace {`fn `already-existing-fn}
   "
   [opts]
   `(do ~@(keep (fn [[sym d]]
-                 (list d opts))
+                 (when (u/define? sym opts)
+                   (list d opts)))
                core-sym->definer)))
 
 ;;; tests

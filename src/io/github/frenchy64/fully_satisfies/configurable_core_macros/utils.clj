@@ -39,3 +39,8 @@
   (-> (get (:rename (resolve-opts opts)) vsym vsym)
       name
       symbol))
+
+(defn define? [sym opts]
+  (let [{:keys [exclude replace]} (resolve-opts opts)]
+    (and (not (contains? exclude sym))
+         (not (contains? replace sym)))))

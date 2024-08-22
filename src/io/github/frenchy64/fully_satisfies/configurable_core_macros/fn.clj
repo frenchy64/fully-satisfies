@@ -88,7 +88,6 @@
         (cons 'fn* new-sigs))
       (meta &form))))
 
-
 (defmacro ->fn [opts]
   `(defmacro ~(u/rename-to `fn opts)
      "params => positional-params*, or positional-params* & rest-param

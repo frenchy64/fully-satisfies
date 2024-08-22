@@ -108,8 +108,9 @@
 (defn print-clojure-core-variant [nsym macro-opts print-opts]
   (print (str-clojure-core-variant nsym macro-opts print-opts)))
 
-(defn spit-clojure-core-variant [file nsym macro-opts print-opts]
-  (spit file (str-clojure-core-variant nsym macro-opts print-opts)))
+(defn spit-clojure-core-variant [file nsym macro-opts {:keys [formatting-lib] :as print-opts}]
+  (spit file (str ";; formatted by " formatting-lib "\n"
+                  (str-clojure-core-variant nsym macro-opts print-opts))))
 
 ;;; tests
 

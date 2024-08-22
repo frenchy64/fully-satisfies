@@ -1,3 +1,4 @@
+;; formatted by :pprint
 (ns
  "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-pprint"
  (:require

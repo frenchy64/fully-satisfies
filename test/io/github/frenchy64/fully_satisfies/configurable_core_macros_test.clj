@@ -56,14 +56,17 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
+(def deterministic-print-bindings
+  {#'*print-level* nil
+   #'*print-length* nil
+   #'*print-meta* true
+   #'*print-namespace-maps* false})
+
 (defn format-forms-via-pprint [forms]
   (apply str (interpose
                "\n"
                (map (fn [form]
-                      (binding [*print-level* nil
-                                *print-length* nil
-                                *print-meta* true
-                                *print-namespace-maps* false]
+                      (with-bindings deterministic-print-bindings
                         (with-out-str
                           (clojure.pprint/pprint form))))
                     forms))))
@@ -73,25 +76,19 @@
                "\n\n"
                (map (fn [form]
                       (fmt/reformat-string
-                        (binding [*print-level* nil
-                                  *print-length* nil
-                                  *print-meta* true
-                                  *print-namespace-maps* false]
+                        (with-bindings deterministic-print-bindings
                           (pr-str form))))
                     forms))))
 
 (defn format-forms-via-zprint [forms]
   (zp/zprint-file-str
-    (apply str (interpose "\n\n" forms))
+    (apply str (interpose "\n\n"
+                          (map #(with-bindings deterministic-print-bindings
+                                  (pr-str %))
+                               forms)))
     ""
     ""
     {}))
-
-(def formatting-lib
-  (case 0
-    0 :pprint
-    1 :cljfmt
-    2 :zprint))
 
 (defn str-clojure-core-variant [nsym macro-opts {:keys [formatting-lib]}]
   (let [{:keys [forms requires]} (->clojure-core* macro-opts)

@@ -38,12 +38,12 @@
               (-> m
                   (update :forms into forms)
                   (update :requires into requires)))
-            {:forms [] :requires []}
+            {:forms [] :requires ['[clojure.core :as cc]]}
             (eduction
               (keep (fn [[sym d]]
                       (when (u/define? sym opts)
                         {:forms (vec (flatten-top-level-forms (macroexpand-1 (list d opts))))
-                         :requires [(-> d namespace symbol)]})))
+                         :requires [[(-> d namespace symbol) :as (symbol (name sym))]]})))
               ;; TODO sort by dependency order
               core-sym->definer))))
 
@@ -56,24 +56,21 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
-(defn format-form [form]
-  (fmt/reformat-string
-    (binding [*print-meta* true
-              *print-namespace-maps* false
-              *print-level* nil
-              *print-length* nil]
-      (pr-str form))))
+(defn form-str [form]
+  (binding [*print-meta* true
+            *print-namespace-maps* false
+            *print-level* nil
+            *print-length* nil]
+    (pr-str form)))
 
 (defn str-clojure-core-variant [nsym opts]
-  (let [{:keys [forms requires]} (->clojure-core* opts)]
-    (str (format-form
-           (list* 'ns nsym
-                  (when (seq requires)
-                    [(list* :require requires)])))
-         "\n\n"
-         (apply str (interpose
-                      "\n\n"
-                      (map format-form forms))))))
+  (let [{:keys [forms requires]} (->clojure-core* opts)
+        form (into [(list* 'ns nsym
+                           (when (seq requires)
+                             [(list* :require requires)]))]
+                   forms)]
+    (fmt/reformat-string
+      (apply str (interpose "\n\n" (map form-str form))))))
 
 (defn print-clojure-core-variant [nsym opts]
   (print (str-clojure-core-variant nsym opts)))

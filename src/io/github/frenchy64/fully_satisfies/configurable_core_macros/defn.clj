@@ -106,5 +106,5 @@
                         :arglists ''([name doc-string? attr-map? [params*] prepost-map? body]
                                      [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])})
            (fn ~macro-name [&form# &env# name# & fdecl#]
-             (defn-implementation &form# &env# name# fdecl# '~opts)))
+             (defn-implementation &form# &env# name# fdecl# ~opts)))
          (doto (var ~macro-name) .setMacro))))

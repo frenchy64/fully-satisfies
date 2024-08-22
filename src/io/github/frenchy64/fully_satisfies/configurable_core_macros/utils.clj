@@ -19,7 +19,7 @@
                 (assert (= 'quote (first opts)))
                 s))]
       (assert (qualified-symbol? s))
-      @(resolve s))))
+      (assoc @(resolve s) :opts-var s))))
 
 ;; TODO pass opts to result somehow
 (defn replacement-for [vsym opts]

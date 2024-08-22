@@ -31,18 +31,20 @@
   :replace {`fn `already-existing-fn}
   "
   [opts]
-  (reduce (fn [m {:keys [forms requires]}]
-            (-> m
-                (update :forms into forms)
-                (update :requires into requires)))
-          {:forms [] :requires []}
-          (eduction
-            (keep (fn [[sym d]]
-                    (when (u/define? sym opts)
-                      {:forms (vec (flatten-top-level-forms (macroexpand-1 (list d opts))))
-                       :requires [(-> d namespace symbol)]})))
-            ;; TODO sort by dependency order
-            core-sym->definer)))
+  (assert (not (map? opts)) (pr-str opts))
+  (let [opts (u/resolve-opts opts)]
+    (reduce (fn [m {:keys [forms requires]}]
+              (-> m
+                  (update :forms into forms)
+                  (update :requires into requires)))
+            {:forms [] :requires []}
+            (eduction
+              (keep (fn [[sym d]]
+                      (when (u/define? sym opts)
+                        {:forms (vec (flatten-top-level-forms (macroexpand-1 (list d opts))))
+                         :requires [(-> d namespace symbol)]})))
+              ;; TODO sort by dependency order
+              core-sym->definer))))
 
 (defmacro ->clojure-core
   "
@@ -53,16 +55,19 @@
   [opts]
   `(do ~@(:forms (->clojure-core* opts))))
 
-(defn print-clojure-core-variant [file nsym opts]
-  (let [{:keys [forms requires]} (->clojure-core* `opts)]
+(defn print-clojure-core-variant [nsym opts]
+  (let [{:keys [forms requires]} (->clojure-core* opts)]
     (clojure.pprint/pprint (list* 'ns nsym
                                   (when (seq requires)
                                     [(list* :require requires)])))
-    (binding [*print-meta* true]
+    (binding [*print-meta* true
+              *print-namespace-maps* false
+              *print-level* nil
+              *print-length* nil]
       (run! clojure.pprint/pprint forms))))
 
 (defn spit-clojure-core-variant [file nsym opts]
-  (spit file (with-out-str (print-clojure-core-variant file nsym opts))))
+  (spit file (with-out-str (print-clojure-core-variant nsym opts))))
 
 ;;; tests
 
@@ -73,7 +78,6 @@
 (->clojure-core `opts)
 (comment
   (print-clojure-core-variant
-    "test/io/github/frenchy64/fully_satisfies/configurable_core_macros_test_generated.clj"
     'io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated
     `opts)
   (spit-clojure-core-variant

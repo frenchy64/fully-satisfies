@@ -72,13 +72,9 @@
                     forms))))
 
 (defn format-forms-via-cljfmt [forms]
-  (apply str (interpose
-               "\n\n"
-               (map (fn [form]
-                      (fmt/reformat-string
-                        (with-bindings deterministic-print-bindings
-                          (pr-str form))))
-                    forms))))
+  (-> forms
+      format-forms-via-pprint
+      fmt/reformat-string))
 
 (defn format-forms-via-zprint [forms]
   (zp/zprint-file-str

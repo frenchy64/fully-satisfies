@@ -14,7 +14,8 @@
 ;; defn
 ;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`fn}}})
+(def info {`let {:dependencies #{`fn}
+                 :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defn]}})
 
 (defn- visit-first-sig-param [fdecl f]
   (let [argv (fn [sig]
@@ -106,5 +107,5 @@
                         :arglists ''([name doc-string? attr-map? [params*] prepost-map? body]
                                      [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])})
            (fn ~macro-name [&form# &env# name# & fdecl#]
-             (defn-implementation &form# &env# name# fdecl# ~opts)))
+             (defn-implementation &form# &env# name# fdecl# '~opts)))
          (doto (var ~macro-name) .setMacro))))

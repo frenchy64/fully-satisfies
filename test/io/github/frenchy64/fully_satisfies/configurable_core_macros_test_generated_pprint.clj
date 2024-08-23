@@ -9,7 +9,6 @@
 ;; formatted by :pprint
 (ns
  io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-pprint
- ^{:line 112, :column 39}
  (:refer-clojure :only [])
  (:require
   [clojure.core :as cc]
@@ -52,7 +51,7 @@
       :opts-var
       io.github.frenchy64.fully-satisfies.configurable-core-macros-test/opts}))
 
-(def ^{:doc "Same as (def name (fn [params* ] exprs*)) or (def\n                             name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n                             to the var metadata. prepost-map defines a map with optional keys\n                             :pre and :post that contain collections of pre or post conditions.", :arglists (quote ^{:line 107, :column 37} ([name doc-string? attr-map? [params*] prepost-map? body] [name doc-string? attr-map? ^{:line 108, :column 66} ([params*] prepost-map? body) + attr-map?]))} my-defn
+(def ^{:doc "Same as (def name (fn [params* ] exprs*)) or (def\n                             name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n                             to the var metadata. prepost-map defines a map with optional keys\n                             :pre and :post that contain collections of pre or post conditions.", :arglists (quote ([name doc-string? attr-map? [params*] prepost-map? body] [name doc-string? attr-map? ([params*] prepost-map? body) + attr-map?]))} my-defn
  (clojure.core/fn my-defn [&form__2192__auto__
                            &env__2193__auto__
                            name__2194__auto__

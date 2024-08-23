@@ -3,6 +3,7 @@
   (:require [clojure.string :as str]
             [clojure.pprint :as pp]
             [clojure.test :refer [is]]
+            [clojure.walk :as walk]
             [cljfmt.core :as fmt]
             [zprint.core :as zp]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
@@ -108,11 +109,21 @@
 
 (defn str-clojure-core-variant [nsym macro-opts {:keys [formatting-lib]}]
   (let [{:keys [forms requires]} (->clojure-core* macro-opts)
-        top-level-forms (cons (list* 'ns nsym
-                                     '(:refer-clojure :only [])
-                                     (when (seq requires)
-                                       [(list* :require requires)]))
-                              forms)]
+        top-level-forms (mapv (fn postwalk [form]
+                                ;; note: walk only preserves symbol metadata in 1.11!
+                                (walk/postwalk
+                                  (fn [form]
+                                    (if (instance? clojure.lang.IObj form)
+                                      (-> form
+                                          (vary-meta dissoc :line :file)
+                                          (vary-meta postwalk))
+                                      form))
+                                  form))
+                              (cons (list* 'ns nsym
+                                           '(:refer-clojure :only [])
+                                           (when (seq requires)
+                                             [(list* :require requires)]))
+                                    forms))]
     ((case formatting-lib
        :pprint format-forms-via-pprint
        :cljfmt format-forms-via-cljfmt

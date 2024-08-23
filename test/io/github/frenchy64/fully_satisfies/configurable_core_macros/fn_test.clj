@@ -8,7 +8,11 @@
 (fn/->fn `my-fn-opts)
 
 (deftest my-fn-test
-  (is (= 1 ((my-fn [x] x) 1))))
+  (is (= 1 ((my-fn [x] x) 1)))
+  (is (= {:pre []} ((my-fn [x] {:pre []}) 1)))
+  (is (thrown? AssertionError ((my-fn [x] {:pre [false]} 2) 1)))
+  (is (thrown? AssertionError ((my-fn [x] {:post [false]} 2) 1)))
+  (is (= 4 ((my-fn [{:keys [a]}] a) {:a 4}))))
 
 (def ^:dynamic *vol*)
 

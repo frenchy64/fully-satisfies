@@ -19,7 +19,7 @@
 
 ;;internal
 (defn defmethod-implementation [multifn dispatch-val fn-tail opts]
-  (assert (symbol? multifn)) ;; pprint strips meta on non-symbols...
+  (assert (symbol? multifn)) ;; clojure.walk strips meta on non-symbols...
   `(. ~(with-meta multifn {:tag 'clojure.lang.MultiFn})
       addMethod
       ~dispatch-val

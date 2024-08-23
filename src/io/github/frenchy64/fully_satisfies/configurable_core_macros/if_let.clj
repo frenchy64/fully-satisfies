@@ -15,7 +15,7 @@
 ;; if-let
 ;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`let `assert}}})
+(def info {`let {:dependencies #{`let}}})
 
 (defn- maybe-destructured
   [params body opts]

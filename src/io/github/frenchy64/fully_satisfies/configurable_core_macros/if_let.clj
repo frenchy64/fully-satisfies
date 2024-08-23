@@ -8,22 +8,14 @@
 
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros.if-let
   (:require [clojure.core :as cc]
-            [io.github.frenchy64.fully-satisfies.configurable-core-macros.utils :as u]))
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.utils :as u]
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.assert-args :as assert-args]))
 
 ;;;;;;;;;;;;;;;;
 ;; if-let
 ;;;;;;;;;;;;;;;;
 
 (def info {`let {:dependencies #{`let `assert}}})
-
-(defmacro ^{:private true} assert-args
-  [& pairs]
-  `(do (when-not ~(first pairs)
-         (throw (IllegalArgumentException.
-                  (str (first ~'&form) " requires " ~(second pairs) " in " ~'*ns* ":" (:line (meta ~'&form))))))
-     ~(let [more (nnext pairs)]
-        (when more
-          (list* `assert-args more)))))
 
 (defn- maybe-destructured
   [params body opts]
@@ -47,7 +39,7 @@
   ([&form bindings then opts]
    (if-let-implementation &form bindings then nil nil opts))
   ([&form bindings then else oldform opts]
-   (assert-args ;;uses &form
+   (assert-args/assert-args ;;uses &form
      (vector? bindings) "a vector for its binding"
      (nil? oldform) "1 or 2 forms after binding vector"
      (= 2 (count bindings)) "exactly 2 forms in binding vector")

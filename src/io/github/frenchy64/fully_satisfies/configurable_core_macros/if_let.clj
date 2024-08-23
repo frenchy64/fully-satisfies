@@ -15,7 +15,9 @@
 ;; if-let
 ;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`let}}})
+(def info {:dependencies #{`let}
+           :sym `if-let
+           :ctor `->if-let})
 
 (defn- maybe-destructured
   [params body opts]
@@ -31,7 +33,7 @@
             (recur (next params) (conj new-params gparam)
                    (-> lets (conj (first params)) (conj gparam)))))
         `(~new-params
-          (~(u/replacement-for `let opts) ~lets
+          (~(u/replacement-for info `let opts) ~lets
             ~@body))))))
 
 ;; internal
@@ -46,7 +48,7 @@
    (let [form (bindings 0) tst (bindings 1)]
      `(let [temp# ~tst]
         (if temp#
-          (~(u/replacement-for `let opts) [~form temp#]
+          (~(u/replacement-for info `let opts) [~form temp#]
             ~then)
           ~else)))))
 

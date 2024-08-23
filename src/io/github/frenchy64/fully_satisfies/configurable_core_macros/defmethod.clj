@@ -14,8 +14,10 @@
 ;; defmethod
 ;;;;;;;;;;;;;;;;
 
-(def info {`defmethod {:dependencies #{`fn}
-                       :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod]}})
+(def info {:dependencies #{`fn}
+           :sym `defmethod
+           :ctor `->defmethod
+           :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod]})
 
 ;;internal
 (defn defmethod-implementation [multifn dispatch-val fn-tail opts]
@@ -23,7 +25,7 @@
   `(. ~(with-meta multifn {:tag 'clojure.lang.MultiFn})
       addMethod
       ~dispatch-val
-      (~(u/replacement-for `fn opts) ~@fn-tail)))
+      (~(u/replacement-for info `fn opts) ~@fn-tail)))
 
 (defmacro ->defmethod [opts]
   (let [macro-name (u/rename-to `defmethod opts)]

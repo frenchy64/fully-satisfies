@@ -22,11 +22,14 @@
       (assoc @(resolve s) :opts-var s))))
 
 ;; TODO pass opts to result somehow
-(defn replacement-for [vsym opts]
+(defn replacement-for [info vsym opts]
   (assert (or (var? vsym)
               (qualified-symbol? vsym)))
   (let [v? (var? vsym)
         vsym (symbol vsym)
+        _ (assert (get (:dependencies info) vsym)
+                  (str "Must declare dependency on " vsym
+                       " for " (:ctor info)))
         vr (get (:replace (resolve-opts opts)) vsym vsym)]
     (assert (or (var? vr)
                 (qualified-symbol? vr)))

@@ -14,8 +14,10 @@
 ;; defn
 ;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`fn}
-                 :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defn]}})
+(def info {:dependencies #{`fn}
+           :sym `defn
+           :ctor `->defn
+           :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defn]})
 
 (defn- visit-first-sig-param [fdecl f]
   (let [argv (fn [sig]
@@ -93,7 +95,7 @@
           ;;todo - restore propagation of fn name
           ;;must figure out how to convey primitive hints to self calls first
           ;;(cons `fn fdecl)
-          (with-meta (cons (u/replacement-for `fn opts) fdecl) {:rettag (:tag m)}))))
+          (with-meta (cons (u/replacement-for info `fn opts) fdecl) {:rettag (:tag m)}))))
 
 (defmacro ->defn [opts]
   (let [macro-name (u/rename-to `defn opts)]

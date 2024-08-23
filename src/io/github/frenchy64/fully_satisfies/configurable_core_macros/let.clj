@@ -8,19 +8,22 @@
 
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros.let
   (:require [clojure.core :as cc]
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.assert-args :refer [assert-args]]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.utils :as u]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; clojure.core/let
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`destructure}}})
+(def info {:dependencies #{`destructure}
+           :sym `let
+           :ctor `->let})
 
-(defn let-implementation [bindings body options]
-  (#'clojure.core/assert-args
+(defn let-implementation [&form bindings body options]
+  (assert-args
     (vector? bindings) "a vector for its binding"
     (even? (count bindings)) "an even number of forms in binding vector")
-  `(let* ~((u/replacement-for #'destructure options) bindings) ~@body))
+  `(let* ~((u/replacement-for info #'destructure options) bindings) ~@body))
 
 (defmacro ->let [opts]
   `(defmacro ~(u/rename-to `let opts)
@@ -36,4 +39,4 @@
      more information about destructuring."
      {#_#_:added "1.0", #_#_:special-form true, :forms '~'[(let [bindings*] exprs*)]}
      [bindings# & body#]
-     (let-implementation bindings# body# '~opts)))
+     (let-implementation ~'&form bindings# body# '~opts)))

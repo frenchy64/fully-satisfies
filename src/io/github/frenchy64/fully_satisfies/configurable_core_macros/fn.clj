@@ -14,7 +14,9 @@
 ;; fn
 ;;;;;;;;;;;;;;;;
 
-(def info {`let {:dependencies #{`let `assert}}})
+(def info {:dependencies #{`let `assert}
+           :sym `fn
+           :ctor `->fn})
 
 (defn- maybe-destructured
   [params body opts]
@@ -30,7 +32,7 @@
             (recur (next params) (conj new-params gparam)
                    (-> lets (conj (first params)) (conj gparam)))))
         `(~new-params
-          (~(u/replacement-for `let opts) ~lets
+          (~(u/replacement-for info `let opts) ~lets
             ~@body))))))
 
 ;; internal
@@ -73,11 +75,11 @@
                             `((let [~'% ~(if (< 1 (count body)) 
                                           `(do ~@body) 
                                           (first body))]
-                               ~@(map (fn* [c] `(~(u/replacement-for `assert opts) ~c)) post)
+                               ~@(map (fn* [c] `(~(u/replacement-for info `assert opts) ~c)) post)
                                ~'%))
                             body)
                      body (if pre
-                            (concat (map (fn* [c] `(~(u/replacement-for `assert opts) ~c)) pre) 
+                            (concat (map (fn* [c] `(~(u/replacement-for info `assert opts) ~c)) pre) 
                                     body)
                             body)]
                  (maybe-destructured params body opts)))

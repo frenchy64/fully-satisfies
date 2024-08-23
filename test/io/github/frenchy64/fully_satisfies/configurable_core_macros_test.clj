@@ -12,7 +12,8 @@
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.fn :as fn]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.defn :as defn]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.defmacro :as defmacro]
-            [io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod :as defmethod]))
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod :as defmethod]
+            [io.github.frenchy64.fully-satisfies.configurable-core-macros.if-let :as if-let]))
 
 ;(alter-var-root #'*print-namespace-maps* (fn [_] false))
 ;(set! *print-namespace-maps* false)
@@ -27,6 +28,7 @@
    [`defn `defn/->defn]
    [`defmacro `defmacro/->defmacro]
    [`defmethod `defmethod/->defmethod]
+   [`if-let `if-let/->if-let]
    ])
 
 (defn flatten-top-level-forms [form]
@@ -159,7 +161,8 @@
                     `fn 'my-fn
                     `defn 'my-defn
                     `defmacro 'my-defmacro
-                    `defmethod 'my-defmethod}})
+                    `defmethod 'my-defmethod
+                    `if-let 'my-if-let}})
 
 (->clojure-core `opts)
 

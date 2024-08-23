@@ -52,7 +52,7 @@
                                               s))))))
 
 ;;internal
-(defn defn-implementation [&form &env name fdecl opts]
+(defn defn-implementation [name fdecl macro? opts]
   (if (instance? clojure.lang.Symbol name)
     nil
     (throw (IllegalArgumentException. "First argument to defn must be a symbol")))
@@ -77,7 +77,7 @@
         fdecl (if (map? (last fdecl))
                 (butlast fdecl)
                 fdecl)
-        m (conj {:arglists (list 'quote (sigs fdecl false))} m)
+        m (conj {:arglists (list 'quote (sigs fdecl macro?))} m)
         m (let [inline (:inline m)
                 ifn (first inline)
                 iname (second inline)]
@@ -107,5 +107,5 @@
                         :arglists ''([name doc-string? attr-map? [params*] prepost-map? body]
                                      [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])})
            (fn ~macro-name [&form# &env# name# & fdecl#]
-             (defn-implementation &form# &env# name# fdecl# '~opts)))
+             (defn-implementation name# fdecl# false '~opts)))
          (doto (var ~macro-name) .setMacro))))

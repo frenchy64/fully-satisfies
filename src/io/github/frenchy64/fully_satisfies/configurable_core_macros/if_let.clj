@@ -51,15 +51,14 @@
           ~else)))))
 
 (defmacro ->if-let [opts]
-  (let [macro-name (u/rename-to `if-let opts)]
-    `(defmacro ~(u/rename-to `if-let opts)
-       "bindings => binding-form test
+  `(defmacro ~(u/rename-to `if-let opts)
+     "bindings => binding-form test
 
-       If test is true, evaluates then with binding-form bound to the value of 
-       test, if not, yields else"
-       {:added "1.0"
-        :arglists '~'([bindings then] [bindings then else #_#_& oldform])}
-       ([bindings# then#]
-        (if-let-implementation ~'&form bindings# then# '~opts))
-       ([bindings# then# else# & oldform#]
-        (if-let-implementation ~'&form bindings# then# else# oldform# '~opts)))))
+     If test is true, evaluates then with binding-form bound to the value of 
+     test, if not, yields else"
+     {:added "1.0"
+      :arglists '~'([bindings then] [bindings then else #_#_& oldform])}
+     ([bindings# then#]
+      (if-let-implementation ~'&form bindings# then# '~opts))
+     ([bindings# then# else# & oldform#]
+      (if-let-implementation ~'&form bindings# then# else# oldform# '~opts))))

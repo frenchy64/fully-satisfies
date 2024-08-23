@@ -71,16 +71,25 @@
    #'*print-namespace-maps* false})
 
 (defn format-forms-via-pprint [forms]
-  (apply str (interpose
-               "\n"
-               (map (fn [form]
-                      (with-out-str
-                        (with-bindings deterministic-print-bindings
-                          (pp/with-pprint-dispatch
-                            pp/simple-dispatch
-                            ;pp/code-dispatch ;; pprint cannot handle (:refer-clojure :only [])
-                            (pp/pprint form)))))
-                    forms))))
+  ;; pprint cannot handle (:refer-clojure :only [])
+  ;; so we print the ns form separately
+  (apply str
+         (with-out-str
+           (with-bindings deterministic-print-bindings
+             (pp/with-pprint-dispatch
+               pp/simple-dispatch
+               (pp/pprint (first forms)))))
+         (when (next forms)
+           "\n")
+         (interpose
+           "\n"
+           (map (fn [form]
+                  (with-out-str
+                    (with-bindings deterministic-print-bindings
+                      (pp/with-pprint-dispatch
+                        pp/code-dispatch 
+                        (pp/pprint form)))))
+                (next forms)))))
 
 (defn format-forms-via-cljfmt [forms]
   (-> forms

@@ -104,19 +104,15 @@
 
 (clojure.core/defmacro my-defmethod
   "Creates and installs a new method of multimethod associated with dispatch-value. "
-  {:arglists
-   '([io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod/multifn
-      io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod/dispatch-val
-      &
-      io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod/fn-tail])}
-  [multifn__17657__auto__
-   dispatch-val__17658__auto__
+  {:arglists '([multifn dispatch-val & fn-tail])}
+  [multifn__18116__auto__
+   dispatch-val__18117__auto__
    &
-   fn-tail__17659__auto__]
+   fn-tail__18118__auto__]
   (io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod/defmethod-implementation
-    multifn__17657__auto__
-    dispatch-val__17658__auto__
-    fn-tail__17659__auto__
+    multifn__18116__auto__
+    dispatch-val__18117__auto__
+    fn-tail__18118__auto__
     '{:rename
       {clojure.core/let my-let,
        clojure.core/fn my-fn,

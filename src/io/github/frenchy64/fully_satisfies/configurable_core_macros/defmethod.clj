@@ -30,6 +30,6 @@
     `(defmacro ~macro-name
        "Creates and installs a new method of multimethod associated with dispatch-value. "
        {;:added "1.0"
-        :arglists '([multifn dispatch-val & fn-tail])}
+        :arglists '~'([multifn dispatch-val & fn-tail])}
        [multifn# dispatch-val# & fn-tail#]
        (defmethod-implementation multifn# dispatch-val# fn-tail# '~opts))))

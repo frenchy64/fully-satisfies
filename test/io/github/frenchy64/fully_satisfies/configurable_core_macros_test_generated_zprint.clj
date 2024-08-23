@@ -9,7 +9,7 @@
 ;; formatted by :zprint
 (ns
   io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-zprint
-  ^{:line 99, :column 39} (:refer-clojure :only [])
+  ^{:line 102, :column 39} (:refer-clojure :only [])
   (:require
     [clojure.core :as cc]
     [io.github.frenchy64.fully-satisfies.configurable-core-macros.let :as let]

@@ -1,6 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros-test
   (:refer-clojure :exclude [replace])
   (:require [clojure.string :as str]
+            [clojure.pprint :as pp]
             [clojure.test :refer [is]]
             [cljfmt.core :as fmt]
             [zprint.core :as zp]
@@ -73,9 +74,12 @@
   (apply str (interpose
                "\n"
                (map (fn [form]
-                      (with-bindings deterministic-print-bindings
-                        (with-out-str
-                          (clojure.pprint/pprint form))))
+                      (with-out-str
+                        (with-bindings deterministic-print-bindings
+                          (pp/with-pprint-dispatch
+                            pp/simple-dispatch
+                            ;pp/code-dispatch ;; pprint cannot handle (:refer-clojure :only [])
+                            (pp/pprint form)))))
                     forms))))
 
 (defn format-forms-via-cljfmt [forms]
@@ -143,7 +147,17 @@
               (name lib))
       (symbol (str "io.github.frenchy64.fully-satisfies.configurable-core-macros-test-generated-" (name lib)))
       `opts
-      {:formatting-lib lib})))
+      {:formatting-lib lib}))
+  (pp/with-pprint-dispatch
+    pp/code-dispatch
+    (pp/pprint '(ns foo
+                  (:refer-clojure :exclude [defn]))))
+  #_ ;; Clojure bug
+  (pp/with-pprint-dispatch
+    pp/code-dispatch
+    (pp/pprint '(ns foo
+                  (:refer-clojure :only []))))
+  )
 
 (my-defn f [&form])
 (my-defn g ([&form &env]) ([&form &env arg]))

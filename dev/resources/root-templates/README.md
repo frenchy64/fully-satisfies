@@ -212,6 +212,7 @@ Wrong number of args (21) passed to: user/eval191/fn--211
 ```
 - (count (eduction)) => count not supported on this type: Eduction
 - (defn f [&form]): https://ask.clojure.org/index.php/14057/defn-rejects-arity-with-args-vector-form
+- definterface doesn't resolve class hints properly https://clojure.atlassian.net/browse/CLJ-2269
 
 ## License
 

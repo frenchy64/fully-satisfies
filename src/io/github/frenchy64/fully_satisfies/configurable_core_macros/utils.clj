@@ -19,10 +19,10 @@
               (qualified-symbol? vsym)))
   (let [opts (resolve-opts opts)
         v? (var? vsym)
-        ;; stay compatible with 1.9 for now by 
+        ;; stay compatible with 1.9 for now
         vsym (if (var? vsym)
                (symbol (some-> (.ns ^clojure.lang.Var vsym) ns-name name) (name (.sym ^clojure.lang.Var vsym)))
-               (symbol vsym))
+               vsym)
         _ (assert (get (:dependencies info) vsym)
                   (str "Must declare dependency on " vsym
                        " for " (:ctor info)))

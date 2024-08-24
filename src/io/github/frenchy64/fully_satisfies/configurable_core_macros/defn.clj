@@ -54,6 +54,7 @@
 
 ;;internal
 (defn defn-implementation [info name fdecl macro? opts]
+  (prn "defn-implementation" opts)
   (if (instance? clojure.lang.Symbol name)
     nil
     (throw (IllegalArgumentException. "First argument to defn must be a symbol")))

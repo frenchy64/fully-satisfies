@@ -1,4 +1,5 @@
 (ns io.github.frenchy64.fully-satisfies.configurable-core-macros
+  "experimental"
   (:require [io.github.frenchy64.fully-satisfies.configurable-core-macros.defmacro :as defmacro]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod :as defmethod]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.defn :as defn]

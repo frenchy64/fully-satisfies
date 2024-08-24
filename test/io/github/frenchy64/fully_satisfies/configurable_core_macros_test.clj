@@ -101,12 +101,20 @@
 
 ;;; tests
 
-(def opts {:rename {`let 'my-let
-                    `fn 'my-fn
-                    `defn 'my-defn
-                    `defmacro 'my-defmacro
-                    `defmethod 'my-defmethod
-                    `if-let 'my-if-let}})
+(def ^:dynamic *vol* nil)
+
+(defn my-destructure [bindings]
+  (destructure
+    (into [(gensym '_) `(vreset! *vol* true)]
+          bindings)))
+
+(def opts {:rename {`let `my-let
+                    `fn `my-fn
+                    `defn `my-defn
+                    `defmacro `my-defmacro
+                    `defmethod `my-defmethod
+                    `if-let `my-if-let}
+           :replace {`destructure `my-destructure}})
 
 (cc-macro/->clojure-core `opts)
 
@@ -136,6 +144,7 @@
 (my-defn f [&form])
 (my-defn g ([&form &env]) ([&form &env arg]))
 (my-defn my-identity [x] x)
+(my-defn custom-destructure [{:keys [x]}] x)
 
 (deftest ->fn-test
   (is (= 1 (my-identity 1))))
@@ -144,4 +153,10 @@
   (testing "fixes Clojure bug" ;; https://clojure.atlassian.net/browse/CLJ-2874
     (is (= '([&form]) (-> #'f meta :arglists)))
     (is (= '([&form &env] [&form &env arg]) (-> #'g meta :arglists))))
-  (is (= 1 (my-identity 1))))
+  (is (= 1 (my-identity 1)))
+  (testing "custom destructure"
+    (let [vol (volatile! false)]
+      (is (false? @vol))
+      (binding [*vol* vol]
+        (is (= 1 (custom-destructure {:x 1}))))
+      (is (true? @vol)))))

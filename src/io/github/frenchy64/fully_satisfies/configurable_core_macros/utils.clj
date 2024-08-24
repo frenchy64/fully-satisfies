@@ -17,23 +17,26 @@
 (defn replacement-for [info vsym opts]
   (assert (or (var? vsym)
               (qualified-symbol? vsym)))
-  (let [v? (var? vsym)
+  (let [opts (resolve-opts opts)
+        v? (var? vsym)
         vsym (symbol vsym)
         _ (assert (get (:dependencies info) vsym)
                   (str "Must declare dependency on " vsym
                        " for " (:ctor info)))
-        vr (get (:replace (resolve-opts opts)) vsym vsym)]
-    (assert (or (var? vr)
-                (qualified-symbol? vr)))
+        vr (or (get (:replace opts) vsym)
+               (get (:rename opts) vsym)
+               vsym)]
+    (prn "replacement-for" vr)
+    (assert (qualified-symbol? vr))
     (cond-> vr
       v? find-var)))
 
 (defn rename-to [vsym opts]
   {:pre [(qualified-symbol? vsym)]
    :post [(simple-symbol? %)]}
-  (-> (get (:rename (resolve-opts opts)) vsym vsym)
-      name
-      symbol))
+  (let [qsym (get (:rename (resolve-opts opts)) vsym vsym)]
+    (assert (qualified-symbol? qsym) qsym)
+    (-> qsym name symbol)))
 
 (defn define? [sym opts]
   {:pre [(qualified-symbol? sym)]}

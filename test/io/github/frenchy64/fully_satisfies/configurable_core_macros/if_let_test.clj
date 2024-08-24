@@ -3,7 +3,7 @@
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.if-let :as if-let]))
 
-(def my-if-let-opts {:rename {`if-let 'my-if-let}})
+(def my-if-let-opts {:rename {`if-let `my-if-let}})
 
 (if-let/->if-let `my-if-let-opts)
 
@@ -17,7 +17,7 @@
   `(do (vreset! *vol* true)
        (let ~@args)))
 
-(def custom-let-opts {:rename {`if-let 'if-let-with-custom-let}
+(def custom-let-opts {:rename {`if-let `if-let-with-custom-let}
                       :replace {`let `my-let}})
 (if-let/->if-let `custom-let-opts)
 

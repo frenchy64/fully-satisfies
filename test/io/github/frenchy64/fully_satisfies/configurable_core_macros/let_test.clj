@@ -3,7 +3,7 @@
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [deftest testing]]
             [io.github.frenchy64.fully-satisfies.configurable-core-macros.let :as let]))
 
-(def my-let-opts {:rename {`let 'my-let}})
+(def my-let-opts {:rename {`let `my-let}})
 
 (let/->let `my-let-opts)
 
@@ -19,7 +19,7 @@
     (into [(gensym '_) `(vreset! *vol* true)]
           bindings)))
 
-(def custom-let-opts {:rename {`let 'let-with-custom-destructure}
+(def custom-let-opts {:rename {`let `let-with-custom-destructure}
                       :replace {`destructure `my-destructure}})
 (let/->let `custom-let-opts)
 

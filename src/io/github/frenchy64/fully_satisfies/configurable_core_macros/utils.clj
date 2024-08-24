@@ -26,7 +26,6 @@
         vr (or (get (:replace opts) vsym)
                (get (:rename opts) vsym)
                vsym)]
-    (prn "replacement-for" vr)
     (assert (qualified-symbol? vr))
     (cond-> vr
       v? find-var)))

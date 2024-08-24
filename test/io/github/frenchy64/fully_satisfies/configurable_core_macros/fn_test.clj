@@ -20,7 +20,7 @@
   `(do (vreset! *vol* true)
        (let ~@args)))
 
-(def custom-let-opts {:rename {`fn 'fn-with-custom-let}
+(def custom-let-opts {:rename {`fn `fn-with-custom-let}
                       :replace {`let `my-let}})
 (fn/->fn `custom-let-opts)
 

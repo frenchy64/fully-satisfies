@@ -22,14 +22,13 @@
 ;; High-level API
 ;;;;;;;;;;;;;;;;;;;;
 
-(def core-sym->definer
-  [[`let `let/->let]
-   [`fn `fn/->fn]
-   [`defn `defn/->defn]
-   [`defmacro `defmacro/->defmacro]
-   [`defmethod `defmethod/->defmethod]
-   [`if-let `if-let/->if-let]
-   ])
+(def core-sym-infos
+  [let/info
+   fn/info
+   defn/info
+   defmacro/info
+   defmethod/info
+   if-let/info])
 
 (defn flatten-top-level-forms [form]
   (let [rec (fn rec [form]
@@ -40,7 +39,6 @@
                 [form]))]
     (vec (rec form))))
 
-;;TODO generate requires
 (defn ->clojure-core*
   "
   :exclude #{`defn `fn} ;;todo
@@ -50,18 +48,20 @@
   [opts]
   (assert (not (map? opts)) (pr-str opts))
   (let [opts (u/resolve-opts opts)]
-    (reduce (fn [m {:keys [forms requires]}]
+    (-> (reduce (fn [m {:keys [forms requires]}]
               (-> m
                   (update :forms into forms)
-                  (update :requires into requires)))
+                  (update :requires into (distinct requires))))
             {:forms [] :requires ['[clojure.core :as cc]]}
             (eduction
-              (keep (fn [[sym d]]
+              (keep (fn [{:keys [sym ctor requires]}]
                       (when (u/define? sym opts)
-                        {:forms (flatten-top-level-forms (macroexpand-1 (list d opts)))
-                         :requires [[(-> d namespace symbol) :as (symbol (name sym))]]})))
+                        {:forms (flatten-top-level-forms (macroexpand-1 (list ctor opts)))
+                         :requires (into [(-> ctor namespace symbol)]
+                                         requires)})))
               ;; TODO sort by dependency order
-              core-sym->definer))))
+              core-sym-infos))
+        (update :requires #(into [] (distinct) %)))))
 
 (defmacro ->clojure-core
   "

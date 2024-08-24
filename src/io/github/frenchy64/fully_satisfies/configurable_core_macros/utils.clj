@@ -44,6 +44,7 @@
       symbol))
 
 (defn define? [sym opts]
+  {:pre [(qualified-symbol? sym)]}
   (let [{:keys [exclude replace]} (resolve-opts opts)]
     (and (not (contains? exclude sym))
          (not (contains? replace sym)))))

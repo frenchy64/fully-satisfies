@@ -59,7 +59,7 @@
     {}))
 
 (defn str-clojure-core-variant [nsym macro-opts {:keys [formatting-lib]}]
-  (let [{:keys [forms requires]} (cc-macro/->clojure-core* macro-opts)
+  (let [{:keys [forms requires]} (#'cc-macro/->clojure-core* macro-opts)
         top-level-forms (mapv (fn postwalk [form]
                                 ;; note: walk only preserves symbol metadata in 1.11!
                                 (walk/postwalk

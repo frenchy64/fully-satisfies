@@ -16,8 +16,7 @@
 
 (def info {:dependencies #{`fn}
            :sym `defn
-           :ctor `->defn
-           :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defn]})
+           :ctor `->defn})
 
 (defn- visit-first-sig-param [fdecl f]
   (let [argv (fn [sig]
@@ -54,7 +53,7 @@
                                               s))))))
 
 ;;internal
-(defn defn-implementation [name fdecl macro? opts]
+(defn defn-implementation [info name fdecl macro? opts]
   (if (instance? clojure.lang.Symbol name)
     nil
     (throw (IllegalArgumentException. "First argument to defn must be a symbol")))
@@ -109,5 +108,5 @@
                         :arglists ''([name doc-string? attr-map? [params*] prepost-map? body]
                                      [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])})
            (fn ~macro-name [&form# &env# name# & fdecl#]
-             (defn-implementation name# fdecl# false '~opts)))
+             (defn-implementation info name# fdecl# false '~opts)))
          (doto (var ~macro-name) .setMacro))))

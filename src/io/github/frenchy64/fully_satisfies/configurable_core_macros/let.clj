@@ -19,7 +19,7 @@
            :sym `let
            :ctor `->let})
 
-(defn let-implementation [&form bindings body options]
+(defn let-implementation [info &form bindings body options]
   (assert-args
     (vector? bindings) "a vector for its binding"
     (even? (count bindings)) "an even number of forms in binding vector")
@@ -39,4 +39,4 @@
      more information about destructuring."
      {#_#_:added "1.0", #_#_:special-form true, :forms '~'[(let [bindings*] exprs*)]}
      [bindings# & body#]
-     (let-implementation ~'&form bindings# body# '~opts)))
+     (let-implementation info ~'&form bindings# body# '~opts)))

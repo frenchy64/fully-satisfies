@@ -16,11 +16,10 @@
 
 (def info {:dependencies #{`fn}
            :sym `defmethod
-           :ctor `->defmethod
-           :requires '[io.github.frenchy64.fully-satisfies.configurable-core-macros.defmethod]})
+           :ctor `->defmethod})
 
 ;;internal
-(defn defmethod-implementation [multifn dispatch-val fn-tail opts]
+(defn defmethod-implementation [info multifn dispatch-val fn-tail opts]
   (assert (symbol? multifn)) ;; clojure.walk strips meta on non-symbols...
   `(. ~(with-meta multifn {:tag 'clojure.lang.MultiFn})
       addMethod
@@ -34,4 +33,4 @@
        {;:added "1.0"
         :arglists '~'([multifn dispatch-val & fn-tail])}
        [multifn# dispatch-val# & fn-tail#]
-       (defmethod-implementation multifn# dispatch-val# fn-tail# '~opts))))
+       (defmethod-implementation info multifn# dispatch-val# fn-tail# '~opts))))

@@ -19,28 +19,11 @@
            :sym `if-let
            :ctor `->if-let})
 
-(defn- maybe-destructured
-  [params body opts]
-  (if (every? symbol? params)
-    (cons params body)
-    (loop [params params
-           new-params (with-meta [] (meta params))
-           lets []]
-      (if params
-        (if (symbol? (first params))
-          (recur (next params) (conj new-params (first params)) lets)
-          (let [gparam (gensym "p__")]
-            (recur (next params) (conj new-params gparam)
-                   (-> lets (conj (first params)) (conj gparam)))))
-        `(~new-params
-          (~(u/replacement-for info `let opts) ~lets
-            ~@body))))))
-
 ;; internal
 (defn if-let-implementation
-  ([&form bindings then opts]
-   (if-let-implementation &form bindings then nil nil opts))
-  ([&form bindings then else oldform opts]
+  ([info &form bindings then opts]
+   (if-let-implementation info &form bindings then nil nil opts))
+  ([info &form bindings then else oldform opts]
    (assert-args/assert-args ;;uses &form
      (vector? bindings) "a vector for its binding"
      (nil? oldform) "1 or 2 forms after binding vector"
@@ -61,6 +44,6 @@
      {:added "1.0"
       :arglists '~'([bindings then] [bindings then else #_#_& oldform])}
      ([bindings# then#]
-      (if-let-implementation ~'&form bindings# then# '~opts))
+      (if-let-implementation info ~'&form bindings# then# '~opts))
      ([bindings# then# else# & oldform#]
-      (if-let-implementation ~'&form bindings# then# else# oldform# '~opts))))
+      (if-let-implementation info ~'&form bindings# then# else# oldform# '~opts))))

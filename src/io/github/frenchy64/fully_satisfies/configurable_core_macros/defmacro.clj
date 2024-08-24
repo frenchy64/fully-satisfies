@@ -15,11 +15,13 @@
 ;; defmacro
 ;;;;;;;;;;;;;;;;
 
-(def info (update defn/info :requires
-                  (fnil conj []) 'io.github.frenchy64.fully-satisfies.configurable-core-macros.defmacro))
+(def info 
+  {:dependencies (:dependencies defn/info)
+   :sym `defmacro
+   :ctor `->defmacro})
 
 ;;internal
-(defn defmacro-implementation [name args opts]
+(defn defmacro-implementation [info name args opts]
   (let [prefix (loop [p (list name) args args]
                  (let [f (first args)]
                    (if (string? f)
@@ -52,7 +54,7 @@
                  (recur (next p) (cons (first p) d))
                  d))]
     (list 'do
-          (defn/defn-implementation (first decl) (rest decl) true opts)
+          (defn/defn-implementation info (first decl) (rest decl) true opts)
           (list '. (list 'var name) '(setMacro))
           (list 'var name))))
 
@@ -69,5 +71,5 @@
                       ;:added "1.0"
                       })
          (fn [&form# &env# name# & args#]
-           (defmacro-implementation name# args# '~opts)))
+           (defmacro-implementation info name# args# '~opts)))
        (doto (var ~macro-name) .setMacro))))

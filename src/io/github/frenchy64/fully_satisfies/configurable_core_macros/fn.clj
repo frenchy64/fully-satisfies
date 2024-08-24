@@ -19,7 +19,7 @@
            :ctor `->fn})
 
 (defn- maybe-destructured
-  [params body opts]
+  [info params body opts]
   (if (every? symbol? params)
     (cons params body)
     (loop [params params
@@ -37,7 +37,7 @@
 
 ;; internal
 (defn fn-implementation
-  [&form sigs opts]
+  [info &form sigs opts]
   (let [name (if (symbol? (first sigs)) (first sigs) nil)
         sigs (if name (next sigs) sigs)
         sigs (if (vector? (first sigs))
@@ -82,7 +82,7 @@
                             (concat (map (fn* [c] `(~(u/replacement-for info `assert opts) ~c)) pre) 
                                     body)
                             body)]
-                 (maybe-destructured params body opts)))
+                 (maybe-destructured info params body opts)))
         new-sigs (map psig sigs)]
     (with-meta
       (if name
@@ -103,4 +103,4 @@
      {;:added "1.0", :special-form true,
       :forms '~'[(fn name? [params* ] exprs*) (fn name? ([params* ] exprs*)+)]}
      [& sigs#]
-     (fn-implementation ~'&form sigs# '~opts)))
+     (fn-implementation info ~'&form sigs# '~opts)))

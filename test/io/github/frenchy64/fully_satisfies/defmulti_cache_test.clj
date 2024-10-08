@@ -13,4 +13,5 @@
 (deftest basic-semantics
   (is (= 'bar (foo :bar)))
   (is (= 'baz (foo :baz)))
-  (is (= 'default (foo (gensym)))))
+  (is (= 'default (foo (gensym))))
+  (is (= #{:bar :baz :default} (set (keys (methods foo))))))

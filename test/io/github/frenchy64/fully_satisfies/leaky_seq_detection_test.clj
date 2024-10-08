@@ -703,3 +703,64 @@
                          strong))
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))
+
+(eduction (map-indexed (fn [i _] (prn "i" i)))
+          (range 10))
+
+(defn get-page! [id]
+  (prn "id" id)
+  (when (< id 40)
+    (inc id)))
+
+
+(let [s (seque 2
+               (iteration get-page!
+                          :initk 0))]
+  (prn "before")
+  (Thread/sleep 100)
+  (first s)
+  (Thread/sleep 100)
+  (prn "after")
+  (Thread/sleep 100)
+  (rest s)
+  (Thread/sleep 100)
+  nil)
+
+(let [producer (fn step [i]
+                 (lazy-seq
+                   (prn "producer" i)
+                   (cons i (step (inc i)))))
+      s (seque 10 (producer 0))]
+  (Thread/sleep 100)
+  nil)
+
+(let [prn (fn [& args]
+            (locking prn
+              (apply prn args)))
+      state (atom {:producer -1
+                   :reader -1})
+      producer (fn step [i]
+                 (lazy-seq
+                   (prn "producer" (swap! state update :producer inc))
+                   (when (< i 40)
+                     (cons i (step (inc i))))))
+      reader (fn step [s]
+               (lazy-seq
+                 (when-some [s (seq s)]
+                   (let [f (first s)]
+                     (prn "reader" (swap! state update :reader inc))
+                     (cons f (step (rest s)))))))
+
+      _ (prn "init" @state)
+      _ (prn ">> calling (seque 10) <<<")
+      s (reader (seque 10 (producer 0)))]
+  (Thread/sleep 1000)
+  (prn ">> calling (first s) <<<")
+  (Thread/sleep 1000)
+  (first s)
+  (Thread/sleep 1000)
+  (prn ">> calling (second s) <<<")
+  (Thread/sleep 1000)
+  (second s)
+  (Thread/sleep 1000)
+  nil)

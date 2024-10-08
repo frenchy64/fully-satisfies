@@ -726,34 +726,35 @@
   (Thread/sleep 100)
   nil)
 
+;; https://ask.clojure.org/index.php/14178/seque-forces-n-2-items-ahead-of-consumer-instead-of-n
 (let [producer (fn step [i]
                  (lazy-seq
                    (prn "producer" i)
                    (cons i (step (inc i)))))
-      s (seque 10 (producer 0))]
-  (Thread/sleep 100)
+      s (seque 1 (producer 0))]
+  (Thread/sleep 1000)
   nil)
 
 (let [prn (fn [& args]
             (locking prn
               (apply prn args)))
       state (atom {:producer -1
-                   :reader -1})
+                   :consumer -1})
       producer (fn step [i]
                  (lazy-seq
                    (prn "producer" (swap! state update :producer inc))
                    (when (< i 40)
                      (cons i (step (inc i))))))
-      reader (fn step [s]
-               (lazy-seq
-                 (when-some [s (seq s)]
-                   (let [f (first s)]
-                     (prn "reader" (swap! state update :reader inc))
-                     (cons f (step (rest s)))))))
+      consumer (fn step [s]
+                 (lazy-seq
+                   (when-some [s (seq s)]
+                     (let [f (first s)]
+                       (prn "consumer" (swap! state update :consumer inc))
+                       (cons f (step (rest s)))))))
 
       _ (prn "init" @state)
       _ (prn ">> calling (seque 10) <<<")
-      s (reader (seque 10 (producer 0)))]
+      s (consumer (seque 10 (producer 0)))]
   (Thread/sleep 1000)
   (prn ">> calling (first s) <<<")
   (Thread/sleep 1000)

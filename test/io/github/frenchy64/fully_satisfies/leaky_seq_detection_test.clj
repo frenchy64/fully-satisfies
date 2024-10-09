@@ -672,43 +672,42 @@
     (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           buffer 5
           head-holder (volatile! (seque buffer lseq))]
-      (first @head-holder)
       (testing "with held head"
+        (first @head-holder)
         (is-strong (into #{} (range
                                ;; extra element offered to queue + `& xs`
                                (+ 3 buffer)))
                    strong))
-      (vreset! head-holder nil)
-      ;; leak? seque's agent seems to hold onto the two elements after buffer size in seq
       (testing "with released head"
+        (vreset! head-holder nil)
+        ;; leak? seque's agent seems to hold onto the two elements after buffer size in seq
         (is-strong (into #{} (range (inc buffer) (+ 3 buffer)))
                    strong))))
   (testing "synchronous-seque"
     (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           buffer 5
           head-holder (volatile! (synchronous-seque buffer lseq))]
-      (first @head-holder)
       (testing "with held head"
+        (first @head-holder)
         (is-strong (into #{} (range
                                ;; extra element offered to queue
                                (+ 2 buffer)))
                    strong))
-      (vreset! head-holder nil)
       (testing "with released head"
+        (vreset! head-holder nil)
         (is-strong #{} strong))))
   (testing "lazier/seque"
     (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
           buffer 5
           head-holder (volatile! (lazier/seque buffer lseq))]
-      (first @head-holder)
-      ;; 
       (testing "with held head"
+        (first @head-holder)
         (is-strong (into #{} (range
                                ;; extra element offered to queue
                                (+ 2 buffer)))
                    strong))
-      (vreset! head-holder nil)
       (testing "with released head"
+        (vreset! head-holder nil)
         ;; leak? lazier/seque's agent seems to hold onto the element after buffer size in seq
         (is-strong (into #{} (range (inc buffer) (+ 2 buffer)))
                    strong)))))

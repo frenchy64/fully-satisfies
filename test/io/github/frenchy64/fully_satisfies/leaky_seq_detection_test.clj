@@ -704,27 +704,15 @@
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))
 
-(eduction (map-indexed (fn [i _] (prn "i" i)))
-          (range 10))
-
-(defn get-page! [id]
-  (prn "id" id)
-  (when (< id 40)
-    (inc id)))
-
-
-(let [s (seque 2
-               (iteration get-page!
-                          :initk 0))]
-  (prn "before")
-  (Thread/sleep 100)
-  (first s)
-  (Thread/sleep 100)
-  (prn "after")
-  (Thread/sleep 100)
-  (rest s)
-  (Thread/sleep 100)
-  nil)
+(let [producer (fn [i]
+                 (prn "producer" i)
+                 (inc i))
+      s (seque 1 (iteration producer :initk 0))]
+  (Thread/sleep 1000))
+;"producer" 0
+;"producer" 1
+;"producer" 2
+nil
 
 ;; https://ask.clojure.org/index.php/14178/seque-forces-n-2-items-ahead-of-consumer-instead-of-n
 (let [producer (fn step [i]
@@ -734,6 +722,10 @@
       s (seque 1 (producer 0))]
   (Thread/sleep 1000)
   nil)
+;"producer" 0
+;"producer" 1
+;"producer" 2
+nil
 
 (let [prn (fn [& args]
             (locking prn

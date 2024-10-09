@@ -623,13 +623,16 @@
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}
-  (let [synchronous-seque (fn synchronous-seque [s]
-                            (if-some [s (not-empty s)]
-                              (do (nthnext s buffer-size)
-                                  (lazy-seq
-                                    (cons (first s) (lazy-seq (synchronous-seque (rest s))))))
-                              (lazy-seq)))]
-    (synchronous-seque (lazy-seq s))))
+  (let [force-producer! #(nthnext % buffer-size)
+        buffer (atom (doto (lazy-seq s)
+                       force-producer!)) ;simulate seque's head-holding
+        synchronous-seque (fn synchronous-seque []
+                            (lazy-seq
+                              (let [[s] (swap-vals! buffer #(doto (next %) force-producer!))]
+                                (if (seq s)
+                                  (cons (first s) (synchronous-seque))
+                                  ()))))]
+    (synchronous-seque)))
 
 (deftest synchronous-seque-test
   (is (= [0 1 2 3 4 5] (seque 6 (range 6))))
@@ -641,28 +644,37 @@
                                  0)))]
     ;(release-pending-sends)
     (is (= [0] (doall (take 1 s))))
-    ; should be 7 not 9
+    ; should be 8 not 9, because of premature call to next via `& xs`
+    (Thread/sleep 1000)
     (is (= (repeat 9 0) @a)))
   (testing "synchronous-seque"
-    (let [a (atom [])]
+    (let [a (atom [])
+          buffer-size 6]
       (is (= [0]
              (doall
-               (take 1 (synchronous-seque 6 (repeatedly 40
-                                               (fn []
-                                                 (swap! a conj 0)
-                                                 0)))))))
-      (is (= (repeat 7 0) @a)))))
+               (take 1 (synchronous-seque buffer-size (repeatedly 40
+                                                                  (fn []
+                                                                    (swap! a conj 0)
+                                                                    0)))))))
+      ;; +1 for take1, +1 for extra offered element rejected by queue
+      (is (= (repeat (+ 2 buffer-size) 0) @a)))))
 
 (deftest seque-look-ahead-test
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
       (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-            head-holder (volatile! (doto (seque 5 lseq)
+            buffer 5
+            head-holder (volatile! (doto (seque buffer lseq)
                                      seq))]
         (first @head-holder)
-        (is-strong (into #{} (range 6)) strong)
+        ;; 
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue
+                               (+ 2 buffer)))
+                   strong)
         (vreset! head-holder nil)
         (is-strong #{} strong)))))
 
@@ -687,19 +699,21 @@
 
 (deftest seque-loop-look-ahead-test
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
       (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
             len 20
-            buffer-size 5]
+            buffer-size 5
+            expected-realized-ahead (inc buffer-size)]
         (loop [i 0
                c (seque buffer-size (take len lseq))]
           (when-some [c (seq c)]
             (testing (pr-str i)
               (is-strong (into #{}
                                (range i
-                                      (min len (+ i buffer-size 1))))
+                                      (min len (+ i expected-realized-ahead 1))))
                          strong))
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))

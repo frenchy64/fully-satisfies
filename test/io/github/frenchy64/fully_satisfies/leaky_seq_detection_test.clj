@@ -681,6 +681,7 @@
       (testing "with released head"
         (vreset! head-holder nil)
         ;; leak? seque's agent seems to hold onto the two elements after buffer size in seq
+        ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
         (is-strong (into #{} (range (inc buffer) (+ 3 buffer)))
                    strong))))
   (testing "synchronous-seque"
@@ -709,6 +710,7 @@
       (testing "with released head"
         (vreset! head-holder nil)
         ;; leak? lazier/seque's agent seems to hold onto the element after buffer size in seq
+        ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
         (is-strong (into #{} (range (inc buffer) (+ 2 buffer)))
                    strong)))))
 
@@ -785,10 +787,11 @@
     (testing "forced seq"
       (first @@head-holder)
       (is-strong #{0} strong))
-    (testing "forced seq"
+    (testing "send off next"
       (send-off @head-holder next)
       (is-strong #{1} strong))
     (testing "head released"
       (vreset! head-holder nil)
       ;; leak? send-off seems to hold onto agent after execution
+      ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
       (is-strong #{1} strong))))

@@ -623,12 +623,14 @@
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}
-  (let [force-producer! #(nthnext % buffer-size)
-        buffer (atom (doto (lazy-seq s)
-                       force-producer!)) ;simulate seque's head-holding
+  (let [buffer (atom (lazy-seq s))
+        ;; force n+1 elements to simulate an extra element offered to the queue but rejected
+        fill! #(nthnext @buffer buffer-size)
+         ;simulate seque's head-holding
         synchronous-seque (fn synchronous-seque []
+                            (fill!)
                             (lazy-seq
-                              (let [[s] (swap-vals! buffer #(doto (next %) force-producer!))]
+                              (let [[s] (swap-vals! buffer next)]
                                 (if (seq s)
                                   (cons (first s) (synchronous-seque))
                                   ()))))]
@@ -638,48 +640,82 @@
   (is (= [0 1 2 3 4 5] (seque 6 (range 6))))
   (is (= [0 1 2 3 4 5] (synchronous-seque 6 (range 6))))
   (let [a (atom [])
-        s (seque 6 (repeatedly 40
-                               (fn []
-                                 (swap! a conj 0)
-                                 0)))]
+        buffer-size 6
+        s (seque buffer-size (repeatedly 40
+                                         (fn []
+                                           (swap! a conj 0)
+                                           0)))]
     ;(release-pending-sends)
     (is (= [0] (doall (take 1 s))))
-    ; should be 8 not 9, because of premature call to next via `& xs`
     (Thread/sleep 1000)
-    (is (= (repeat 9 0) @a)))
-  (testing "synchronous-seque"
-    (let [a (atom [])
-          buffer-size 6]
-      (is (= [0]
-             (doall
-               (take 1 (synchronous-seque buffer-size (repeatedly 40
-                                                                  (fn []
-                                                                    (swap! a conj 0)
-                                                                    0)))))))
-      ;; +1 for take1, +1 for extra offered element rejected by queue
-      (is (= (repeat (+ 2 buffer-size) 0) @a)))))
-
-(deftest seque-look-ahead-test
+    ;; +1 for take1, +1 for extra offered element rejected by queue, +1 for `& xs`
+    (is (= (+ 3 buffer-size) (count @a))))
   (doseq [seque [#'synchronous-seque
                  #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
-      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-            buffer 5
-            head-holder (volatile! (doto (seque buffer lseq)
-                                     seq))]
-        (first @head-holder)
-        ;; 
+      (let [a (atom [])
+            buffer-size 6]
+        (is (= [0]
+               (doall
+                 (take 1 (synchronous-seque buffer-size (repeatedly 40
+                                                                    (fn []
+                                                                      (swap! a conj 0)
+                                                                      0)))))))
+        (Thread/sleep 1000)
+        ;; +1 for take1, +1 for extra offered element rejected by queue
+        (is (= (+ 2 buffer-size) (count @a)))))))
+
+(deftest seque-look-ahead-test
+  (testing "seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (seque buffer lseq))]
+      (first @head-holder)
+      (testing "with held head"
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue + `& xs`
+                               (+ 3 buffer)))
+                   strong))
+      (vreset! head-holder nil)
+      ;; leak? seque's agent seems to hold onto the two elements after buffer size in seq
+      (testing "with released head"
+        (is-strong (into #{} (range (inc buffer) (+ 3 buffer)))
+                   strong))))
+  (testing "synchronous-seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (synchronous-seque buffer lseq))]
+      (first @head-holder)
+      (testing "with held head"
         (is-strong (into #{} (range
                                ;; extra element offered to queue
                                (+ 2 buffer)))
-                   strong)
-        (vreset! head-holder nil)
-        (is-strong #{} strong)))))
+                   strong))
+      (vreset! head-holder nil)
+      (testing "with released head"
+        (is-strong #{} strong))))
+  (testing "lazier/seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (lazier/seque buffer lseq))]
+      (first @head-holder)
+      ;; 
+      (testing "with held head"
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue
+                               (+ 2 buffer)))
+                   strong))
+      (vreset! head-holder nil)
+      (testing "with released head"
+        ;; leak? lazier/seque's agent seems to hold onto the element after buffer size in seq
+        (is-strong (into #{} (range (inc buffer) (+ 2 buffer)))
+                   strong)))))
 
 (deftest seque-reduce-look-ahead-test
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
@@ -690,7 +726,7 @@
                   (testing (pr-str i)
                     (is-strong (into #{}
                                    (range i
-                                          (min len (+ i buffer-size 1))))
+                                          (min len (+ i buffer-size 2))))
                              strong))
                   (inc i))
                 0
@@ -717,57 +753,3 @@
                          strong))
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))
-
-(let [producer (fn [i]
-                 (prn "producer" i)
-                 (inc i))
-      s (seque 1 (iteration producer :initk 0))]
-  (Thread/sleep 1000))
-;"producer" 0
-;"producer" 1
-;"producer" 2
-nil
-
-;; https://ask.clojure.org/index.php/14178/seque-forces-n-2-items-ahead-of-consumer-instead-of-n
-(let [producer (fn step [i]
-                 (lazy-seq
-                   (prn "producer" i)
-                   (cons i (step (inc i)))))
-      s (seque 1 (producer 0))]
-  (Thread/sleep 1000)
-  nil)
-;"producer" 0
-;"producer" 1
-;"producer" 2
-nil
-
-(let [prn (fn [& args]
-            (locking prn
-              (apply prn args)))
-      state (atom {:producer -1
-                   :consumer -1})
-      producer (fn step [i]
-                 (lazy-seq
-                   (prn "producer" (swap! state update :producer inc))
-                   (when (< i 40)
-                     (cons i (step (inc i))))))
-      consumer (fn step [s]
-                 (lazy-seq
-                   (when-some [s (seq s)]
-                     (let [f (first s)]
-                       (prn "consumer" (swap! state update :consumer inc))
-                       (cons f (step (rest s)))))))
-
-      _ (prn "init" @state)
-      _ (prn ">> calling (seque 10) <<<")
-      s (consumer (seque 10 (producer 0)))]
-  (Thread/sleep 1000)
-  (prn ">> calling (first s) <<<")
-  (Thread/sleep 1000)
-  (first s)
-  (Thread/sleep 1000)
-  (prn ">> calling (second s) <<<")
-  (Thread/sleep 1000)
-  (second s)
-  (Thread/sleep 1000)
-  nil)

@@ -795,3 +795,47 @@
       ;; leak? send-off seems to hold onto agent after execution
       ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
       (is-strong #{1} strong))))
+
+;; reprod
+(let [strong-ref (volatile! (agent nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (send-off @strong-ref vector)
+  (while (not (vector? @@strong-ref)))
+  (Thread/sleep 1000)
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+(let [strong-ref (volatile! (atom nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (swap! @strong-ref vector)
+  (while (not (vector? @@strong-ref)))
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+#_
+(let [strong-ref (volatile! (agent nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (send-off @strong-ref (fn [_] (throw (Exception.))))
+  (while (not (vector? @@strong-ref)))
+  (Thread/sleep 1000)
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+;; hmm I don't think dynamic bindings need to be propagated to watchers and error handlers.
+;; maybe we can use the same page on binding-conveyor-fn
+(comment
+  (def a (agent nil))
+  (send-off a (fn [_] (throw (Exception.))))
+  (agent-errors a)
+  (do @a)
+
+  (def b (agent nil))
+  (def log (atom []))
+  (add-watch b nil (fn [& args] (swap! log conj args)))
+  (send-off b identity)
+  (do @log)
+
+  )

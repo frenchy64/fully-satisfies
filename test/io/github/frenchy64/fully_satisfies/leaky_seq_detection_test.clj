@@ -752,3 +752,43 @@
                          strong))
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; atom
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest atom-head-holding-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (volatile! (atom lseq))]
+    (testing "empty seq"
+      (is-strong #{} strong))
+    (testing "forced seq"
+      (first @@head-holder)
+      (is-strong #{0} strong))
+    (testing "swap!"
+      (swap! @head-holder next)
+      (is-strong #{1} strong))
+    (testing "head released"
+      (vreset! head-holder nil)
+      (is-strong #{} strong))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; agent
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest agent-head-holding-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (volatile! (agent lseq))]
+    (testing "empty seq"
+      (is-strong #{} strong))
+    (testing "forced seq"
+      (first @@head-holder)
+      (is-strong #{0} strong))
+    (testing "forced seq"
+      (send-off @head-holder next)
+      (is-strong #{1} strong))
+    (testing "head released"
+      (vreset! head-holder nil)
+      ;; leak? send-off seems to hold onto agent after execution
+      (is-strong #{1} strong))))

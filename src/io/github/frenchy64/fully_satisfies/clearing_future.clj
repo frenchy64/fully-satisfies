@@ -14,45 +14,27 @@
 
 (set! *warn-on-reflection* true)
 
-(defn ^:private clearing-future-binding-conveyor-fn
+(defn binding-conveyor-fn
+  {:private true
+   :added "1.3"}
   [f]
   (let [frame (clojure.lang.Var/cloneThreadBindingFrame)]
-    (fn
+    (fn 
       ([]
-       (let [previous-frame (clojure.lang.Var/getThreadBindingFrame)]
          (clojure.lang.Var/resetThreadBindingFrame frame)
-         (try
-           (f)
-           (finally
-             (clojure.lang.Var/resetThreadBindingFrame previous-frame)))))
+         (f))
       ([x]
-       (let [previous-frame (clojure.lang.Var/getThreadBindingFrame)]
          (clojure.lang.Var/resetThreadBindingFrame frame)
-         (try
-           (f x)
-           (finally
-             (clojure.lang.Var/resetThreadBindingFrame previous-frame)))))
+         (f x))
       ([x y]
-       (let [previous-frame (clojure.lang.Var/getThreadBindingFrame)]
          (clojure.lang.Var/resetThreadBindingFrame frame)
-         (try
-           (f x y)
-           (finally
-             (clojure.lang.Var/resetThreadBindingFrame previous-frame)))))
+         (f x y))
       ([x y z]
-       (let [previous-frame (clojure.lang.Var/getThreadBindingFrame)]
          (clojure.lang.Var/resetThreadBindingFrame frame)
-         (try
-           (f x y z)
-           (finally
-             (clojure.lang.Var/resetThreadBindingFrame previous-frame)))))
+         (f x y z))
       ([x y z & args] 
-       (let [previous-frame (clojure.lang.Var/getThreadBindingFrame)]
          (clojure.lang.Var/resetThreadBindingFrame frame)
-         (try
-           (apply f x y z args)
-           (finally
-             (clojure.lang.Var/resetThreadBindingFrame previous-frame))))))))
+         (apply f x y z args)))))
 
 (defn ^:private deref-clearing-future
   ([^java.util.concurrent.Future fut]
@@ -70,8 +52,12 @@
   not yet finished, calls to deref/@ will block, unless the variant
   of deref with timeout is used. See also - realized?."
   [f]
-  (let [f (clearing-future-binding-conveyor-fn f)
-        fut (.submit clojure.lang.Agent/soloExecutor ^Callable f)]
+  (let [f (binding-conveyor-fn f)
+        fut (.submit clojure.lang.Agent/soloExecutor
+                     ^Callable
+                     #(let [o (clojure.lang.Var/getThreadBindingFrame)]
+                        (try (f)
+                             (finally (clojure.lang.Var/resetThreadBindingFrame o)))))]
     (reify 
      clojure.lang.IDeref 
      (deref [_] (deref-clearing-future fut))
@@ -97,5 +83,5 @@
   deref with timeout is used. See also - realized?."
   [& body] `(clearing-future-call (^{:once true} fn* [] ~@body))) 
 
-(defn future-call [& args] (apply clearing-future-call args))
+(defn future-call [f] (clearing-future-call f))
 (defmacro future [& body] `(clearing-future ~@body))

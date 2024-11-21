@@ -623,51 +623,100 @@
 
 (defn synchronous-seque [buffer-size s]
   {:pre [(pos? buffer-size)]}
-  (let [synchronous-seque (fn synchronous-seque [s]
-                            (if-some [s (not-empty s)]
-                              (do (nthnext s buffer-size)
-                                  (lazy-seq
-                                    (cons (first s) (lazy-seq (synchronous-seque (rest s))))))
-                              (lazy-seq)))]
-    (synchronous-seque (lazy-seq s))))
+  (let [buffer (atom (lazy-seq s))
+        ;; force n+1 elements to simulate an extra element offered to the queue but rejected
+        fill! #(nthnext @buffer buffer-size)
+         ;simulate seque's head-holding
+        synchronous-seque (fn synchronous-seque []
+                            (fill!)
+                            (lazy-seq
+                              (let [[s] (swap-vals! buffer next)]
+                                (if (seq s)
+                                  (cons (first s) (synchronous-seque))
+                                  ()))))]
+    (synchronous-seque)))
 
 (deftest synchronous-seque-test
   (is (= [0 1 2 3 4 5] (seque 6 (range 6))))
   (is (= [0 1 2 3 4 5] (synchronous-seque 6 (range 6))))
   (let [a (atom [])
-        s (seque 6 (repeatedly 40
-                               (fn []
-                                 (swap! a conj 0)
-                                 0)))]
+        buffer-size 6
+        s (seque buffer-size (repeatedly 40
+                                         (fn []
+                                           (swap! a conj 0)
+                                           0)))]
     ;(release-pending-sends)
     (is (= [0] (doall (take 1 s))))
-    ; should be 7 not 9
-    (is (= (repeat 9 0) @a)))
-  (testing "synchronous-seque"
-    (let [a (atom [])]
-      (is (= [0]
-             (doall
-               (take 1 (synchronous-seque 6 (repeatedly 40
-                                               (fn []
-                                                 (swap! a conj 0)
-                                                 0)))))))
-      (is (= (repeat 7 0) @a)))))
-
-(deftest seque-look-ahead-test
+    (Thread/sleep 1000)
+    ;; +1 for take1, +1 for extra offered element rejected by queue, +1 for `& xs`
+    (is (= (+ 3 buffer-size) (count @a))))
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
-      (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
-            head-holder (volatile! (doto (seque 5 lseq)
-                                     seq))]
+      (let [a (atom [])
+            buffer-size 6]
+        (is (= [0]
+               (doall
+                 (take 1 (synchronous-seque buffer-size (repeatedly 40
+                                                                    (fn []
+                                                                      (swap! a conj 0)
+                                                                      0)))))))
+        (Thread/sleep 1000)
+        ;; +1 for take1, +1 for extra offered element rejected by queue
+        (is (= (+ 2 buffer-size) (count @a)))))))
+
+(deftest seque-look-ahead-test
+  (testing "seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (seque buffer lseq))]
+      (testing "with held head"
         (first @head-holder)
-        (is-strong (into #{} (range 6)) strong)
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue + `& xs`
+                               (+ 3 buffer)))
+                   strong))
+      (testing "with released head"
         (vreset! head-holder nil)
-        (is-strong #{} strong)))))
+        ;; leak? seque's agent seems to hold onto the two elements after buffer size in seq
+        ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
+        (is-strong (into #{} (range (inc buffer) (+ 3 buffer)))
+                   strong))))
+  (testing "synchronous-seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (synchronous-seque buffer lseq))]
+      (testing "with held head"
+        (first @head-holder)
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue
+                               (+ 2 buffer)))
+                   strong))
+      (testing "with released head"
+        (vreset! head-holder nil)
+        (is-strong #{} strong))))
+  (testing "lazier/seque"
+    (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+          buffer 5
+          head-holder (volatile! (lazier/seque buffer lseq))]
+      (testing "with held head"
+        (first @head-holder)
+        (is-strong (into #{} (range
+                               ;; extra element offered to queue
+                               (+ 2 buffer)))
+                   strong))
+      (testing "with released head"
+        (vreset! head-holder nil)
+        ;; leak? lazier/seque's agent seems to hold onto the element after buffer size in seq
+        ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
+        (is-strong (into #{} (range (inc buffer) (+ 2 buffer)))
+                   strong)))))
 
 (deftest seque-reduce-look-ahead-test
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
@@ -678,7 +727,7 @@
                   (testing (pr-str i)
                     (is-strong (into #{}
                                    (range i
-                                          (min len (+ i buffer-size 1))))
+                                          (min len (+ i buffer-size 2))))
                              strong))
                   (inc i))
                 0
@@ -687,19 +736,106 @@
 
 (deftest seque-loop-look-ahead-test
   (doseq [seque [#'synchronous-seque
+                 #'lazier/seque
                  ;#'seque
                  ]]
     (testing (pr-str seque)
       (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
             len 20
-            buffer-size 5]
+            buffer-size 5
+            expected-realized-ahead (inc buffer-size)]
         (loop [i 0
                c (seque buffer-size (take len lseq))]
           (when-some [c (seq c)]
             (testing (pr-str i)
               (is-strong (into #{}
                                (range i
-                                      (min len (+ i buffer-size 1))))
+                                      (min len (+ i expected-realized-ahead 1))))
                          strong))
             (recur (inc i) (next c))))
         (is-strong #{} strong)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; atom
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest atom-head-holding-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (volatile! (atom lseq))]
+    (testing "empty seq"
+      (is-strong #{} strong))
+    (testing "forced seq"
+      (first @@head-holder)
+      (is-strong #{0} strong))
+    (testing "swap!"
+      (swap! @head-holder next)
+      (is-strong #{1} strong))
+    (testing "head released"
+      (vreset! head-holder nil)
+      (is-strong #{} strong))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; agent
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest agent-head-holding-test
+  (let [{:keys [strong lseq]} (ref-counting-lazy-seq)
+        head-holder (volatile! (agent lseq))]
+    (testing "empty seq"
+      (is-strong #{} strong))
+    (testing "forced seq"
+      (first @@head-holder)
+      (is-strong #{0} strong))
+    (testing "send off next"
+      (send-off @head-holder next)
+      (is-strong #{1} strong))
+    (testing "head released"
+      (vreset! head-holder nil)
+      ;; leak? send-off seems to hold onto agent after execution
+      ;; probable root cause: https://clojure.atlassian.net/browse/CLJ-2619
+      (is-strong #{1} strong))))
+
+;; reprod
+(let [strong-ref (volatile! (agent nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (send-off @strong-ref vector)
+  (while (not (vector? @@strong-ref)))
+  (Thread/sleep 1000)
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+(let [strong-ref (volatile! (atom nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (swap! @strong-ref vector)
+  (while (not (vector? @@strong-ref)))
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+#_
+(let [strong-ref (volatile! (agent nil))
+      weak-ref (java.lang.ref.WeakReference. @strong-ref)]
+  (send-off @strong-ref (fn [_] (throw (Exception.))))
+  (while (not (vector? @@strong-ref)))
+  (Thread/sleep 1000)
+  (vreset! strong-ref nil)
+  (System/gc)
+  (prn 'object-was-gced? (nil? (.get weak-ref))))
+
+;; hmm I don't think dynamic bindings need to be propagated to watchers and error handlers.
+;; maybe we can use the same page on binding-conveyor-fn
+(comment
+  (def a (agent nil))
+  (send-off a (fn [_] (throw (Exception.))))
+  (agent-errors a)
+  (do @a)
+
+  (def b (agent nil))
+  (def log (atom []))
+  (add-watch b nil (fn [& args] (swap! log conj args)))
+  (send-off b identity)
+  (do @log)
+
+  )

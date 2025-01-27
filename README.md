@@ -214,6 +214,10 @@ Wrong number of args (21) passed to: user/eval191/fn--211
 - (defn f [&form]): https://ask.clojure.org/index.php/14057/defn-rejects-arity-with-args-vector-form
 - definterface doesn't resolve class hints properly https://clojure.atlassian.net/browse/CLJ-2269
 - lazy-seq implementing withMeta without realizing itself https://clojureverse.org/t/why-does-with-meta-realize-lazy-sequences/6664
+- potential issues with core.cache's SoftCache https://github.com/clojure/core.cache/blob/c7cd3e8e09bdf3b223b8fdb49c0db9339af8dee6/src/main/clojure/clojure/core/cache.clj#L519
+  - it uses `::sentinel` idiom for representing `nil`, so `:clojure.core.cache/nil` cannot be stored in these caches
+  - it implements IPerisistentCollection even though it's mutable
+  - `(get cache (or item ::nil))` would also look up `::nil` for false values, so false cannot be cached either
 
 ## License
 

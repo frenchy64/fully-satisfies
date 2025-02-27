@@ -62,6 +62,7 @@ jobs:
         uses: DeLaGuardo/setup-clojure@13.1
         with:
           babashka-version: ${{env.BABASHKA_VERSION}}
+          lein: 2.11.2
       - name: Prepare java
         uses: actions/setup-java@v4
         with:
@@ -73,7 +74,7 @@ jobs:
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          git config --global user.email "ambrose@ambrosebs.com"
+          git config --global user.email "actions-ci-bot@github.com"
           git config --global user.name "Ambrose Bonnaire-Sergeant"
           if [[ "$COMMIT_MSG" == "Release :major" ]]; then
             lein release :major

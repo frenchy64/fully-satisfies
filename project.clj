@@ -15,7 +15,7 @@
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
              :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests
-                   :dependencies [[org.clojure/test.check "1.1.0"]
+                   :dependencies [[org.clojure/test.check "1.1.1"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]

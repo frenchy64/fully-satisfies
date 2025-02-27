@@ -218,6 +218,7 @@ Wrong number of args (21) passed to: user/eval191/fn--211
   - it uses `::sentinel` idiom for representing `nil`, so `:clojure.core.cache/nil` cannot be stored in these caches
   - it implements IPerisistentCollection even though it's mutable
   - `(get cache (or item ::nil))` would also look up `::nil` for false values, so false cannot be cached either
+- https://ask.clojure.org/index.php/14433/doseq-and-for-expands-body-twice
 
 ## License
 

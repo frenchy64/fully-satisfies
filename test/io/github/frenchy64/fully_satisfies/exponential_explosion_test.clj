@@ -10,14 +10,37 @@
   `(do ~x ~x))
 
 (deftest double-expand-test
-  (binding [sut/*state* (atom {})
-            *ns* (the-ns this-ns)]
-    ;;original form: (exponential (duplicated foo))
-    (let [foo 'foo]
-      (sut/lint-macro-call #'exponential [(list 'duplicated foo)])
-      (sut/lint-macro-call #'duplicated [foo])
-      (sut/lint-macro-call #'duplicated [foo]))
-    (let [{:keys [history seen suspects] :as res} @sut/*state*]
-      (is suspects (pr-str res))
-      res))
+  (testing "pointer identity is used to compare args"
+    (binding [sut/*state* (atom {})
+              *ns* (the-ns this-ns)]
+      ;;original form: (exponential (duplicated foo))
+      (let [->foo #(symbol "foo")]
+        (sut/lint-macro-call #'exponential [(list 'duplicated (->foo))])
+        (sut/lint-macro-call #'duplicated [(->foo)])
+        (sut/lint-macro-call #'duplicated [(->foo)]))
+      (let [{:keys [history seen suspects] :as res} @sut/*state*]
+        (is (not suspects) (pr-str res))
+        res)))
+  (testing "report if duplicate found after expanding parent"
+    (binding [sut/*state* (atom {})
+              *ns* (the-ns this-ns)]
+      ;;original form: (exponential (duplicated foo))
+      (let [foo 'foo]
+        (sut/lint-macro-call #'exponential [(list 'duplicated foo)])
+        (sut/lint-macro-call #'duplicated [foo])
+        (sut/lint-macro-call #'duplicated [foo]))
+      (let [{:keys [history seen suspects] :as res} @sut/*state*]
+        (is suspects (pr-str res))
+        res)))
+  (testing "ignore if duplicate found *before* expanding parent"
+    (binding [sut/*state* (atom {})
+              *ns* (the-ns this-ns)]
+      ;;original form: (exponential (duplicated foo))
+      (let [foo 'foo]
+        (sut/lint-macro-call #'duplicated [foo])
+        (sut/lint-macro-call #'exponential [(list 'duplicated foo)])
+        (sut/lint-macro-call #'duplicated [foo]))
+      (let [{:keys [history seen suspects] :as res} @sut/*state*]
+        (is (not suspects) (pr-str res))
+        res)))
   )

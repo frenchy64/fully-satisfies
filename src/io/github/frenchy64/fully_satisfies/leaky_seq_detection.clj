@@ -3,7 +3,7 @@
 
   The java.lang.ref.Cleaner class (JDK9+) provides hooks into garbage
   collection. You can register a function that is called when a value
-  becomes phantom reachable, indicating is it a candidate for garbage
+  becomes phantom reachable, indicating it is a candidate for garbage
   collection.
   
   The JVM is very likely to perform garbage collection

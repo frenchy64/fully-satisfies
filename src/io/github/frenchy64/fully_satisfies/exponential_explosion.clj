@@ -1,6 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies.exponential-explosion
+  (:refer-clojure :exclude [doseq])
   (:require [clojure.spec.alpha :as s]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]))
 
 ;;FIXME this idea won't work because s/macroexpand-check doesn't take the full
 ;; form, it takes the macro Var and a list of arguments. might need to index by
@@ -36,6 +38,8 @@
                    true
                    (reduced false)))
                true (range (count args)))))
+
+(defn id->form [[v args]] (cons (-> v symbol name symbol) args))
 
 (defn lint-macro-call [v args]
   (let [args (vec args)
@@ -81,6 +85,14 @@
 
                      trace (update :suspects (fnil conj [])
                                    {:id id :trace trace}))))))))
+
+(defn report-issues [state]
+  (doseq [{:keys [id trace] :as suspect} (:suspects state)
+          :let [form (id->form id)]]
+    (println "Potentially exponential expansion detected: " (pr-str form) "\n"
+             trace
+
+             )))
 
 (defn monkey-patch-macroexpand-check! []
   (alter-var-root #'s/macroexpand-check

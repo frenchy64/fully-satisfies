@@ -1,5 +1,6 @@
 (ns io.github.frenchy64.fully-satisfies.exponential-explosion-test
   (:require [clojure.test :refer [deftest is testing]]
+            [clojure.string :as str]
             [io.github.frenchy64.fully-satisfies.exponential-explosion :as sut]))
 
 (def this-ns (ns-name *ns*))
@@ -31,6 +32,10 @@
         (sut/lint-macro-call #'duplicated [foo]))
       (let [{:keys [history seen suspects] :as res} @sut/*state*]
         (is suspects (pr-str res))
+        (is (= ["Potentially exponential expansion detected:  (duplicated foo) "
+                " [[#'io.github.frenchy64.fully-satisfies.exponential-explosion-test/exponential [(duplicated foo)]] [#'io.github.frenchy64.fully-satisfies.exponential-explosion-test/duplicated [foo]]]"
+                ::TODO]
+               (str/split-lines (with-out-str (sut/report-issues res)))))
         res)))
   (testing "ignore if duplicate found *before* expanding parent"
     (binding [sut/*state* (atom {})

@@ -5,10 +5,26 @@
 
 (def this-ns (ns-name *ns*))
 
-(defmacro duplicated [x] x)
+(defmacro duplicated [x]
+  (prn 'duplicated
+       {:file *file*
+        :line (.deref clojure.lang.Compiler/LINE)
+        :column (.deref clojure.lang.Compiler/COLUMN)})
+  x)
 
 (defmacro exponential [x]
+  (prn 'exponential
+       {:file *file*
+        :line (.deref clojure.lang.Compiler/LINE)
+        :column (.deref clojure.lang.Compiler/COLUMN)})
   `(do ~x ~x))
+
+(comment
+  (duplicated 1)
+  (exponential (duplicated 1))
+  (exponential (do (-> 1 duplicated)
+                   (-> 1 duplicated)))
+  )
 
 (deftest double-expand-test
   (testing "pointer identity is used to compare args"

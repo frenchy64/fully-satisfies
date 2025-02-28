@@ -39,22 +39,26 @@
                    (reduced false)))
                true (range (count args)))))
 
-(defn id->form [[v args]] (cons (-> v symbol name symbol) args))
+(defn id->form [{:keys [msym args]}] (cons (-> msym name symbol) args))
 
 (defn lint-macro-call [v args]
   (let [args (vec args)
-        id [v args]
+        info {:file *file*
+              :line (.deref clojure.lang.Compiler/LINE)
+              :column (.deref clojure.lang.Compiler/COLUMN)}
+        msym (symbol v)
+        id {:msym msym :args args :info info}
         nargs (count args)]
-    (swap! *state* 
+    (swap! *state*
            (fn [{:keys [history] :as m}]
-             (let [seen? (some #(identical-vec-contents? args (nth % 1)) (get-in m [:seen id]))
+             (let [seen? (some #(identical-vec-contents? args (:args %)) (get-in m [:seen id]))
                    trace (when seen?
                            ;; go back and find the parent macro for this form.
-                           (let [vname (-> v symbol name)
+                           (let [vname (name msym)
                                  likely-macro-call? #(and (symbol? %)
                                                           (= vname (name %)))]
                              (when-let [parent-idx (some (fn [i]
-                                                           (let [[pvar pargs :as candidate-parent] (nth history i)
+                                                           (let [{pargs :args :as candidate-parent} (nth history i)
                                                                  candidates (volatile! [])
                                                                  _ (run! (fn [form]
                                                                            ;; maybe prewalk and skip quoted things?
@@ -73,8 +77,10 @@
                                                          (range (dec (count history)) -1 -1))]
                                ;; TODO only warn if this form has been duplicated between now and the parent
                                (let [trace (subvec history parent-idx)]
-                                 (when (some (fn [[v' args']]
-                                               (and (= v v') (identical-vec-contents? args args')))
+                                 (when (some (fn [{msym' :msym args' :args info' :info}]
+                                               (and (= msym msym')
+                                                    (= info info')
+                                                    (identical-vec-contents? args args')))
                                              trace)
                                    trace)))))]
                (-> m
@@ -90,9 +96,7 @@
   (doseq [{:keys [id trace] :as suspect} (:suspects state)
           :let [form (id->form id)]]
     (println "Potentially exponential expansion detected: " (pr-str form) "\n"
-             trace
-
-             )))
+             trace)))
 
 (defn monkey-patch-macroexpand-check! []
   (alter-var-root #'s/macroexpand-check

@@ -1,6 +1,10 @@
 (ns io.github.frenchy64.fully-satisfies.exponential-explosion
   (:require [clojure.spec.alpha :as s]))
 
+;;FIXME this idea won't work because s/macroexpand-check doesn't take the full
+;; form, it takes the macro Var and a list of arguments. might need to index by
+;; the qualified or unqualified macro symbol.
+
 ;; idea: cache every sublist in a macroexpand-1 argument's call by using s/macroexpand-check
 ;; in a soft and/or ttl cache. if this list shows up twice by pointer identity as a target
 ;; of a macroexpand-1 call, then it has probably been duplicated by a macro.
@@ -18,12 +22,14 @@
 ;; vv expand else
 ;; (go a)   ;; increment cache '(go a) -- error! found twice.
 
-;(defonce )
+(defn lint-macro-call [v args]
+  )
 
 (defn monkey-patch-macroexpand-check! []
   (alter-var-root #'s/macroexpand-check
                   (fn [macroexpand-check]
                     (fn [v args]
+                      (lint-macro-call v args)
                       (macroexpand-check v args)))))
 
 (defonce __monkey-patch__

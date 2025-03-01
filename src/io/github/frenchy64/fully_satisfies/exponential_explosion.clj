@@ -6,8 +6,7 @@
             [clojure.pprint :as pp]
             [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]))
 
-;;TODO print the maximum number of expansions of a duplicated form
-;;TODO only could reexpansions of forms that originate form the current file
+;;TODO only consider reexpansions of forms that originate form the current file
 
 (defmacro ^:private dbg [f] `(let [v# ~f] (prn '~f :=> v#) v#))
 
@@ -24,6 +23,11 @@
                true (range (count args)))))
 
 (defn id->form [{:keys [msym args]}] (cons (-> msym name symbol) args))
+
+(defn same-id? [id id']
+  (and (= (:msym id) (:msym id'))
+       (= (:info id) (:info id'))
+       (identical-vec-contents? (:args id) (:args id'))))
 
 (defn lint-macro-call [v args]
   ;(prn [v args])
@@ -65,11 +69,7 @@
                                                            #_(range (dec (count history)) -1 -1))]
                                  ;; TODO only warn if this form has been duplicated between now and the parent
                                  (let [trace (subvec history parent-idx)]
-                                   (when (some (fn [{msym' :msym args' :args info' :info}]
-                                                 (and (= msym msym')
-                                                      (= info info')
-                                                      (identical-vec-contents? args args')))
-                                               trace)
+                                   (when (some #(same-id? % id) trace)
                                      trace)))))]
                  (-> m
                      (update :history (fnil conj []) id)
@@ -77,11 +77,10 @@
                        (not seen?)
                        (update-in [:seen id] (fnil conj []) id)
 
-                       trace (update :suspects (fnil conj [])
-                                     {:id id :trace trace})))))))))
+                       trace (assoc-in [:suspects id] {:trace trace})))))))))
 
 (defn report-issues [state]
-  (doseq [{:keys [id trace] :as suspect} (:suspects state)
+  (doseq [[id {:keys [trace]}] (:suspects state)
           :let [{:keys [file line column]} (:info id)
                 form (id->form id)
                 parent-form (id->form (first trace))

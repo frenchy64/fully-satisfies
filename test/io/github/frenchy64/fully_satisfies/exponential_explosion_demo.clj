@@ -45,10 +45,10 @@
   (exponential (doseq [_ nil] (let [] (duplicated 1))))
   (let [] (exponential (duplicated 1)))
   (exponential (do (-> 1 duplicated)
-                   (-> 1 duplicated)))
+                   (-> 2 duplicated exponential)))
   (exponential
     (exponential
       (exponential
         (do (-> 1 duplicated)
-            (-> 1 duplicated)))))
+            (-> 2 duplicated)))))
   )

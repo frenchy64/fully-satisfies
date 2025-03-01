@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [doseq])
   (:require [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
+            [clojure.pprint :as pp]
             [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]))
 
 ;;FIXME this idea won't work because s/macroexpand-check doesn't take the full
@@ -27,7 +28,9 @@
 
 (defmacro ^:private dbg [f] `(let [v# ~f] (prn '~f :=> v#) v#))
 
-(def ^:dynamic *state* (atom {}))
+(def ^:dynamic *state* nil)
+
+(def ignored-macros #{})
 
 (defn identical-vec-contents? [args args']
   {:pre [(vector? args)
@@ -42,55 +45,58 @@
 (defn id->form [{:keys [msym args]}] (cons (-> msym name symbol) args))
 
 (defn lint-macro-call [v args]
-  (let [args (vec args)
-        info {:file *file*
-              :line (.deref clojure.lang.Compiler/LINE)
-              :column (.deref clojure.lang.Compiler/COLUMN)}
-        msym (symbol v)
-        id {:msym msym :args args :info info}
-        nargs (count args)]
-    (swap! *state*
-           (fn [{:keys [history] :as m}]
-             (let [seen? (some #(identical-vec-contents? args (:args %)) (get-in m [:seen id]))
-                   trace (when seen?
-                           ;; go back and find the parent macro for this form.
-                           (let [vname (name msym)
-                                 likely-macro-call? #(and (symbol? %)
-                                                          (= vname (name %)))]
-                             (when-let [parent-idx (some (fn [i]
-                                                           (let [{pargs :args :as candidate-parent} (nth history i)
-                                                                 candidates (volatile! [])
-                                                                 _ (run! (fn [form]
-                                                                           ;; maybe prewalk and skip quoted things?
-                                                                           (walk/postwalk (fn [v]
-                                                                                            (when (and (seq? v)
-                                                                                                       (likely-macro-call? (first v))
-                                                                                                       (= nargs (bounded-count (+ 2 nargs) (next v)))
-                                                                                                       (identical-vec-contents? args (vec (next v))))
-                                                                                              (vswap! candidates conj v))
-                                                                                            v)
-                                                                                          form)
-                                                                           nil)
-                                                                         pargs)]
-                                                             (when (seq @candidates)
-                                                               i)))
-                                                         (range (dec (count history)) -1 -1))]
-                               ;; TODO only warn if this form has been duplicated between now and the parent
-                               (let [trace (subvec history parent-idx)]
-                                 (when (some (fn [{msym' :msym args' :args info' :info}]
-                                               (and (= msym msym')
-                                                    (= info info')
-                                                    (identical-vec-contents? args args')))
-                                             trace)
-                                   trace)))))]
-               (-> m
-                   (update :history (fnil conj []) id)
-                   (cond->
-                     (not seen?)
-                     (update-in [:seen id] (fnil conj []) id)
+  (when-not (ignored-macros (symbol v))
+    (when-some [state *state*]
+      (let [;; TODO coerce to edn (remove vars)
+            args (vec args)
+            info {:file *file*
+                  :line (.deref clojure.lang.Compiler/LINE)
+                  :column (.deref clojure.lang.Compiler/COLUMN)}
+            msym (symbol v)
+            id {:msym msym :args args :info info}
+            nargs (count args)]
+        (swap! state
+               (fn [{:keys [history] :as m}]
+                 (let [seen? (some #(identical-vec-contents? args (:args %)) (get-in m [:seen id]))
+                       trace (when seen?
+                               ;; go back and find the parent macro for this form.
+                               (let [vname (name msym)
+                                     likely-macro-call? #(and (symbol? %)
+                                                              (= vname (name %)))]
+                                 (when-let [parent-idx (some (fn [i]
+                                                               (let [{pargs :args :as candidate-parent} (nth history i)
+                                                                     candidates (volatile! [])
+                                                                     _ (run! (fn [form]
+                                                                               ;; maybe prewalk and skip quoted things?
+                                                                               (walk/postwalk (fn [v]
+                                                                                                (when (and (seq? v)
+                                                                                                           (likely-macro-call? (first v))
+                                                                                                           (= nargs (bounded-count (+ 2 nargs) (next v)))
+                                                                                                           (identical-vec-contents? args (vec (next v))))
+                                                                                                  (vswap! candidates conj v))
+                                                                                                v)
+                                                                                              form)
+                                                                               nil)
+                                                                             pargs)]
+                                                                 (when (seq @candidates)
+                                                                   i)))
+                                                             (range (dec (count history)) -1 -1))]
+                                   ;; TODO only warn if this form has been duplicated between now and the parent
+                                   (let [trace (subvec history parent-idx)]
+                                     (when (some (fn [{msym' :msym args' :args info' :info}]
+                                                   (and (= msym msym')
+                                                        (= info info')
+                                                        (identical-vec-contents? args args')))
+                                                 trace)
+                                       trace)))))]
+                   (-> m
+                       (update :history (fnil conj []) id)
+                       (cond->
+                         (not seen?)
+                         (update-in [:seen id] (fnil conj []) id)
 
-                     trace (update :suspects (fnil conj [])
-                                   {:id id :trace trace}))))))))
+                         trace (update :suspects (fnil conj [])
+                                       {:id id :trace trace}))))))))))
 
 (defn report-issues [state]
   (doseq [{:keys [id trace] :as suspect} (:suspects state)
@@ -98,12 +104,50 @@
     (println "Potentially exponential expansion detected: " (pr-str form) "\n"
              trace)))
 
+(defn patched-macroexpand-check [macroexpand-check v args]
+  (lint-macro-call v args)
+  (macroexpand-check v args))
+
 (defn monkey-patch-macroexpand-check! []
   (alter-var-root #'s/macroexpand-check
                   (fn [macroexpand-check]
                     (fn [v args]
-                      (lint-macro-call v args)
-                      (macroexpand-check v args)))))
+                      (patched-macroexpand-check macroexpand-check v args)))))
+
+(defn patched-load [load args]
+  (doseq [arg args]
+    ;(prn "patched-load" arg)
+    (binding [*state* (atom {})]
+      (load arg)
+      ;(pp/pprint @*state*)
+      (report-issues @*state*))))
+
+(defn monkey-patch-load! []
+  (alter-var-root #'load
+                  (fn [load]
+                    (fn [& args]
+                      (patched-load load args)))))
+
+(defn patched-eval [eval form]
+  (binding [*state* (atom {})]
+    (let [res (eval form)] 
+      (report-issues @*state*)
+      res)))
+
+(defn monkey-patch-eval! []
+  (alter-var-root #'eval
+                  (fn [eval]
+                    (fn [form]
+                      (patched-eval eval form)))))
+
+(comment
+  (require (ns-name *ns*) :reload)
+  (defonce __monkey-patch__
+    (do (monkey-patch-load!)
+        (monkey-patch-eval!)
+        (monkey-patch-macroexpand-check!)
+        ))
+  )
 
 #_
 (defonce __monkey-patch__

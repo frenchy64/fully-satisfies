@@ -5,7 +5,22 @@
 
 (def this-ns (ns-name *ns*))
 
+(comment
+  (require this-ns :reload))
+
+(defmacro rebind-info [m & body]
+  `(with-bindings
+     (into {} (map (fn [[k# v#]]
+                     {(case k#
+                        :file #'*file
+                        :line #'clojure.lang.Compiler/LINE
+                        :column #'clojure.lang.Compiler/COLUMN)
+                      v#}))
+           ~m)
+     (do ~@body)))
+
 (defmacro duplicated [x]
+  #_
   (prn 'duplicated
        {:file *file*
         :line (.deref clojure.lang.Compiler/LINE)
@@ -13,13 +28,15 @@
   x)
 
 (defmacro exponential [x]
+  #_
   (prn 'exponential
        {:file *file*
         :line (.deref clojure.lang.Compiler/LINE)
         :column (.deref clojure.lang.Compiler/COLUMN)})
   `(do ~x ~x))
 
-(comment
+(#_comment
+ do
   (duplicated 1)
   (exponential (duplicated 1))
   (exponential (do (-> 1 duplicated)

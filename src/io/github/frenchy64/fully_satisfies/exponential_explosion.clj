@@ -1,6 +1,7 @@
 (ns io.github.frenchy64.fully-satisfies.exponential-explosion
   (:refer-clojure :exclude [doseq])
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [clojure.walk :as walk]
             [clojure.pprint :as pp]
             [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]))
@@ -100,9 +101,12 @@
 
 (defn report-issues [state]
   (doseq [{:keys [id trace] :as suspect} (:suspects state)
-          :let [form (id->form id)]]
-    (println "Potentially exponential expansion detected: " (pr-str form) "\n"
-             trace)))
+          :let [form (id->form id)
+                parent-form (id->form (first trace))
+                nduplicates (inc (get (frequencies trace) id))]]
+    (println "Expanding" (pr-str parent-form) "resulted in expanding" (pr-str form)
+             nduplicates "times"; "\n"
+             #_(str/join " " (interpose :=> (mapv id->form trace))))))
 
 (defn patched-macroexpand-check [macroexpand-check v args]
   (lint-macro-call v args)

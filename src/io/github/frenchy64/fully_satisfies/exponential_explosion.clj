@@ -6,26 +6,8 @@
             [clojure.pprint :as pp]
             [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]))
 
-;;FIXME this idea won't work because s/macroexpand-check doesn't take the full
-;; form, it takes the macro Var and a list of arguments. might need to index by
-;; the qualified or unqualified macro symbol.
-
-;; idea: cache every sublist in a macroexpand-1 argument's call by using s/macroexpand-check
-;; in a soft and/or ttl cache. if this list shows up twice by pointer identity as a target
-;; of a macroexpand-1 call, then it has probably been duplicated by a macro.
-;; will not work for special forms or non-macro calls due to Compiler.java hardcoding
-;; the conditions of calling s/macroexpand-check. probably still useful since exponential
-;; code blowup is most critical when you duplicate macro calls.
-
-;; keep a history of expansions that contain the same list so an expansion trace can be provided.
-
-;; (doseq [a nil] (go a)) ;; cache form '(go a) by pointer identity
-;; vv expand
-;; (if (chunked? s) (go a) (go a)) ;; nothing we can do, special form
-;; vv expand then
-;; (go a)   ;; increment cache '(go a)
-;; vv expand else
-;; (go a)   ;; increment cache '(go a) -- error! found twice.
+;;TODO print the maximum number of expansions of a duplicated form
+;;TODO only could reexpansions of forms that originate form the current file
 
 (defmacro ^:private dbg [f] `(let [v# ~f] (prn '~f :=> v#) v#))
 

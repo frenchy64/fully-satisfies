@@ -89,9 +89,7 @@
                 form (id->form id)
                 parent-form (id->form (first trace))
                 nduplicates (inc (get (frequencies trace) id))]]
-    (println (str (peek (str/split file #"/")) ":" line ":" column) "Form" (pr-str form) "expanded" 
-             nduplicates "times"; "\n"
-             #_(str/join " " (interpose :=> (mapv id->form trace))))))
+    (println (str (peek (str/split file #"/")) ":" line ":" column ":") "Expanded" nduplicates "times:" (pr-str form))))
 
 (defn patched-macroexpand-check [macroexpand-check v args]
   (lint-macro-call v args)

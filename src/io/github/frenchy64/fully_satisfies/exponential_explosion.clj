@@ -79,7 +79,8 @@
                                                                            pargs)]
                                                                (when (seq @candidates)
                                                                  i)))
-                                                           (range (dec (count history)) -1 -1))]
+                                                           (range (count history))
+                                                           #_(range (dec (count history)) -1 -1))]
                                  ;; TODO only warn if this form has been duplicated between now and the parent
                                  (let [trace (subvec history parent-idx)]
                                    (when (some (fn [{msym' :msym args' :args info' :info}]
@@ -99,10 +100,11 @@
 
 (defn report-issues [state]
   (doseq [{:keys [id trace] :as suspect} (:suspects state)
-          :let [form (id->form id)
+          :let [{:keys [file line column]} (:info id)
+                form (id->form id)
                 parent-form (id->form (first trace))
                 nduplicates (inc (get (frequencies trace) id))]]
-    (println "Expanding" (pr-str parent-form) "resulted in expanding" (pr-str form)
+    (println (str (peek (str/split file #"/")) ":" line ":" column) "Form" (pr-str form) "expanded" 
              nduplicates "times"; "\n"
              #_(str/join " " (interpose :=> (mapv id->form trace))))))
 
@@ -134,6 +136,7 @@
   (binding [*state* (atom {})]
     (let [res (eval form)] 
       (report-issues @*state*)
+      ;(pp/pprint @*state*)
       res)))
 
 (defn monkey-patch-eval! []

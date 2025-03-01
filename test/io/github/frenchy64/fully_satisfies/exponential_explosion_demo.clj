@@ -39,8 +39,15 @@
   (exponential (let [] (duplicated 1)))
   (exponential (exponential (duplicated 1)))
   (doseq [_ nil] (exponential (let [] (duplicated 1))))
+  (doseq [_ nil] (duplicated 1))
+  (io.github.frenchy64.fully-satisfies.linear-expansion/doseq [_ nil] (duplicated 1))
   (exponential (doseq [_ nil] (let [] (duplicated 1))))
   (let [] (exponential (duplicated 1)))
   (exponential (do (-> 1 duplicated)
                    (-> 1 duplicated)))
+  (exponential
+    (exponential
+      (exponential
+        (do (-> 1 duplicated)
+            (-> 1 duplicated)))))
   )

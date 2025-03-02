@@ -92,6 +92,7 @@
     (println (str (peek (str/split file #"/")) ":" line ":" column ":") "Expanded" nduplicates "times:" (pr-str form))))
 
 (defn patched-macroexpand-check [macroexpand-check v args]
+  ;(prn v args)
   (lint-macro-call v args)
   (macroexpand-check v args))
 
@@ -128,14 +129,17 @@
                     (fn [form]
                       (patched-eval eval form)))))
 
+(defn monkey-patch! []
+  (monkey-patch-load!)
+  (monkey-patch-eval!)
+  (monkey-patch-macroexpand-check!))
+
 (comment
   (require (ns-name *ns*) :reload)
   (defonce __monkey-patch__
-    (do (monkey-patch-load!)
-        (monkey-patch-eval!)
-        (monkey-patch-macroexpand-check!)
-        ))
+    (monkey-patch!))
   )
+
 
 #_
 (defonce __monkey-patch__

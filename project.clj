@@ -15,6 +15,7 @@
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
              :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests
+                   :injections [((requiring-resolve 'io.github.frenchy64.fully-satisfies.exponential-explosion/monkey-patch!))]
                    :dependencies [[org.clojure/test.check "1.1.1"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript

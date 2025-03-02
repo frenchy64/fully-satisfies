@@ -1,6 +1,8 @@
 (ns io.github.frenchy64.fully-satisfies.fully-satisfies-test
+  (:refer-clojure :exclude [doseq])
   (:require [clojure.test :refer [is]]
             [io.github.frenchy64.fully-satisfies.uncaught-testing-contexts :refer [testing deftest]]
+            [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq]]
             [io.github.frenchy64.fully-satisfies :refer [fully-satisfies?] :as fs]))
 
 (defn te* [top-levels body]

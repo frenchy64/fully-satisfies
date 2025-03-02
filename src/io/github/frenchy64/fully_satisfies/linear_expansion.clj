@@ -7,7 +7,12 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns io.github.frenchy64.fully-satisfies.linear-expansion
-  "Macros whose expansions grow linearly rather than exponentially."
+  "Macros whose expansions grow linearly rather than exponentially.
+
+  ;; Usage
+  (:refer-clojure :exclude [doseq for])
+  (:require [io.github.frenchy64.fully-satisfies.linear-expansion :refer [doseq for]]
+  "
   (:refer-clojure :exclude [doseq for])
   (:require [io.github.frenchy64.fully-satisfies.configurable-core-macros.assert-args :refer [assert-args]]))
 

@@ -89,7 +89,7 @@
                 form (id->form id)
                 parent-form (id->form (first trace))
                 nduplicates (inc (get (frequencies trace) id))]]
-    (println (str (peek (str/split file #"/")) ":" line ":" column ":") "Expanded" nduplicates "times:" (pr-str form))))
+    (println (str file #_(peek (str/split file #"/")) ":" line ":" column ":") "Expanded" nduplicates "times:" (pr-str form))))
 
 (defn patched-macroexpand-check [macroexpand-check v args]
   ;(prn v args)

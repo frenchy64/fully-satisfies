@@ -17,7 +17,7 @@
              :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests
                    :injections [((requiring-resolve 'io.github.frenchy64.fully-satisfies.exponential-explosion/monkey-patch!))]
                    :dependencies [[org.clojure/test.check "1.1.1"]
-                                  [com.gfredericks/test.chuck "0.2.12"
+                                  [com.gfredericks/test.chuck "0.2.14"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]
                                   [org.clojure/core.async "1.3.618"]

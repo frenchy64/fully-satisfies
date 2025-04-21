@@ -176,3 +176,7 @@
             fixed (fixed/for [i c1 :when b1 j c2 :let [foo (if b2 c1 c2)] k c3]
                     [i j k foo])]
         (is (= core fixed))))))
+
+(deftest for-expansion-test
+  (is (= (fixed/for [x (range 3) y (range 3) :let [z (+ x y)] :when (odd? z)] [x y z])
+         ::FIXME)))

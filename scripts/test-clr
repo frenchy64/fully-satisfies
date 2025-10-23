@@ -1,0 +1,20 @@
+#!/bin/bash
+# Run tests for fully-satisfies under ClojureCLR
+#
+# This script uses the cljr CLI tool with deps-clr.edn to run the test suite.
+#
+# Prerequisites:
+# - cljr (ClojureCLR CLI tool) must be installed as a dotnet tool
+# - .NET 8.0 or later must be installed
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+echo "Running fully-satisfies tests under ClojureCLR..."
+
+# Run tests using cljr with deps-clr.edn and cognitect test-runner
+cd "$PROJECT_ROOT"
+cljr -Sdeps deps-clr.edn -M:test "$@"

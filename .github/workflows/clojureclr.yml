@@ -1,0 +1,43 @@
+name: Test ClojureCLR
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'copilot/add-test-workflow-for-clojure-clr'
+
+jobs:
+  test-clojureclr:
+    runs-on: ubuntu-latest
+    # only test main if in frenchy64/fully-satisfies repo
+    if: ${{ !(github.ref == 'refs/heads/main'
+              && github.repository != 'frenchy64/fully-satisfies'
+              && github.event_name == 'push')
+         }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Install ClojureCLR and cljr
+        run: |
+          # Install ClojureCLR as a dotnet tool
+          dotnet tool install --global Clojure.Main --version 1.12.3-alpha3
+          # Install cljr CLI tool
+          dotnet tool install --global Clojure.Cljr --version 0.1.0-alpha8
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+      
+      - name: Verify ClojureCLR and cljr installation
+        run: |
+          which Clojure.Main || echo "Clojure.Main not in PATH"
+          which cljr || echo "cljr not in PATH"
+          ls -la ~/.dotnet/tools/
+      
+      - name: Run fully-satisfies test suite with ClojureCLR
+        run: |
+          echo "Running fully-satisfies test suite with ClojureCLR..."
+          ./scripts/test-clr

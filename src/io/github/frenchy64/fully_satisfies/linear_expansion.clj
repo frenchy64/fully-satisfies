@@ -97,6 +97,7 @@
                                   & [[_ next-expr] :as next-groups]]]
                     (let [giter (gensym "iter__")
                           gxs (gensym "s__")
+                          outer-loop (boolean next-groups)
                           do-mod (fn do-mod [[[k v :as pair] & etc]]
                                    (cond
                                      (= k :let) `(let ~v ~(do-mod etc))
@@ -105,7 +106,7 @@
                                                     ~(do-mod etc)
                                                     (recur (rest ~gxs)))
                                      (keyword? k) (err "Invalid 'for' keyword " k)
-                                     next-groups
+                                     outer-loop
                                       `(let [iterys# ~(emit-bind next-groups)
                                              fs# (seq (iterys# ~next-expr))]
                                          (if fs#
@@ -113,14 +114,12 @@
                                            (recur (rest ~gxs))))
                                      :else `(cons ~body-expr
                                                   (~giter (rest ~gxs)))))]
-                      (if next-groups
-                        #_"not the inner-most loop"
+                      (if outer-loop
                         `(fn ~giter [~gxs]
                            (lazy-seq
                              (loop [~gxs ~gxs]
                                (when-first [~bind ~gxs]
                                  ~(do-mod mod-pairs)))))
-                        #_"inner-most loop"
                         (let [gi (gensym "i__")
                               gb (gensym "b__")
                               do-cmod (fn do-cmod [[[k v :as pair] & etc]]

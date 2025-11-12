@@ -80,15 +80,12 @@
    binding-forms.  Supported modifiers are: :let [binding-form expr ...],
    :while test, :when test.
 
-  Unlike clojure.core/for, expansion grows linearly with the number
-  of nestings of this macro, rather than exponentially.
-
   (take 100 (for [x (range 100000000) y (range 1000000) :while (< y x)] [x y]))"
   {:added "1.0"}
   [seq-exprs body-expr]
   (assert-args
-    (vector? seq-exprs) "a vector for its binding"
-    (even? (count seq-exprs)) "an even number of forms in binding vector")
+     (vector? seq-exprs) "a vector for its binding"
+     (even? (count seq-exprs)) "an even number of forms in binding vector")
   (let [to-groups (fn [seq-exprs]
                     (reduce (fn [groups [k v]]
                               (if (keyword? k)
@@ -100,54 +97,63 @@
                                   & [[_ next-expr] :as next-groups]]]
                     (let [giter (gensym "iter__")
                           gxs (gensym "s__")
-                          gfirst (gensym "first__")
-                          gf (gensym "f__")
-                          gi (gensym "i__")
-                          gb (gensym "b__")
-                          inner-most-loop? (nil? next-groups)
-                          do-mod (fn do-mod [chunked? [[k v :as pair] & etc]]
-                                   {:pre [(or (not chunked?) inner-most-loop?)]}
-                                   (let [wrap (fn [b] (if inner-most-loop? `(let [~bind (~gf ~gfirst)] ~b) b))]
-                                     (cond
-                                       (= k :let) (wrap `(let ~v ~(do-mod chunked? etc)))
-                                       (= k :while) (wrap `(when ~v ~(do-mod chunked? etc)))
-                                       (= k :when) (wrap `(if ~v
-                                                            ~(do-mod chunked? etc)
-                                                            (recur ~(if chunked?
-                                                                      `(unchecked-inc ~gi)
-                                                                      `(rest ~gxs)))))
-                                       (keyword? k) (err "Invalid 'for' keyword " k)
-                                       (not inner-most-loop?) `(let [iterys# ~(emit-bind next-groups)]
-                                                                 (if-let [fs# (seq (iterys# ~next-expr))]
-                                                                   (concat fs# (~giter (rest ~gxs)))
-                                                                   (recur (rest ~gxs))))
-                                       :else (if chunked?
-                                               `(do (chunk-append ~gb (~gf ~gfirst))
-                                                    (recur (unchecked-inc ~gi)))
-                                               `(cons (~gf ~gfirst)
-                                                      (~giter (rest ~gxs)))))))]
-                      `(fn ~giter [~gxs]
-                         (lazy-seq
-                           (loop [~gxs ~gxs]
-                             ~(if-not inner-most-loop?
-                                `(when-first [~bind ~gxs]
-                                   ~(do-mod false mod-pairs))
-                                `(when-let [~gxs (seq ~gxs)]
-                                   (let [~gf (fn [~bind] ~body-expr)]
-                                     (if (chunked-seq? ~gxs)
-                                       (let [c# (chunk-first ~gxs)
-                                             size# (int (count c#))
-                                             ~gb (chunk-buffer size#)]
-                                         (if (loop [~gi (int 0)]
-                                               (if (< ~gi size#)
-                                                 (let [~gfirst (.nth c# ~gi)]
-                                                   ~(do-mod true mod-pairs))
-                                                 true))
-                                           (chunk-cons
-                                             (chunk ~gb)
-                                             (~giter (chunk-rest ~gxs)))
-                                           (chunk-cons (chunk ~gb) nil)))
-                                       (let [~gfirst (first ~gxs)]
-                                         ~(do-mod false mod-pairs)))))))))))]
+                          do-mod (fn do-mod [[[k v :as pair] & etc]]
+                                   (cond
+                                     (= k :let) `(let ~v ~(do-mod etc))
+                                     (= k :while) `(when ~v ~(do-mod etc))
+                                     (= k :when) `(if ~v
+                                                    ~(do-mod etc)
+                                                    (recur (rest ~gxs)))
+                                     (keyword? k) (err "Invalid 'for' keyword " k)
+                                     next-groups
+                                      `(let [iterys# ~(emit-bind next-groups)
+                                             fs# (seq (iterys# ~next-expr))]
+                                         (if fs#
+                                           (concat fs# (~giter (rest ~gxs)))
+                                           (recur (rest ~gxs))))
+                                     :else `(cons ~body-expr
+                                                  (~giter (rest ~gxs)))))]
+                      (if next-groups
+                        #_"not the inner-most loop"
+                        `(fn ~giter [~gxs]
+                           (lazy-seq
+                             (loop [~gxs ~gxs]
+                               (when-first [~bind ~gxs]
+                                 ~(do-mod mod-pairs)))))
+                        #_"inner-most loop"
+                        (let [gi (gensym "i__")
+                              gb (gensym "b__")
+                              do-cmod (fn do-cmod [[[k v :as pair] & etc]]
+                                        (cond
+                                          (= k :let) `(let ~v ~(do-cmod etc))
+                                          (= k :while) `(when ~v ~(do-cmod etc))
+                                          (= k :when) `(if ~v
+                                                         ~(do-cmod etc)
+                                                         (recur
+                                                           (unchecked-inc ~gi)))
+                                          (keyword? k)
+                                            (err "Invalid 'for' keyword " k)
+                                          :else
+                                            `(do (chunk-append ~gb ~body-expr)
+                                                 (recur (unchecked-inc ~gi)))))]
+                          `(fn ~giter [~gxs]
+                             (lazy-seq
+                               (loop [~gxs ~gxs]
+                                 (when-let [~gxs (seq ~gxs)]
+                                   (if (chunked-seq? ~gxs)
+                                     (let [c# (chunk-first ~gxs)
+                                           size# (int (count c#))
+                                           ~gb (chunk-buffer size#)]
+                                       (if (loop [~gi (int 0)]
+                                             (if (< ~gi size#)
+                                               (let [~bind (.nth c# ~gi)]
+                                                 ~(do-cmod mod-pairs))
+                                               true))
+                                         (chunk-cons
+                                           (chunk ~gb)
+                                           (~giter (chunk-rest ~gxs)))
+                                         (chunk-cons (chunk ~gb) nil)))
+                                     (let [~bind (first ~gxs)]
+                                       ~(do-mod mod-pairs)))))))))))]
     `(let [iter# ~(emit-bind (to-groups seq-exprs))]
-       (iter# ~(second seq-exprs)))))
+        (iter# ~(second seq-exprs)))))

@@ -107,38 +107,35 @@
                                                     (recur (rest ~gxs)))
                                      (keyword? k) (err "Invalid 'for' keyword " k)
                                      outer-loop
-                                      `(let [iterys# ~(emit-bind next-groups)
-                                             fs# (seq (iterys# ~next-expr))]
-                                         (if fs#
-                                           (concat fs# (~giter (rest ~gxs)))
-                                           (recur (rest ~gxs))))
+                                     `(let [iterys# ~(emit-bind next-groups)
+                                            fs# (seq (iterys# ~next-expr))]
+                                        (if fs#
+                                          (concat fs# (~giter (rest ~gxs)))
+                                          (recur (rest ~gxs))))
                                      :else `(cons ~body-expr
-                                                  (~giter (rest ~gxs)))))]
-                      (if outer-loop
-                        `(fn ~giter [~gxs]
-                           (lazy-seq
-                             (loop [~gxs ~gxs]
-                               (when-first [~bind ~gxs]
-                                 ~(do-mod mod-pairs)))))
-                        (let [gi (gensym "i__")
-                              gb (gensym "b__")
-                              do-cmod (fn do-cmod [[[k v :as pair] & etc]]
-                                        (cond
-                                          (= k :let) `(let ~v ~(do-cmod etc))
-                                          (= k :while) `(when ~v ~(do-cmod etc))
-                                          (= k :when) `(if ~v
-                                                         ~(do-cmod etc)
-                                                         (recur
-                                                           (unchecked-inc ~gi)))
-                                          (keyword? k)
-                                            (err "Invalid 'for' keyword " k)
-                                          :else
-                                            `(do (chunk-append ~gb ~body-expr)
-                                                 (recur (unchecked-inc ~gi)))))]
-                          `(fn ~giter [~gxs]
-                             (lazy-seq
-                               (loop [~gxs ~gxs]
-                                 (when-let [~gxs (seq ~gxs)]
+                                                  (~giter (rest ~gxs)))))
+                          gi (gensym "i__")
+                          gb (gensym "b__")
+                          do-cmod (fn do-cmod [[[k v :as pair] & etc]]
+                                    (cond
+                                      (= k :let) `(let ~v ~(do-cmod etc))
+                                      (= k :while) `(when ~v ~(do-cmod etc))
+                                      (= k :when) `(if ~v
+                                                     ~(do-cmod etc)
+                                                     (recur
+                                                       (unchecked-inc ~gi)))
+                                      (keyword? k)
+                                      (err "Invalid 'for' keyword " k)
+                                      :else
+                                      `(do (chunk-append ~gb ~body-expr)
+                                           (recur (unchecked-inc ~gi)))))]
+                      `(fn ~giter [~gxs]
+                         (lazy-seq
+                           (loop [~gxs ~gxs]
+                             ~(if outer-loop
+                                `(when-first [~bind ~gxs]
+                                   ~(do-mod mod-pairs))
+                                `(when-let [~gxs (seq ~gxs)]
                                    (if (chunked-seq? ~gxs)
                                      (let [c# (chunk-first ~gxs)
                                            size# (int (count c#))
@@ -153,6 +150,6 @@
                                            (~giter (chunk-rest ~gxs)))
                                          (chunk-cons (chunk ~gb) nil)))
                                      (let [~bind (first ~gxs)]
-                                       ~(do-mod mod-pairs)))))))))))]
+                                       ~(do-mod mod-pairs))))))))))]
     `(let [iter# ~(emit-bind (to-groups seq-exprs))]
         (iter# ~(second seq-exprs)))))

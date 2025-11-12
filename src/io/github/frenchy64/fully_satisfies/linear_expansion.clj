@@ -97,6 +97,8 @@
                                   & [[_ next-expr] :as next-groups]]]
                     (let [giter (gensym "iter__")
                           gxs (gensym "s__")
+                          gi (gensym "i__")
+                          gb (gensym "b__")
                           outer-loop (boolean next-groups)
                           do-mod (fn do-mod [[[k v :as pair] & etc]]
                                    (cond
@@ -114,8 +116,6 @@
                                           (recur (rest ~gxs))))
                                      :else `(cons ~body-expr
                                                   (~giter (rest ~gxs)))))
-                          gi (gensym "i__")
-                          gb (gensym "b__")
                           do-cmod (fn do-cmod [[[k v :as pair] & etc]]
                                     (cond
                                       (= k :let) `(let ~v ~(do-cmod etc))
@@ -126,6 +126,7 @@
                                                        (unchecked-inc ~gi)))
                                       (keyword? k)
                                       (err "Invalid 'for' keyword " k)
+                                      outer-loop (throw (Exception. "do-cmod for inner loop only"))
                                       :else
                                       `(do (chunk-append ~gb ~body-expr)
                                            (recur (unchecked-inc ~gi)))))]

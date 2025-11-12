@@ -99,6 +99,7 @@
                           gxs (gensym "s__")
                           gi (gensym "i__")
                           gb (gensym "b__")
+                          gchunked? (gensym "c__")
                           outer-loop (boolean next-groups)
                           do-mod (fn do-mod [[[k v :as pair] & etc]]
                                    (cond
@@ -137,20 +138,21 @@
                                 `(when-first [~bind ~gxs]
                                    ~(do-mod mod-pairs))
                                 `(when-let [~gxs (seq ~gxs)]
-                                   (if (chunked-seq? ~gxs)
-                                     (let [c# (chunk-first ~gxs)
-                                           size# (int (count c#))
-                                           ~gb (chunk-buffer size#)]
-                                       (if (loop [~gi (int 0)]
-                                             (if (< ~gi size#)
-                                               (let [~bind (.nth c# ~gi)]
-                                                 ~(do-cmod mod-pairs))
-                                               true))
-                                         (chunk-cons
-                                           (chunk ~gb)
-                                           (~giter (chunk-rest ~gxs)))
-                                         (chunk-cons (chunk ~gb) nil)))
-                                     (let [~bind (first ~gxs)]
-                                       ~(do-mod mod-pairs))))))))))]
+                                   (let [~gchunked? (chunked-seq? ~gxs)]
+                                     (let [^clojure.lang.IChunk c# (when ~gchunked? (chunk-first ~gxs))
+                                           size# (when ~gchunked? (int (count c#)))
+                                           ~gb (when ~gchunked? (chunk-buffer size#))]
+                                       (if ~gchunked?
+                                         (if (loop [~gi (int 0)]
+                                               (if (< ~gi size#)
+                                                 (let [~bind (.nth c# ~gi)]
+                                                   ~(do-cmod mod-pairs))
+                                                 true))
+                                           (chunk-cons
+                                             (chunk ~gb)
+                                             (~giter (chunk-rest ~gxs)))
+                                           (chunk-cons (chunk ~gb) nil))
+                                         (let [~bind (first ~gxs)]
+                                           ~(do-mod mod-pairs))))))))))))]
     `(let [iter# ~(emit-bind (to-groups seq-exprs))]
         (iter# ~(second seq-exprs)))))

@@ -122,18 +122,21 @@
                                      :else `(cons ~body-expr
                                                   (~giter (rest ~gxs)))))
                           do-cmod (fn do-cmod [[[k v :as pair] & etc]]
+                                    (assert (not outer-loop))
                                     (cond
                                       (= k :let) `(let ~v ~(do-cmod etc))
                                       (= k :while) `(if ~v
                                                       ~(do-cmod etc)
-                                                      (recur
-                                                        ~gxs
-                                                        ~gchunk-size ; (not (< ~gi ~gchunk-size)) to break loop
-                                                        ~gchunk-size
-                                                        ~gchunk
-                                                        false ;; drop results
-                                                        ~gb
-                                                        ~gchunked?))
+                                                      (when ~gchunked?
+                                                        ; (not (< ~gi ~gchunk-size)) to break loop
+                                                        (recur
+                                                          ~gxs
+                                                          ~gchunk-size
+                                                          ~gchunk-size
+                                                          ~gchunk
+                                                          false ;; drop results
+                                                          ~gb
+                                                          ~gchunked?)))
                                       (= k :when) `(if ~v
                                                      ~(do-cmod etc)
                                                      (if ~gchunked?
@@ -153,22 +156,19 @@
                                                          ~gchunk-iter?
                                                          ~gb
                                                          ~gchunked?)))
-                                      (keyword? k)
-                                      (err "Invalid 'for' keyword " k)
-                                      outer-loop (throw (Exception. "do-cmod for inner loop only"))
-                                      :else
-                                      `(let [~gbody ~body-expr]
-                                         (if ~gchunked?
-                                           (do (chunk-append ~gb ~gbody)
-                                               (recur ~gxs
-                                                      (unchecked-inc ~gi)
-                                                      ~gchunk-size
-                                                      ~gchunk
-                                                      ~gchunk-iter?
-                                                      ~gb
-                                                      ~gchunked?))
-                                           (cons ~gbody
-                                                 (~giter (rest ~gxs)))))))]
+                                      (keyword? k) (err "Invalid 'for' keyword " k)
+                                      :else `(let [~gbody ~body-expr]
+                                               (if ~gchunked?
+                                                 (do (chunk-append ~gb ~gbody)
+                                                     (recur ~gxs
+                                                            (unchecked-inc ~gi)
+                                                            ~gchunk-size
+                                                            ~gchunk
+                                                            ~gchunk-iter?
+                                                            ~gb
+                                                            ~gchunked?))
+                                                 (cons ~gbody
+                                                       (~giter (rest ~gxs)))))))]
                       `(fn ~giter [~gxs]
                          (lazy-seq
                            ~(if outer-loop
@@ -185,14 +185,14 @@
                                       ~gchunked? false]
                                  (if (< ~gi ~gchunk-size)
                                    (when-let [~gxs (cond-> ~gxs ~gchunked? seq)]
-                                     (let [~gchunked? (if ~gchunked? true (chunked-seq? ~gxs))
-                                           ~gchunk (when ~gchunked? (chunk-first ~gxs))
+                                     (let [~gchunked? (or ~gchunked? (chunked-seq? ~gxs))
+                                           ~gchunk (when ~gchunked? (or ~gchunk (chunk-first ~gxs)))
                                            ~gchunk-size (if ~gchunked?
                                                           (if (neg? ~gchunk-size)
                                                             (int (count ~gchunk))
                                                             ~gchunk-size)
                                                           (int 0))
-                                           ~gb (when ~gchunked? (chunk-buffer ~gchunk-size))
+                                           ~gb (when ~gchunked? (or ~gb (chunk-buffer ~gchunk-size)))
                                            ~bind (if ~gchunked?
                                                    (.nth ~gchunk ~gi)
                                                    (first ~gxs))]

@@ -222,10 +222,17 @@
 (iter__29499__auto__ nil))
 
 ;; expands twice
-(loop [a 1]
-  (printing-macro)
-  (when false
-    (recur nil)))
+#(loop [a 1]
+   (printing-macro)
+   (recur nil))
+; (out) "expanded"
+; (out) "expanded"
+
+;; expands once
+#(loop [a 1]
+   (printing-macro)
+   (recur 1))
+; (out) "expanded"
   )
 
 (deftest for-single-variable-test

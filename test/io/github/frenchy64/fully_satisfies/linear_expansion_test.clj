@@ -3,6 +3,9 @@
             [clojure.core :as c]
             [io.github.frenchy64.fully-satisfies.linear-expansion :as fixed]))
 
+;; important: Auto-boxing warnings mean the Clojure compiler analyzes the body of a loop twice.
+;; e.g., counting-macro is expanded twice here: (loop [a 1] (counting-macro) (recur nil))
+;; must fix such warnings for reliable is-count-expansions calls.
 (set! *warn-on-reflection* true)
 
 (def ^:dynamic *counter* nil)

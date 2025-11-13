@@ -3,6 +3,11 @@
             [clojure.core :as c]
             [io.github.frenchy64.fully-satisfies.linear-expansion :as fixed]))
 
+;; important: Auto-boxing warnings mean the Clojure compiler analyzes the body of a loop twice.
+;; e.g., counting-macro is expanded twice here: (loop [a 1] (counting-macro) (recur nil))
+;; must fix such warnings for reliable is-count-expansions calls.
+(set! *warn-on-reflection* true)
+
 (def ^:dynamic *counter* nil)
 (defmacro counting-macro [] (swap! *counter* inc))
 
@@ -124,7 +129,7 @@
   (is-count-expansions 6 `(c/for [_# (counting-macro) _# (counting-macro) _# (counting-macro) _# (counting-macro)] (counting-macro))))
 
 (deftest for-single-variable-test
-  (is (macroexpand-1 `(c/for [~'v ~'e] ~'body))))
+  (is (macroexpand-1 `(fixed/for [~'v ~'e] ~'body))))
 
 (deftest fixed-for-duplicates-no-expansion-test
   (is (thrown? Exception (eval `(fixed/for [] (counting-macro)))))
@@ -176,3 +181,7 @@
             fixed (fixed/for [i c1 :when b1 j c2 :let [foo (if b2 c1 c2)] k c3]
                     [i j k foo])]
         (is (= core fixed))))))
+
+(deftest for-expansion-test
+  (is (= (fixed/for [x (range 3) y (range 3) :let [z (+ x y)] :when (odd? z)] [x y z])
+         '([0 1 1] [1 0 1] [1 2 3] [2 1 3]))))

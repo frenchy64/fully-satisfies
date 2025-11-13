@@ -184,7 +184,7 @@
                                       ~gb nil
                                       ~gchunked? false]
                                  (if (< ~gi ~gchunk-size)
-                                   (when-let [~gxs (cond-> ~gxs ~gchunked? seq)]
+                                   (when-let [~gxs (if ~gchunked? ~gxs (seq ~gxs))]
                                      (let [~gchunked? (or ~gchunked? (chunked-seq? ~gxs))
                                            ~gchunk (when ~gchunked? (or ~gchunk (chunk-first ~gxs)))
                                            ~gchunk-size (if ~gchunked?

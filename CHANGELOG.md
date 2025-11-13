@@ -1,6 +1,8 @@
 # NEXT - TBD
 - clojure.core as a macro
 - simpler approach for `clearing-future` to synchronize with latest proposed patch
+- Add `io.github.frenchy64.fully-satisfies.linear-expansion` for macro whose expansions grow linearly rather than exponentially
+  - contains versions of `clojure.core/{for,doseq}`
 
 # 1.12.0 - May 31st 2024
 - [safe local-clearing variants of delay and lazy-seq](https://frenchy64.github.io/fully-satisfies/latest/io.github.frenchy64.fully-satisfies.safe-locals-clearing.html)

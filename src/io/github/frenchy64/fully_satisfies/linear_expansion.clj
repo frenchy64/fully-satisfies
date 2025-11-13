@@ -80,12 +80,15 @@
    binding-forms.  Supported modifiers are: :let [binding-form expr ...],
    :while test, :when test.
 
+  Unlike clojure.core/for, expansion grows linearly with the number
+  of nestings of this macro, rather than exponentially.
+
   (take 100 (for [x (range 100000000) y (range 1000000) :while (< y x)] [x y]))"
   {:added "1.0"}
   [seq-exprs body-expr]
   (assert-args
-     (vector? seq-exprs) "a vector for its binding"
-     (even? (count seq-exprs)) "an even number of forms in binding vector")
+    (vector? seq-exprs) "a vector for its binding"
+    (even? (count seq-exprs)) "an even number of forms in binding vector")
   (let [to-groups (fn [seq-exprs]
                     (reduce (fn [groups [k v]]
                               (if (keyword? k)
@@ -196,8 +199,6 @@
                                      (chunk-cons
                                        (chunk ~gb)
                                        (~giter (chunk-rest ~gxs)))
-                                     (chunk-cons (chunk ~gb) nil)))))))))
-res `(let [iter# ~(emit-bind (to-groups seq-exprs))]
-     (iter# ~(second seq-exprs)))]
-res
-  ))
+                                     (chunk-cons (chunk ~gb) nil)))))))))]
+    `(let [iter# ~(emit-bind (to-groups seq-exprs))]
+       (iter# ~(second seq-exprs)))))

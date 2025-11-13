@@ -176,23 +176,23 @@
                                  (when-first [~bind ~gxs]
                                    ~(do-mod mod-pairs)))
                               `(loop [~gxs ~gxs
-                                      ;; initially (< ~gi ~gchunk-size 0)
-                                      ~gi (int -2)
-                                      ~gchunk-size (int -1)
+                                      ~gi (int 0)
+                                      ~gchunk-size (int 1) ;; before newly-chunked, ensure (< ~gi ~gchunk-size)
                                       ~gchunk nil
                                       ~gchunk-iter? true
                                       ~gb nil
                                       ~gchunked? false]
                                  (if (< ~gi ~gchunk-size)
                                    (when-let [~gxs (if ~gchunked? ~gxs (seq ~gxs))]
-                                     (let [~gchunked? (or ~gchunked? (chunked-seq? ~gxs))
-                                           ~gchunk (when ~gchunked? (or ~gchunk (chunk-first ~gxs)))
-                                           ~gchunk-size (if ~gchunked?
-                                                          (if (neg? ~gchunk-size)
-                                                            (int (count ~gchunk))
-                                                            ~gchunk-size)
-                                                          (int 0))
-                                           ~gb (when ~gchunked? (or ~gb (chunk-buffer ~gchunk-size)))
+                                     (let [chunked# (chunked-seq? ~gxs)
+                                           newly-chunked?# (if ~gchunked? false chunked#)
+                                           ~gchunked? (or ~gchunked? chunked#)
+                                           ~gi (if newly-chunked?# (int 0) ~gi)
+                                           ~gchunk (if newly-chunked?# (chunk-first ~gxs) ~gchunk)
+                                           ~gchunk-size (if newly-chunked?#
+                                                          (int (count ~gchunk))
+                                                          ~gchunk-size)
+                                           ~gb (if newly-chunked?# (chunk-buffer ~gchunk-size) ~gb)
                                            ~bind (if ~gchunked?
                                                    (.nth ~gchunk ~gi)
                                                    (first ~gxs))]
@@ -202,7 +202,5 @@
                                        (chunk ~gb)
                                        (~giter (chunk-rest ~gxs)))
                                      (chunk-cons (chunk ~gb) nil)))))))))]
-    (->
-      `(let [iter# ~(emit-bind (to-groups seq-exprs))]
-        (iter# ~(second seq-exprs)))
-      (doto ((requiring-resolve 'clojure.pprint/pprint))))))
+  `(let [iter# ~(emit-bind (to-groups seq-exprs))]
+     (iter# ~(second seq-exprs)))))

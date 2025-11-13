@@ -186,16 +186,12 @@
                                    (when-let [~gxs (if ~gchunked? ~gxs (seq ~gxs))]
                                      (let [chunked# (chunked-seq? ~gxs)
                                            newly-chunked?# (if ~gchunked? false chunked#)
-                                           ~gchunked? (or ~gchunked? chunked#)
                                            ~gi (if newly-chunked?# (int 0) ~gi)
                                            ~gchunk (if newly-chunked?# (chunk-first ~gxs) ~gchunk)
-                                           ~gchunk-size (if newly-chunked?#
-                                                          (int (count ~gchunk))
-                                                          ~gchunk-size)
+                                           ~gchunk-size (if newly-chunked?# (int (count ~gchunk)) ~gchunk-size)
                                            ~gb (if newly-chunked?# (chunk-buffer ~gchunk-size) ~gb)
-                                           ~bind (if ~gchunked?
-                                                   (.nth ~gchunk ~gi)
-                                                   (first ~gxs))]
+                                           ~gchunked? (or ~gchunked? chunked#)
+                                           ~bind (if ~gchunked? (.nth ~gchunk ~gi) (first ~gxs))]
                                        ~(do-cmod mod-pairs)))
                                    (if ~gchunk-iter?
                                      (chunk-cons

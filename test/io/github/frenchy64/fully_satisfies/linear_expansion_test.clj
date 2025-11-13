@@ -3,6 +3,8 @@
             [clojure.core :as c]
             [io.github.frenchy64.fully-satisfies.linear-expansion :as fixed]))
 
+(set! *warn-on-reflection* true)
+
 (def ^:dynamic *counter* nil)
 (defmacro counting-macro [] (swap! *counter* inc))
 
@@ -122,118 +124,6 @@
   (is-count-expansions 16 `(c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (counting-macro))))))
   (is-count-expansions 64 `(c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (c/for [_# nil] (counting-macro))))))))
   (is-count-expansions 6 `(c/for [_# (counting-macro) _# (counting-macro) _# (counting-macro) _# (counting-macro)] (counting-macro))))
-
-(comment
-  (defmacro printing-macro []
-    #_
-    (try (throw (Exception.))
-         (catch Exception e (prn e)))
-    (prn "expanded")
-    :printing-macro)
-  (fixed/for [_# nil] (printing-macro))
-  (do  (printing-macro))
-
-(clojure.core/let
-[iter__29499__auto__
- (clojure.core/fn
-  iter__29550
-  [to-process__29551]
-  (clojure.core/lazy-seq
-   (clojure.core/loop
-    [to-process__29551
-     to-process__29551
-     chunk-index__29552
-     (clojure.core/int 0)
-     csize__29556
-     (clojure.core/int 1)
-     chunk__29555
-     nil
-     citer__29557
-     true
-     chunk-buffer__29553
-     nil
-     c?__29554
-     false]
-    (if
-     (clojure.core/< chunk-index__29552 csize__29556)
-     (clojure.core/when-let
-      [to-process__29551
-       (if
-        c?__29554
-        to-process__29551
-        (clojure.core/seq to-process__29551))]
-      (clojure.core/let
-       [chunked__29497__auto__
-        (clojure.core/chunked-seq? to-process__29551)
-        newly-chunked?__29498__auto__
-        (if c?__29554 false chunked__29497__auto__)
-        chunk-index__29552
-        (if
-         newly-chunked?__29498__auto__
-         (clojure.core/int 0)
-         chunk-index__29552)
-        chunk__29555
-        (if
-         newly-chunked?__29498__auto__
-         (clojure.core/chunk-first to-process__29551)
-         chunk__29555)
-        csize__29556
-        (if
-         newly-chunked?__29498__auto__
-         (clojure.core/int (clojure.core/count chunk__29555))
-         csize__29556)
-        chunk-buffer__29553
-        (if
-         newly-chunked?__29498__auto__
-         (clojure.core/chunk-buffer csize__29556)
-         chunk-buffer__29553)
-        c?__29554
-        (clojure.core/or c?__29554 chunked__29497__auto__)
-        _#
-        (if
-         c?__29554
-         (.nth chunk__29555 chunk-index__29552)
-         (clojure.core/first to-process__29551))]
-       (clojure.core/let
-        [body__29549 (printing-macro)]
-        (if
-         c?__29554
-         (do
-          (clojure.core/chunk-append chunk-buffer__29553 body__29549)
-          (recur
-           to-process__29551
-           (clojure.core/unchecked-inc chunk-index__29552)
-           csize__29556
-           chunk__29555
-           citer__29557
-           chunk-buffer__29553
-           c?__29554))
-         (clojure.core/cons
-          body__29549
-          (iter__29550 (clojure.core/rest to-process__29551)))))))
-     (if
-      citer__29557
-      (clojure.core/chunk-cons
-       (clojure.core/chunk chunk-buffer__29553)
-       (iter__29550 (clojure.core/chunk-rest to-process__29551)))
-      (clojure.core/chunk-cons
-       (clojure.core/chunk chunk-buffer__29553)
-       nil))))))]
-(iter__29499__auto__ nil))
-
-;; expands twice
-#(loop [a 1]
-   (printing-macro)
-   (recur nil))
-; (out) "expanded"
-; (out) "expanded"
-
-;; expands once
-#(loop [a 1]
-   (printing-macro)
-   (recur 1))
-; (out) "expanded"
-  )
 
 (deftest for-single-variable-test
   (is (macroexpand-1 `(fixed/for [~'v ~'e] ~'body))))

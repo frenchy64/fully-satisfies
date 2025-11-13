@@ -185,9 +185,9 @@
                                    (when-let [~gxs (if ~gchunked? ~gxs (seq ~gxs))]
                                      (let [chunked# (chunked-seq? ~gxs)
                                            newly-chunked?# (if ~gchunked? false chunked#)
-                                           ~gi (if newly-chunked?# (int 0) ~gi)
+                                           ~gi (int (if newly-chunked?# 0 ~gi))
                                            ~gchunk (if newly-chunked?# (chunk-first ~gxs) ~gchunk)
-                                           ~gchunk-size (if newly-chunked?# (int (count ~gchunk)) ~gchunk-size)
+                                           ~gchunk-size (int (if newly-chunked?# (count ~gchunk) ~gchunk-size))
                                            ~gb (if newly-chunked?# (chunk-buffer ~gchunk-size) ~gb)
                                            ~gchunked? (or ~gchunked? chunked#)
                                            ~bind (if ~gchunked? (.nth ~gchunk ~gi) (first ~gxs))]
@@ -199,7 +199,5 @@
                                      (chunk-cons (chunk ~gb) nil)))))))))
 res `(let [iter# ~(emit-bind (to-groups seq-exprs))]
      (iter# ~(second seq-exprs)))]
-(prn "after for expansion")
-(doto res
-    ((requiring-resolve 'clojure.pprint/pprint)))
+res
   ))

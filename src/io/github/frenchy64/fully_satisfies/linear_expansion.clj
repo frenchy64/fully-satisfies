@@ -108,75 +108,73 @@
                           gchunk-size (gensym "csize__")
                           gchunk-iter? (gensym "citer__")
                           outer-loop (boolean next-groups)
-                          do-mod (fn do-mod [[[k v :as pair] & etc]]
-                                   (cond
-                                     (= k :let) `(let ~v ~(do-mod etc))
-                                     (= k :while) `(when ~v ~(do-mod etc))
-                                     (= k :when) `(if ~v
-                                                    ~(do-mod etc)
-                                                    (recur (rest ~gxs)))
-                                     (keyword? k) (err "Invalid 'for' keyword " k)
-                                     outer-loop
-                                     `(let [iterys# ~(emit-bind next-groups)
-                                            fs# (seq (iterys# ~next-expr))]
-                                        (if fs#
-                                          (concat fs# (~giter (rest ~gxs)))
-                                          (recur (rest ~gxs))))
-                                     :else (throw (Exception. "do-mod with inner loop"))))
-                          do-cmod (fn do-cmod [[[k v :as pair] & etc]]
-                                    (assert (not outer-loop))
-                                    (cond
-                                      (= k :let) `(let ~v ~(do-cmod etc))
-                                      (= k :while) `(if ~v
-                                                      ~(do-cmod etc)
-                                                      (when ~gchunked?
-                                                        ; (not (< ~gi ~gchunk-size)) to break loop
+                          do-outer (fn do-outer [[[k v :as pair] & etc]]
+                                     (cond
+                                       (= k :let) `(let ~v ~(do-outer etc))
+                                       (= k :while) `(when ~v ~(do-outer etc))
+                                       (= k :when) `(if ~v
+                                                      ~(do-outer etc)
+                                                      (recur (rest ~gxs)))
+                                       (keyword? k) (err "Invalid 'for' keyword " k)
+                                       :else
+                                       `(let [iterys# ~(emit-bind next-groups)
+                                              fs# (seq (iterys# ~next-expr))]
+                                          (if fs#
+                                            (concat fs# (~giter (rest ~gxs)))
+                                            (recur (rest ~gxs))))))
+                          do-inner (fn do-inner [[[k v :as pair] & etc]]
+                                     (cond
+                                       (= k :let) `(let ~v ~(do-inner etc))
+                                       (= k :while) `(if ~v
+                                                       ~(do-inner etc)
+                                                       (when ~gchunked?
+                                                         ; (not (< ~gi ~gchunk-size)) to break loop
+                                                         (recur
+                                                           ~gxs
+                                                           ~gchunk-size
+                                                           ~gchunk-size
+                                                           ~gchunk
+                                                           false ;; drop results
+                                                           ~gb
+                                                           ~gchunked?)))
+                                       (= k :when) `(if ~v
+                                                      ~(do-inner etc)
+                                                      (if ~gchunked?
                                                         (recur
                                                           ~gxs
-                                                          ~gchunk-size
+                                                          (unchecked-inc ~gi)
                                                           ~gchunk-size
                                                           ~gchunk
-                                                          false ;; drop results
+                                                          ~gchunk-iter?
+                                                          ~gb
+                                                          ~gchunked?)
+                                                        (recur
+                                                          (rest ~gxs)
+                                                          ~gi
+                                                          ~gchunk-size
+                                                          ~gchunk
+                                                          ~gchunk-iter?
                                                           ~gb
                                                           ~gchunked?)))
-                                      (= k :when) `(if ~v
-                                                     ~(do-cmod etc)
-                                                     (if ~gchunked?
-                                                       (recur
-                                                         ~gxs
-                                                         (unchecked-inc ~gi)
-                                                         ~gchunk-size
-                                                         ~gchunk
-                                                         ~gchunk-iter?
-                                                         ~gb
-                                                         ~gchunked?)
-                                                       (recur
-                                                         (rest ~gxs)
-                                                         ~gi
-                                                         ~gchunk-size
-                                                         ~gchunk
-                                                         ~gchunk-iter?
-                                                         ~gb
-                                                         ~gchunked?)))
-                                      (keyword? k) (err "Invalid 'for' keyword " k)
-                                      :else `(let [~gbody ~body-expr]
-                                               (if ~gchunked?
-                                                 (do (chunk-append ~gb ~gbody)
-                                                     (recur ~gxs
-                                                            (unchecked-inc ~gi)
-                                                            ~gchunk-size
-                                                            ~gchunk
-                                                            ~gchunk-iter?
-                                                            ~gb
-                                                            ~gchunked?))
-                                                 (cons ~gbody
-                                                       (~giter (rest ~gxs)))))))]
+                                       (keyword? k) (err "Invalid 'for' keyword " k)
+                                       :else `(let [~gbody ~body-expr]
+                                                (if ~gchunked?
+                                                  (do (chunk-append ~gb ~gbody)
+                                                      (recur ~gxs
+                                                             (unchecked-inc ~gi)
+                                                             ~gchunk-size
+                                                             ~gchunk
+                                                             ~gchunk-iter?
+                                                             ~gb
+                                                             ~gchunked?))
+                                                  (cons ~gbody
+                                                        (~giter (rest ~gxs)))))))]
                       `(fn ~giter [~gxs]
                          (lazy-seq
                            ~(if outer-loop
                               `(loop [~gxs ~gxs]
                                  (when-first [~bind ~gxs]
-                                   ~(do-mod mod-pairs)))
+                                   ~(do-outer mod-pairs)))
                               `(loop [~gxs ~gxs
                                       ~gi (int 0)
                                       ~gchunk-size (int 1) ;; before newly-chunked, ensure (< ~gi ~gchunk-size)
@@ -194,7 +192,7 @@
                                            ~gb (if newly-chunked?# (chunk-buffer ~gchunk-size) ~gb)
                                            ~gchunked? (or ~gchunked? chunked#)
                                            ~bind (if ~gchunked? (.nth ~gchunk ~gi) (first ~gxs))]
-                                       ~(do-cmod mod-pairs)))
+                                       ~(do-inner mod-pairs)))
                                    (if ~gchunk-iter?
                                      (chunk-cons
                                        (chunk ~gb)

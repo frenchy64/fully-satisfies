@@ -119,8 +119,7 @@
                                         (if fs#
                                           (concat fs# (~giter (rest ~gxs)))
                                           (recur (rest ~gxs))))
-                                     :else `(cons ~body-expr
-                                                  (~giter (rest ~gxs)))))
+                                     :else (throw (Exception. "do-mod with inner loop"))))
                           do-cmod (fn do-cmod [[[k v :as pair] & etc]]
                                     (assert (not outer-loop))
                                     (cond
@@ -197,6 +196,10 @@
                                      (chunk-cons
                                        (chunk ~gb)
                                        (~giter (chunk-rest ~gxs)))
-                                     (chunk-cons (chunk ~gb) nil)))))))))]
-  `(let [iter# ~(emit-bind (to-groups seq-exprs))]
-     (iter# ~(second seq-exprs)))))
+                                     (chunk-cons (chunk ~gb) nil)))))))))
+res `(let [iter# ~(emit-bind (to-groups seq-exprs))]
+     (iter# ~(second seq-exprs)))]
+(prn "after for expansion")
+(doto res
+    ((requiring-resolve 'clojure.pprint/pprint)))
+  ))

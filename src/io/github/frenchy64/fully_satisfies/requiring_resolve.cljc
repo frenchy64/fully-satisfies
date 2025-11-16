@@ -93,7 +93,7 @@
   (:require [clojure.core :as cc]))
 
 (def ^:private -require-lock
-  #?(:bb clojure.lang.RT/REQUIRE_LOCK
+  #?(:bb #'clojure.core/require #_;;FIXME should be clojure.lang.RT/REQUIRE_LOCK but bb doesn't expose it
      :default (let [{:keys [major minor]} *clojure-version*]
                 (or (try (.get (.getField clojure.lang.RT "REQUIRE_LOCK") clojure.lang.RT)
                          (catch java.lang.NoSuchFieldException _))

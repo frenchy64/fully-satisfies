@@ -1,0 +1,2 @@
+;; deps.edn for babashka dependees, no prep step
+{:paths ["../src"]}

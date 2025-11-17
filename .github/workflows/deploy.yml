@@ -1,0 +1,70 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types:
+      - completed
+
+env:
+  BABASHKA_VERSION: "1.12.196"
+  DEFAULT_JAVA_VERSION: "21"
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment:
+      name: clojars
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Clone gh-pages
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: tmp/fully-satisfies-gh-pages
+          ref: gh-pages
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/project.clj') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Install clojure tools
+        uses: DeLaGuardo/setup-clojure@13.1
+        with:
+          babashka-version: ${{env.BABASHKA_VERSION}}
+          lein: 2.11.2
+
+      - name: Prepare java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{env.DEFAULT_JAVA_VERSION}}
+
+      - name: Deploy to clojars
+        env:
+          CLOJARS_USER: ambrosebs
+          CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
+          COMMIT_MSG: ${{ github.event.workflow_run.head_commit.message }}
+        run: |
+          git config --global user.email "actions-ci-bot@github.com"
+          git config --global user.name "Ambrose Bonnaire-Sergeant"
+          if [[ "$COMMIT_MSG" == "Release :major" ]]; then
+            lein release :major
+          elif [[ "$COMMIT_MSG" == "Release :minor" ]]; then
+            lein release :minor
+          elif [[ "$COMMIT_MSG" == "Release :patch" ]]; then
+            lein release :patch
+          else
+            lein deploy snapshot
+          fi

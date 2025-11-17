@@ -70,7 +70,7 @@ jobs:
           java-version: ${{env.DEFAULT_JAVA_VERSION}}
       - name: deploy
         env: 
-          CLOJARS_USER: ${{ secrets.CLOJARS_USER }}
+          CLOJARS_USER: ambrosebs
           CLOJARS_TOKEN: ${{ secrets.CLOJARS_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |

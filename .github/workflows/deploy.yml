@@ -7,7 +7,6 @@ on:
       - completed
 
 env:
-  BABASHKA_VERSION: "1.12.196"
   DEFAULT_JAVA_VERSION: "21"
 
 jobs:
@@ -42,7 +41,6 @@ jobs:
       - name: Install clojure tools
         uses: DeLaGuardo/setup-clojure@13.1
         with:
-          babashka-version: ${{env.BABASHKA_VERSION}}
           lein: 2.11.2
 
       - name: Prepare java

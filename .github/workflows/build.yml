@@ -7,7 +7,6 @@ on:
   pull_request:
 
 env:
-  BABASHKA_VERSION: "1.12.196"
   DEFAULT_JAVA_VERSION: "21"
 
 jobs:

@@ -12,7 +12,7 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (def ^:dynamic *counter* nil)
-(defmacro counting-macro [] (swap! *counter* inc))
+(defmacro counting-macro [] (swap! *counter* inc) nil)
 
 (defn is-count-expansions [expected form]
   (binding [*counter* (atom 0)]
@@ -66,6 +66,7 @@
   (is-count-expansions 1 `(counting-macro))
   (is-count-expansions 1 `(fixed/doseq [] (counting-macro)))
   (is-count-expansions 1 `(fixed/doseq [_# nil] (counting-macro)))
+  (is-count-expansions 1 `(fixed/doseq [_# (counting-macro)]))
   (is-count-expansions 1 `(fixed/doseq [_# nil _# nil _# nil _# nil] (counting-macro)))
   (is-count-expansions 1 `(fixed/doseq [_# nil _# nil _# nil _# (counting-macro)]))
   (is-count-expansions 4 `#(fixed/doseq [_# (counting-macro) _# (counting-macro) _# (counting-macro) _# (counting-macro)]))
@@ -316,23 +317,23 @@
                           (recur (next s) nil 0 0)))))))))))
   (testing '(doseq [V0 E0 V1 E1 V2 E2] B)
     (testing 'c/doseq
-      (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq ~'[V0 E0 E1 V1 E2 V2] ~'B)))
+      (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))
              '(loop [s (seq E0) chunk- nil count- 0 i 0]
                 (if (< i count-)
                   (let [V0 (.nth chunk- i)]
-                    (loop [s (seq V1) chunk- nil count- 0 i 0]
+                    (loop [s (seq E1) chunk- nil count- 0 i 0]
                       (if (< i count-)
-                        (let [E1 (.nth chunk- i)]
-                          (loop [s (seq V2) chunk- nil count- 0 i 0]
+                        (let [V1 (.nth chunk- i)]
+                          (loop [s (seq E2) chunk- nil count- 0 i 0]
                             (if (< i count-)
-                              (let [E2 (.nth chunk- i)]
+                              (let [V2 (.nth chunk- i)]
                                 (do B)
                                 (recur s chunk- count- (unchecked-inc i)))
                               (when-let [s (seq s)]
                                 (if (chunked-seq? s)
                                   (let [f (chunk-first s)]
                                     (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                  (let [E2 (first s)]
+                                  (let [V2 (first s)]
                                     (do B)
                                     (recur (next s) nil 0 0))))))
                           (recur s chunk- count- (unchecked-inc i)))
@@ -340,17 +341,17 @@
                           (if (chunked-seq? s)
                             (let [f (chunk-first s)]
                               (recur (chunk-rest s) f (int (count f)) (int 0)))
-                            (let [E1 (first s)]
-                              (loop [s (seq V2) chunk- nil count- 0 i 0]
+                            (let [V1 (first s)]
+                              (loop [s (seq E2) chunk- nil count- 0 i 0]
                                 (if (< i count-)
-                                  (let [E2 (.nth chunk- i)]
+                                  (let [V2 (.nth chunk- i)]
                                     (do B)
                                     (recur s chunk- count- (unchecked-inc i)))
                                   (when-let [s (seq s)]
                                     (if (chunked-seq? s)
                                       (let [f (chunk-first s)]
                                         (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                      (let [E2 (first s)]
+                                      (let [V2 (first s)]
                                         (do B)
                                         (recur (next s) nil 0 0))))))
                               (recur (next s) nil 0 0))))))
@@ -360,19 +361,19 @@
                       (let [f (chunk-first s)]
                         (recur (chunk-rest s) f (int (count f)) (int 0)))
                       (let [V0 (first s)]
-                        (loop [s (seq V1) chunk- nil count- 0 i 0]
+                        (loop [s (seq E1) chunk- nil count- 0 i 0]
                           (if (< i count-)
-                            (let [E1 (.nth chunk- i)]
-                              (loop [s (seq V2) chunk- nil count- 0 i 0]
+                            (let [V1 (.nth chunk- i)]
+                              (loop [s (seq E2) chunk- nil count- 0 i 0]
                                 (if (< i count-)
-                                  (let [E2 (.nth chunk- i)]
+                                  (let [V2 (.nth chunk- i)]
                                     (do B)
                                     (recur s chunk- count- (unchecked-inc i)))
                                   (when-let [s (seq s)]
                                     (if (chunked-seq? s)
                                       (let [f (chunk-first s)]
                                         (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                      (let [E2 (first s)]
+                                      (let [V2 (first s)]
                                         (do B)
                                         (recur (next s) nil 0 0))))))
                               (recur s chunk- count- (unchecked-inc i)))
@@ -380,44 +381,45 @@
                               (if (chunked-seq? s)
                                 (let [f (chunk-first s)]
                                   (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                (let [E1 (first s)]
-                                  (loop [s (seq V2) chunk- nil count- 0 i 0]
+                                (let [V1 (first s)]
+                                  (loop [s (seq E2) chunk- nil count- 0 i 0]
                                     (if (< i count-)
-                                      (let [E2 (.nth chunk- i)]
+                                      (let [V2 (.nth chunk- i)]
                                         (do B)
                                         (recur s chunk- count- (unchecked-inc i)))
                                       (when-let [s (seq s)]
                                         (if (chunked-seq? s)
                                           (let [f (chunk-first s)]
                                             (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                          (let [E2 (first s)]
+                                          (let [V2 (first s)]
                                             (do B)
                                             (recur (next s) nil 0 0))))))
                                   (recur (next s) nil 0 0))))))
                         (recur (next s) nil 0 0)))))))))
     (testing 'fixed/doseq
-      (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq ~'[V0 E0 E1 V1 E2 V2] ~'B)))
+      (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))
              '(loop [s (seq E0) chunk- nil count- 0 i 0]
-                (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
+                (let [in-chunk (< i count-)
+                      s (if in-chunk s (seq s))]
                   (when (if in-chunk true s)
                     (if (if in-chunk false (chunked-seq? s))
                       (let [f (chunk-first s)]
                         (recur (chunk-rest s) f (int (count f)) (int 0)))
                       (let [V0 (if in-chunk (.nth chunk- i) (first s))]
-                        (loop [s (seq V1) chunk- nil count- 0 i 0]
+                        (loop [s (seq E1) chunk- nil count- 0 i 0]
                           (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
                             (when (if in-chunk true s)
                               (if (if in-chunk false (chunked-seq? s))
                                 (let [f (chunk-first s)]
                                   (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                (let [E1 (if in-chunk (.nth chunk- i) (first s))]
-                                  (loop [s (seq V2) chunk- nil count- 0 i 0]
+                                (let [V1 (if in-chunk (.nth chunk- i) (first s))]
+                                  (loop [s (seq E2) chunk- nil count- 0 i 0]
                                     (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
                                       (when (if in-chunk true s)
                                         (if (if in-chunk false (chunked-seq? s))
                                           (let [f (chunk-first s)]
                                             (recur (chunk-rest s) f (int (count f)) (int 0)))
-                                          (let [E2 (if in-chunk (.nth chunk- i) (first s))]
+                                          (let [V2 (if in-chunk (.nth chunk- i) (first s))]
                                             (do B)
                                             (if in-chunk
                                               (recur s chunk- count- (unchecked-inc i))

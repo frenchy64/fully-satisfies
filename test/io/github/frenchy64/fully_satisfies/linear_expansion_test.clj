@@ -209,8 +209,7 @@
                           (recur (chunk-rest s) f (int (count f)) (int 0)))
                         (do (if P
                               (do (do B)
-                                  (if
-                                    in-chunk
+                                  (if in-chunk
                                     (recur s chunk- count- (unchecked-inc i))
                                     (recur (next s) nil 0 0)))
                               (if in-chunk
@@ -305,8 +304,7 @@
                       (if (if in-chunk false chunked?)
                         (let [f (chunk-first s)]
                           (recur (chunk-rest s) f (int (count f)) (int 0)))
-                        (do (loop
-                              [s (seq V1) chunk- nil count- 0 i 0]
+                        (do (loop [s (seq V1) chunk- nil count- 0 i 0]
                               (let [in-chunk (< i count-)
                                     s (if in-chunk s (seq s))]
                                 (when (if in-chunk true s)
@@ -426,8 +424,7 @@
                                       (do (loop [s (seq V2) chunk- nil count- 0 i 0]
                                             (let [in-chunk (< i count-)
                                                   s (if in-chunk s (seq s))]
-                                              (when
-                                                (if in-chunk true s)
+                                              (when (if in-chunk true s)
                                                 (let [chunked? (if in-chunk false (chunked-seq? s))
                                                       E2 (if in-chunk (.nth chunk- i) (if chunked? nil (first s)))]
                                                   (if (if in-chunk false chunked?)

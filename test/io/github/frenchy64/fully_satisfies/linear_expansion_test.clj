@@ -9,6 +9,7 @@
 ;; e.g., counting-macro is expanded twice here: (loop [a 1] (counting-macro) (recur nil))
 ;; must fix such warnings for reliable is-count-expansions calls.
 (set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 
 (def ^:dynamic *counter* nil)
 (defmacro counting-macro [] (swap! *counter* inc))
@@ -493,5 +494,5 @@
         (is (= core fixed))))))
 
 (deftest for-expansion-test
-  (is (= (fixed/for [x (range 3) y (range 3) :let [z (+ x y)] :when (odd? z)] [x y z])
+  (is (= (fixed/for [x (range 3) y (range 3) :let [z (+ (long x) (long y))] :when (odd? z)] [x y z])
          '([0 1 1] [1 0 1] [1 2 3] [2 1 3]))))

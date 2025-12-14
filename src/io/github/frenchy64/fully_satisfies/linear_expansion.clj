@@ -54,7 +54,7 @@
                            needrec (steppair 0)
                            subform (steppair 1)]
                        [true
-                        `(loop [~seq- (seq ~v), ~chunk- nil,
+                        `(loop [~seq- ~v, ~chunk- nil,
                                 ~count- 0, ~i- 0]
                            (let [~in-chunk- (< ~i- ~count-)
                                  ~seq- (if ~in-chunk- ~seq- (seq ~seq-))]

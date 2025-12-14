@@ -452,36 +452,134 @@
                           (recur (next s) nil 0 0))))))))))))
 
 (deftest doseq-expansion-size-test
-  (is (= (mapv (fn [ncolls]
-                 (let [binder (into [] (comp (map (fn [i]
-                                                    [(symbol (str "V" i))
-                                                     (symbol (str "E" i))]))
-                                             cat)
-                                    (range ncolls))
-                       ->count (fn [op] (count-subforms (macroexpand-1 (list op binder 'B))))]
-                   (into {} (map (fn [op] {op (->count op)}))
-                         `#{c/doseq fixed/doseq})))
-               (range 10))
-         '[{io.github.frenchy64.fully-satisfies.linear-expansion/doseq 3,
-            clojure.core/doseq 3}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 100,
-            clojure.core/doseq 89}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 197,
-            clojure.core/doseq 261}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 294,
-            clojure.core/doseq 605}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 391,
-            clojure.core/doseq 1293}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 488,
-            clojure.core/doseq 2669}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 585,
-            clojure.core/doseq 5421}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 682,
-            clojure.core/doseq 10925}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 779,
-            clojure.core/doseq 21933}
-           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 876,
-            clojure.core/doseq 43949}])))
+  (testing "(doseq [V0 E0 ... V8 E8] B)"
+    (is (= (into (sorted-map-by (fn [l r] (compare (count-subforms l) (count-subforms r))))
+                 (map (fn [ncolls]
+                        (let [binder (into [] (comp (map (fn [i]
+                                                           [(symbol (str "V" i))
+                                                            (symbol (str "E" i))]))
+                                                    cat)
+                                           (range ncolls))
+                              body 'B
+                              ->form (fn [op] (list op binder body))
+                              ->count (fn [op] (count-subforms (macroexpand-1 (->form op))))]
+                          {(->form 'doseq)
+                           (into {} (map (fn [op] {op (->count op)}))
+                                 `#{c/doseq fixed/doseq})})))
+                 (range 10))
+           '{(doseq [] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 3,   clojure.core/doseq 3},
+             (doseq [V0 E0] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 100, clojure.core/doseq 89},
+             (doseq [V0 E0 V1 E1] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 197, clojure.core/doseq 261},
+             (doseq [V0 E0 V1 E1 V2 E2] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 294, clojure.core/doseq 605},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 391, clojure.core/doseq 1293},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 488, clojure.core/doseq 2669},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 585, clojure.core/doseq 5421},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 682, clojure.core/doseq 10925},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 779, clojure.core/doseq 21933},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 876, clojure.core/doseq 43949}})))
+  (testing "(doseq [V E] B0 ... B8)"
+    (is (= (into (sorted-map-by (fn [l r] (compare (count-subforms l) (count-subforms r))))
+                 (map (fn [ncolls]
+                        (let [binder '[V E]
+                              body (mapv (fn [i] (symbol (str "B" i))) (range ncolls))
+                              ->form (fn [op] (list* op binder body))
+                              ->count (fn [op] (count-subforms (macroexpand-1 (->form op))))]
+                          {(->form 'doseq)
+                           (into {} (map (fn [op] {op (->count op)}))
+                                 `#{c/doseq fixed/doseq})})))
+                 (range 10))
+           '{(doseq [V E])
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 99,  clojure.core/doseq 87},
+             (doseq [V E] B0)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 100, clojure.core/doseq 89},
+             (doseq [V E] B0 B1)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 101, clojure.core/doseq 91},
+             (doseq [V E] B0 B1 B2)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 102, clojure.core/doseq 93},
+             (doseq [V E] B0 B1 B2 B3)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 103, clojure.core/doseq 95},
+             (doseq [V E] B0 B1 B2 B3 B4)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 104, clojure.core/doseq 97},
+             (doseq [V E] B0 B1 B2 B3 B4 B5)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 105, clojure.core/doseq 99},
+             (doseq [V E] B0 B1 B2 B3 B4 B5 B6)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 106, clojure.core/doseq 101},
+             (doseq [V E] B0 B1 B2 B3 B4 B5 B6 B7)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 107, clojure.core/doseq 103},
+             (doseq [V E] B0 B1 B2 B3 B4 B5 B6 B7 B8)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 108, clojure.core/doseq 105}})))
+  (testing "(doseq [V0 E0 V1 E1] B0 ... B8)"
+    (is (= (into (sorted-map-by (fn [l r] (compare (count-subforms l) (count-subforms r))))
+                 (map (fn [ncolls]
+                        (let [binder '[V0 E0 V1 E1]
+                              body (mapv (fn [i] (symbol (str "B" i))) (range ncolls))
+                              ->form (fn [op] (list* op binder body))
+                              ->count (fn [op] (count-subforms (macroexpand-1 (->form op))))]
+                          {(->form 'doseq)
+                           (into {} (map (fn [op] {op (->count op)}))
+                                 `#{c/doseq fixed/doseq})})))
+                 (range 10))
+           '{(doseq [V0 E0 V1 E1])
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 196, clojure.core/doseq 257},
+             (doseq [V0 E0 V1 E1] B0)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 197, clojure.core/doseq 261},
+             (doseq [V0 E0 V1 E1] B0 B1)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 198, clojure.core/doseq 265},
+             (doseq [V0 E0 V1 E1] B0 B1 B2)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 199, clojure.core/doseq 269},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 200, clojure.core/doseq 273},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3 B4)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 201, clojure.core/doseq 277},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3 B4 B5)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 202, clojure.core/doseq 281},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3 B4 B5 B6)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 203, clojure.core/doseq 285},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3 B4 B5 B6 B7)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 204, clojure.core/doseq 289},
+             (doseq [V0 E0 V1 E1] B0 B1 B2 B3 B4 B5 B6 B7 B8)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 205, clojure.core/doseq 293}})))
+  (testing "(doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 ... B8)"
+    (is (= (into (sorted-map-by (fn [l r] (compare (count-subforms l) (count-subforms r))))
+                 (map (fn [ncolls]
+                        (let [binder '[V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8]
+                              body (mapv (fn [i] (symbol (str "B" i))) (range ncolls))
+                              ->form (fn [op] (list* op binder body))
+                              ->count (fn [op] (count-subforms (macroexpand-1 (->form op))))]
+                          {(->form 'doseq)
+                           (into {} (map (fn [op] {op (->count op)}))
+                                 `#{c/doseq fixed/doseq})})))
+                 (range 10))
+           '{(doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8])
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 875, clojure.core/doseq 43437},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 876, clojure.core/doseq 43949},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 877, clojure.core/doseq 44461},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 878, clojure.core/doseq 44973},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 879, clojure.core/doseq 45485},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3 B4)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 880, clojure.core/doseq 45997},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3 B4 B5)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 881, clojure.core/doseq 46509},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3 B4 B5 B6)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 882, clojure.core/doseq 47021},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3 B4 B5 B6 B7)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 883, clojure.core/doseq 47533},
+             (doseq [V0 E0 V1 E1 V2 E2 V3 E3 V4 E4 V5 E5 V6 E6 V7 E7 V8 E8] B0 B1 B2 B3 B4 B5 B6 B7 B8)
+             {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 884, clojure.core/doseq 48045}}))))
 
 (deftest for-expands-exponentially-test
   (is (thrown? Exception (eval `(c/for [] (counting-macro)))))

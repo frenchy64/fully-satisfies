@@ -62,6 +62,16 @@
                        :else form))
                    form)))
 
+(defn count-subforms
+  "Approximate measure of expansion size"
+  [form]
+  (let [n (atom 0)]
+    (walk/postwalk (fn [form]
+                     (swap! n inc')
+                     form)
+                   form)
+    @n))
+
 (deftest fixed-doseq-duplicates-no-expansion-test
   (is-count-expansions 1 `(counting-macro))
   (is-count-expansions 1 `(fixed/doseq [] (counting-macro)))
@@ -148,6 +158,7 @@
            '(do B))))
   (testing '(doseq [V E] B)
     (testing 'c/doseq
+      (is (= 89 (count-subforms (macroexpand-1 `(doseq [~'V ~'E] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq [~'V ~'E] ~'B)))
              '(loop [s (seq E) chunk- nil count- 0 i 0]
                 (if (< i count-)
@@ -162,6 +173,7 @@
                         (do B)
                         (recur (next s) nil 0 0)))))))))
     (testing 'fixed/doseq
+      (is (= 100 (count-subforms (macroexpand-1 `(fixed/doseq [~'V ~'E] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq [~'V ~'E] ~'B)))
              '(loop [s E chunk- nil count- 0 i 0]
                 (let [in-chunk (< i count-)
@@ -181,6 +193,7 @@
            '(if P (do (do B) nil) nil))))
   (testing '(doseq [V E :when P] B)
     (testing 'c/doseq
+      (is (= 115 (count-subforms (macroexpand-1 `(doseq [~'V ~'E :when ~'P] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq [~'V ~'E :when ~'P] ~'B)))
              '(loop [s (seq E) chunk- nil count- 0 i 0]
                 (if (< i count-)
@@ -199,6 +212,7 @@
                               (recur (next s) nil 0 0))
                           (recur (next s) nil 0 0))))))))))
     (testing 'fixed/doseq
+      (is (= 124 (count-subforms (macroexpand-1 `(fixed/doseq [~'V ~'E :when ~'P] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq [~'V ~'E :when ~'P] ~'B)))
              '(loop [s E chunk- nil count- 0 i 0]
                 (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
@@ -222,6 +236,7 @@
            '(when P (do B) nil))))
   (testing '(doseq [V E :while P] B)
     (testing 'c/doseq
+      (is (= 95 (count-subforms (macroexpand-1 `(doseq [~'V ~'E :while ~'P] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq [~'V ~'E :while ~'P] ~'B)))
              '(loop [s (seq E) chunk- nil count- 0 i 0]
                 (if (< i count-)
@@ -238,6 +253,7 @@
                           (do B)
                           (recur (next s) nil 0 0))))))))))
     (testing 'fixed/doseq
+      (is (= 103 (count-subforms (macroexpand-1 `(fixed/doseq [~'V ~'E :while ~'P] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq [~'V ~'E :while ~'P] ~'B)))
              '(loop [s E chunk- nil count- 0 i 0]
                 (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
@@ -257,6 +273,7 @@
            '(let [S T] (do B)))))
   (testing '(doseq [V0 E0 V1 E1] B)
     (testing 'c/doseq
+      (is (= 261 (count-subforms (macroexpand-1 `(doseq ~'[V0 E0 V1 E1] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq ~'[V0 E0 V1 E1] ~'B)))
              '(loop [s (seq E0) chunk- nil count- 0 i 0]
                 (if (< i count-)
@@ -293,6 +310,7 @@
                                   (recur (next s) nil 0 0))))))
                         (recur (next s) nil 0 0)))))))))
     (testing 'fixed/doseq
+      (is (= 197 (count-subforms (macroexpand-1 `(fixed/doseq ~'[V0 E0 V1 E1] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq ~'[V0 E0 V1 E1] ~'B)))
              '(loop [s E0 chunk- nil count- 0 i 0]
                 (let [in-chunk (< i count-) s (if in-chunk s (seq s))]
@@ -317,6 +335,7 @@
                           (recur (next s) nil 0 0)))))))))))
   (testing '(doseq [V0 E0 V1 E1 V2 E2] B)
     (testing 'c/doseq
+      (is (= 605 (count-subforms (macroexpand-1 `(doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))
              '(loop [s (seq E0) chunk- nil count- 0 i 0]
                 (if (< i count-)
@@ -397,6 +416,7 @@
                                   (recur (next s) nil 0 0))))))
                         (recur (next s) nil 0 0)))))))))
     (testing 'fixed/doseq
+      (is (= 294 (count-subforms (macroexpand-1 `(fixed/doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))))
       (is (= (pretty-doseq-expansion (macroexpand-1 `(fixed/doseq ~'[V0 E0 V1 E1 V2 E2] ~'B)))
              '(loop [s E0 chunk- nil count- 0 i 0]
                 (let [in-chunk (< i count-)
@@ -430,6 +450,38 @@
                         (if in-chunk
                           (recur s chunk- count- (unchecked-inc i))
                           (recur (next s) nil 0 0))))))))))))
+
+(deftest doseq-expansion-size-test
+  (is (= (mapv (fn [ncolls]
+                 (let [binder (into [] (comp (map (fn [i]
+                                                    [(symbol (str "V" i))
+                                                     (symbol (str "E" i))]))
+                                             cat)
+                                    (range ncolls))
+                       ->count (fn [op] (count-subforms (macroexpand-1 (list op binder 'B))))]
+                   (into {} (map (fn [op] {op (->count op)}))
+                         `#{c/doseq fixed/doseq})))
+               (range 10))
+         '[{io.github.frenchy64.fully-satisfies.linear-expansion/doseq 3,
+            clojure.core/doseq 3}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 100,
+            clojure.core/doseq 89}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 197,
+            clojure.core/doseq 261}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 294,
+            clojure.core/doseq 605}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 391,
+            clojure.core/doseq 1293}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 488,
+            clojure.core/doseq 2669}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 585,
+            clojure.core/doseq 5421}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 682,
+            clojure.core/doseq 10925}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 779,
+            clojure.core/doseq 21933}
+           {io.github.frenchy64.fully-satisfies.linear-expansion/doseq 876,
+            clojure.core/doseq 43949}])))
 
 (deftest for-expands-exponentially-test
   (is (thrown? Exception (eval `(c/for [] (counting-macro)))))

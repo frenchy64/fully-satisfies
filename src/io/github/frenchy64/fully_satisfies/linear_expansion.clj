@@ -59,16 +59,13 @@
                            (let [~in-chunk- (< ~i- ~count-)
                                  ~seq- (if ~in-chunk- ~seq- (seq ~seq-))]
                              (when (if ~in-chunk- true ~seq-)
-                               (let [chunked?# (if ~in-chunk- false (chunked-seq? ~seq-))
-                                     ~k (if ~in-chunk-
-                                          (.nth ~chunk- ~i-)
-                                          (if chunked?# nil (first ~seq-)))]
-                                 (if (if ~in-chunk- false chunked?#)
-                                   (let [c# (chunk-first ~seq-)]
-                                     (recur (chunk-rest ~seq-) c#
-                                            (int (count c#)) (int 0)))
-                                   (do ~subform
-                                       ~@(when needrec [recform])))))))])))))]
+                               (if (if ~in-chunk- false (chunked-seq? ~seq-))
+                                 (let [c# (chunk-first ~seq-)]
+                                   (recur (chunk-rest ~seq-) c#
+                                          (int (count c#)) (int 0)))
+                                 (let [~k (if ~in-chunk- (.nth ~chunk- ~i-) (first ~seq-))]
+                                   ~subform
+                                   ~@(when needrec [recform]))))))])))))]
     (nth (step nil (seq seq-exprs)) 1)))
 
 (defmacro for

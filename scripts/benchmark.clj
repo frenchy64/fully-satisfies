@@ -1,6 +1,7 @@
 (ns benchmark
   (:require [criterium.core :as c]
             [clj-async-profiler.core :as p]
+            [clojure.java.io :as io]
             [io.github.frenchy64.fully-satisfies :as sut]))
 
 
@@ -57,16 +58,20 @@
 
 (defn bench []
   (println "Starting benchmarks...")
-  (spit "bench-results.txt"
-        (with-out-str
-          (println "bench satisfies?")
-          (bench-satisfies?)
-          (println "\n\nbench fully-satisfies?")
-          (bench-fully-satisfies?)))
-  (println "Finished benchmarking."))
+  (let [output-dir "bench-results"
+        results-file (str output-dir "/bench-results.txt")]
+    (io/make-parents results-file)
+    (spit results-file
+          (with-out-str
+            (println "bench satisfies?")
+            (bench-satisfies?)
+            (println "\n\nbench fully-satisfies?")
+            (bench-fully-satisfies?)))
+    (println (str "Results saved to: " results-file))
+    (println "Finished benchmarking.")))
 
 (comment
-  ;; see bench-results.txt
+  ;; see bench-results/bench-results.txt
   (bench)
 
   ;; start profiler at port 17042

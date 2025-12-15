@@ -2,11 +2,39 @@
 (ns benchmark-linear
   (:require [criterium.core :as c]
             [clojure.pprint :as pp]
-            [oz.core :as oz]
+            [cheshire.core :as json]
+            [clojure.java.io :as io]
             [io.github.frenchy64.fully-satisfies.linear :refer [butlast+last
                                                                 count+last]]
             [io.github.frenchy64.fully-satisfies.linear-test :refer [butlast+last-reference
                                                                      count+last-reference]]))
+
+(defn export-vega-html!
+  "Exports a Vega-Lite spec to an HTML file with embedded visualization.
+   Takes a Vega-Lite spec (as a Clojure map) and an output file path."
+  [spec output-file]
+  (let [spec-json (json/generate-string spec)
+        html (str "<!DOCTYPE html>\n"
+                  "<html>\n"
+                  "<head>\n"
+                  "  <meta charset=\"UTF-8\">\n"
+                  "  <title>Benchmark Visualization</title>\n"
+                  "  <script src=\"https://cdn.jsdelivr.net/npm/vega@5\"></script>\n"
+                  "  <script src=\"https://cdn.jsdelivr.net/npm/vega-lite@6.4.1\"></script>\n"
+                  "  <script src=\"https://cdn.jsdelivr.net/npm/vega-embed@6\"></script>\n"
+                  "  <style>\n"
+                  "    body { padding: 20px; font-family: sans-serif; }\n"
+                  "  </style>\n"
+                  "</head>\n"
+                  "<body>\n"
+                  "  <div id=\"vis\"></div>\n"
+                  "  <script>\n"
+                  "    vegaEmbed('#vis', " spec-json ", {\"mode\": \"vega-lite\"});\n"
+                  "  </script>\n"
+                  "</body>\n"
+                  "</html>\n")]
+    (io/make-parents output-file)
+    (spit output-file html)))
 
 (def quick? true)
 
@@ -65,26 +93,27 @@
   (spec-checker)
   (spec-checker 1)
 
-  (oz/start-server!)
+  ;; Generate plots after benchmarks
+  (generate-plots)
 
   )
 
-(defn regen-mean []
-  (spit "bench-linear-mean.txt"
+(defn regen-mean [results-file mean-file]
+  (spit mean-file
         (with-out-str
           (let [first-iteration (atom true)]
-            (doseq [[info k->result] (read-string (slurp "bench-linear-results.txt"))
+            (doseq [[info k->result] (read-string (slurp results-file))
                     [k result] k->result]
               (when-not (first (reset-vals! first-iteration false))
                 (println))
               (println info k)
               (c/report-point-estimate "Execution time mean" (:mean result)))))))
 
-(defn regen-pretty []
-  (spit "bench-linear-pretty.txt"
+(defn regen-pretty [results-file pretty-file]
+  (spit pretty-file
         (with-out-str
           (let [first-iteration (atom true)]
-            (doseq [[info k->result] (read-string (slurp "bench-linear-results.txt"))
+            (doseq [[info k->result] (read-string (slurp results-file))
                     [k result] k->result]
               (when-not (first (reset-vals! first-iteration false))
                 (println))
@@ -93,57 +122,95 @@
 
 (defn bench []
   (println "Starting benchmarks...")
-  (let [results (bench*)]
-    (spit "bench-linear-results.txt"
+  (let [results (bench*)
+        output-dir "bench-results"
+        results-file (str output-dir "/bench-linear-results.txt")
+        pretty-file (str output-dir "/bench-linear-pretty.txt")
+        mean-file (str output-dir "/bench-linear-mean.txt")]
+    (io/make-parents results-file)
+    (spit results-file
           (with-out-str
             (pp/pprint results)))
-    (regen-pretty)
-    (regen-mean)))
+    (println (str "Results saved to: " results-file))
+    (regen-pretty results-file pretty-file)
+    (println (str "Pretty output saved to: " pretty-file))
+    (regen-mean results-file mean-file)
+    (println (str "Mean output saved to: " mean-file))))
 
-(defn plots* []
-  (let [results (read-string (slurp "bench-linear-results.txt"))
+(defn generate-plots
+  "Generate HTML visualizations from benchmark results."
+  []
+  (let [output-dir "bench-results"
+        results-file (str output-dir "/bench-linear-results.txt")
+        results (read-string (slurp results-file))
         values (mapcat (fn [[size rs]]
                          (assert (nat-int? size) (pr-str size))
                          (map (fn [[k {[mean] :mean}]]
                                 {:size size
-                                 :time mean
-                                 :f k})
+                                 :time (* mean 1e6) ; convert to microseconds
+                                 :f (str k)})
                               rs))
                        results)
         groups (group-by (comp first :f) values)]
-    (concat
-      (map (fn [[k values]]
-             (assert (keyword? k) (pr-str k))
-             [:div
-              [:h1 (name k)]
-              (map (fn [limit]
-                     [:vega-lite
-                      {:data {:values (filter #(<= (:size %) limit) values)}
-                       :encoding {:x {:field "size" :type "quantitative"}
-                                  :y {:field "time" :type "quantitative"}
-                                  :color {:field "f" :type "nominal"}}
-                       :mark "line"}])
-                   [10 100 1000 1000000])])
-           {:count+last (concat (:count+last groups)
-                                (:count+last-reference groups)
-                                (:last groups)
-                                (:count groups))
-            :butlast+last (concat (:butlast+last groups)
-                                  (:butlast+last-reference groups)
-                                  (:last groups)
-                                  (:butlast groups))})
-      [[:div
-        [:h1 "butlast+last vs count+last"]
-        (for [limit [10 100 #_1000 #_1000000]]
-          [:vega-lite
-           {:data {:values (filter #(<= (:size %) limit)
-                                   (concat (:count+last groups)
-                                           (:butlast+last groups)))}
-            :encoding {:x {:field "size" :type "quantitative"}
-                       :y {:field "time" :type "quantitative"}
-                       :color {:field "f" :type "nominal"}}
-            :mark "line"}])]])))
+
+    ;; Generate overall comparison plot
+    (export-vega-html!
+     {:data {:values values}
+      :title "Linear Operations Benchmark - All Functions"
+      :width 600
+      :height 400
+      :mark {:type "line" :point true}
+      :encoding {:x {:field "size" :type "quantitative" :title "Input size"}
+                 :y {:field "time" :type "quantitative" :title "Mean execution time (μs)" :scale {:type "log"}}
+                 :color {:field "f" :type "nominal" :title "Function"}
+                 :tooltip [{:field "size" :type "quantitative"}
+                           {:field "time" :type "quantitative" :format ".4f"}
+                           {:field "f" :type "nominal"}]}}
+     (str output-dir "/bench-linear-all.html"))
+
+    ;; Generate count+last comparison plot
+    (let [count-last-values (concat (get groups :count+last [])
+                                    (get groups :count+last-reference [])
+                                    (get groups :last [])
+                                    (get groups :count []))]
+      (export-vega-html!
+       {:data {:values count-last-values}
+        :title "count+last Family Comparison"
+        :width 600
+        :height 400
+        :mark {:type "line" :point true}
+        :encoding {:x {:field "size" :type "quantitative" :title "Input size"}
+                   :y {:field "time" :type "quantitative" :title "Mean execution time (μs)" :scale {:type "log"}}
+                   :color {:field "f" :type "nominal" :title "Function"}
+                   :tooltip [{:field "size" :type "quantitative"}
+                             {:field "time" :type "quantitative" :format ".4f"}
+                             {:field "f" :type "nominal"}]}}
+       (str output-dir "/bench-linear-count-last.html")))
+
+    ;; Generate butlast+last comparison plot
+    (let [butlast-last-values (concat (get groups :butlast+last [])
+                                      (get groups :butlast+last-reference [])
+                                      (get groups :last [])
+                                      (get groups :butlast []))]
+      (export-vega-html!
+       {:data {:values butlast-last-values}
+        :title "butlast+last Family Comparison"
+        :width 600
+        :height 400
+        :mark {:type "line" :point true}
+        :encoding {:x {:field "size" :type "quantitative" :title "Input size"}
+                   :y {:field "time" :type "quantitative" :title "Mean execution time (μs)" :scale {:type "log"}}
+                   :color {:field "f" :type "nominal" :title "Function"}
+                   :tooltip [{:field "size" :type "quantitative"}
+                             {:field "time" :type "quantitative" :format ".4f"}
+                             {:field "f" :type "nominal"}]}}
+       (str output-dir "/bench-linear-butlast-last.html")))
+
+    (println (str "Plots saved to " output-dir "/"))
+    (println "  - bench-linear-all.html")
+    (println "  - bench-linear-count-last.html")
+    (println "  - bench-linear-butlast-last.html")))
 
 (comment
-  (oz/start-server!)
-  (oz/view! (plots*)))
+  ;; Generate plots after benchmarks
+  (generate-plots))

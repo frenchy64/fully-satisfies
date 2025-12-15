@@ -9,13 +9,15 @@
              {:source-paths ["scripts"]
               :dependencies [[com.clojure-goes-fast/clj-async-profiler "0.5.1"]
                              [criterium/criterium "0.4.6"]
-                             [metasoarous/oz "1.6.0-alpha36"]]
-              :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
+                             [cheshire "5.12.0"]]
+              :jvm-opts ["-Xms2g" "-Xmx2g"
+                         "-Djdk.attach.allowAttachSelf"]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :gen-doc
              {:jvm-opts ["--add-opens" "java.base/java.lang=ALL-UNNAMED"]}
              :dev {:jvm-opts ["-Xms64m" "-Xmx64m"] ; small heap to speed up cleaners tests
                    :dependencies [[org.clojure/test.check "1.1.1"]
+                                  [com.clojure-goes-fast/clj-java-decompiler "0.3.7"]
                                   [com.gfredericks/test.chuck "0.2.12"
                                    :exclusions [org.clojure/clojurescript
                                                 com.andrewmcveigh/cljs-time]]
@@ -37,7 +39,9 @@
                                     :sign-releases false}]]
   :aliases {"bench" ["with-profile" "+bench" "run" "-m" "benchmark/bench"]
             "bench-expand-kvs" ["with-profile" "+bench" "run" "-m" "benchmark-expand-kvs/bench"]
-            "bench-linear" ["with-profile" "+bench" "run" "-m" "benchmark-linear/bench"]}
+            "bench-linear" ["with-profile" "+bench" "run" "-m" "benchmark-linear/bench"]
+            "bench-doseq" ["with-profile" "+bench" "run" "-m" "benchmark-doseq/bench"]
+            "bench-doseq-quick" ["with-profile" "+bench" "run" "-m" "benchmark-doseq/bench" "true"]}
   :release-tasks [["clean"]
                   ["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]

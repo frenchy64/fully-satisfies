@@ -1,0 +1,53 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        type: choice
+        description: "Benchmark to run"
+        options:
+        - bench-doseq
+        - bench-doseq-quick
+        - bench-linear
+        - bench-expand-kvs
+      java_version:
+        type: int
+        optional: true
+        default: 25
+
+env:
+  JAVA_VERSION: ${{ inputs.java_version }}
+
+jobs:
+  test:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Cache local Maven repository
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/project.clj') }}-${{ inputs.benchmark }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Prepare java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Install Leiningen
+        run: |
+          wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+          chmod +x lein
+          sudo mv lein /usr/local/bin/
+          lein version
+      - run: lein "${{ inputs.benchmark }}"
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-${{ inputs.benchmark }}-java${{ env.JAVA_VERSION }}
+          path: bench-results/

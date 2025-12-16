@@ -12,9 +12,9 @@ on:
         - bench-linear
         - bench-expand-kvs
       java_version:
-        type: int
-        optional: true
-        default: 25
+        type: string
+        required: false
+        default: '25'
 
 env:
   JAVA_VERSION: ${{ inputs.java_version }}
@@ -44,7 +44,7 @@ jobs:
           chmod +x lein
           sudo mv lein /usr/local/bin/
           lein version
-      - run: lein "${{ inputs.benchmark }}"
+      - run: lein with-profile +bench "${{ inputs.benchmark }}"
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         if: always()

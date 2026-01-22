@@ -12,17 +12,23 @@
 
 ;; benchmark runs equivalent of this code, for each doseq
 ;; n == size
-;; (fn []
-;;   (doseq [x0 (range 10)
-;;           ...
-;;           xn (range 10)]
-;;     (str x0 ... xn)))
+;; (let [v (volatile! nil)
+;;   (alter-var-root #'strong (constantly v))
+;;   (fn []
+;;     (doseq [x0 (range 10)
+;;             ...
+;;             xn (range 10)]
+;;       (str x0 ... xn)))
+
+(defonce strong (volatile! nil))
 
 (defn bench-cases [size]
   (let [syms (mapv (fn [i] (symbol (str "x" i))) (range size))
         binder (vec (interleave syms (repeat `(range 10))))
         body (list* `str syms)
-        op->form (fn [op] (list op binder body))]
+        op->form (fn [op]
+                   (list `let ['vol `strong]
+                         (list `fn [] (list op binder `(vreset! ~'vol ~body)))))]
     (into (sorted-map)
           (map (fn [op] {op (op->form op)}))
           [`exponential/doseq
@@ -38,7 +44,7 @@
   (let [bench-fn (if quick? c/quick-benchmark* c/benchmark*)
         form->runner (fn [form]
                        (prn "form->runner" form)
-                       (eval (list `fn [] form)))
+                       (eval form))
         opts {:warmup-jit-period 0}]
     (into (sorted-map)
           (map (fn [[op form]]
@@ -50,11 +56,9 @@
 
 (defn bench
   ([] (bench false))
-  ([quick?] (bench quick? 1))
+  ([quick?] (bench quick? 4))
   ([quick? iterations]
-   (let [results [(bench* quick? 1)]
-         _ (prn "after")
-         #_(mapv #(bench* quick? %) (range iterations))
+   (let [results (mapv #(bench* quick? %) (range iterations))
          timestamp (.format (LocalDateTime/now) (DateTimeFormatter/ofPattern "yyyyMMdd-HHmmss"))
          output-dir "bench-results"
          results-file (str output-dir "/benchmark-results-" timestamp ".edn")

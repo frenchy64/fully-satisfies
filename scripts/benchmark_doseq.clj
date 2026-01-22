@@ -56,7 +56,7 @@
 
 (defn bench
   ([] (bench false))
-  ([quick?] (bench quick? 4))
+  ([quick?] (bench quick? 7))
   ([quick? iterations]
    (let [results (mapv #(bench* quick? %) (range iterations))
          timestamp (.format (LocalDateTime/now) (DateTimeFormatter/ofPattern "yyyyMMdd-HHmmss"))

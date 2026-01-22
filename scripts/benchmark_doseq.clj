@@ -10,6 +10,14 @@
   (:import [java.time LocalDateTime]
            [java.time.format DateTimeFormatter]))
 
+;; benchmark runs equivalent of this code, for each doseq
+;; n == size
+;; (fn []
+;;   (doseq [x0 (range 10)
+;;           ...
+;;           xn (range 10)]
+;;     (str x0 ... xn)))
+
 (defn bench* [quick? size]
   (let [bench-fn (if quick? c/quick-benchmark* c/benchmark*)
         syms (mapv (fn [i] (symbol "x" i)) (range size))
@@ -98,7 +106,7 @@
 
 (defn bench
   ([] (bench false))
-  ([quick?] (bench quick? 10))
+  ([quick?] (bench quick? 0))
   ([quick? iterations]
    (let [results (mapv #(bench* quick? %) (range iterations))
          timestamp (.format (LocalDateTime/now) (DateTimeFormatter/ofPattern "yyyyMMdd-HHmmss"))
